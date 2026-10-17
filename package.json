@@ -1,0 +1,56 @@
+{
+  "name": "claude-buddy",
+  "version": "1.11.0",
+  "description": "Kleiner Pixel-Begleiter an der Taskleiste: Mini-Claude oder Ente.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node scripts/make-icon.js",
+    "dist": "electron-builder --win nsis --x64 --publish never",
+    "release": "electron-builder --win nsis --x64 --publish always"
+  },
+  "devDependencies": {
+    "electron": "38.8.4",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "de.desktop.ente",
+    "productName": "Claude Buddy",
+    "files": [
+      "src/**",
+      "assets/**",
+      "!node_modules/koffi/{src,vendor,doc,lib}/**",
+      "!node_modules/koffi/build/koffi/!(win32_x64)/**",
+      "!node_modules/uiohook-napi/{src,libuiohook}/**",
+      "!node_modules/uiohook-napi/prebuilds/!(win32-x64)/**"
+    ],
+    "win": {
+      "icon": "assets/icon.png",
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "npmRebuild": false,
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "Claude-Buddy-Setup-${version}.${ext}",
+      "shortcutName": "Claude Buddy",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "clavicular-alt",
+      "repo": "claude-buddy",
+      "private": true,
+      "releaseType": "release"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2",
+    "koffi": "2.14.1",
+    "uiohook-napi": "1.5.5"
+  },
+  "author": "clavicular-alt"
+}

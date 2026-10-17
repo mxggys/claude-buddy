@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Eingabe</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <style>
+    /* kleines Eingabefeld im Stil der Windows-11-Menüs */
+    html, body { margin: 0; height: 100%; background: transparent; }
+    body { font: 13px/1.4 "Segoe UI", system-ui, sans-serif; color: #f2efe9; padding: 8px; box-sizing: border-box; user-select: none; }
+    form {
+      height: 100%; box-sizing: border-box; display: grid; gap: 8px; align-content: start; padding: 12px 14px;
+      background: #202024; border: 1px solid rgba(255, 255, 255, .08); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+    }
+    label { font-weight: 600; }
+    .hint { margin: 0; color: #a8a39b; font-size: 12px; }
+    input {
+      width: 100%; box-sizing: border-box; background: #17171a; color: #f2efe9; border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 6px; padding: 7px 8px; font: 13px "Segoe UI", sans-serif; user-select: text;
+    }
+    input:focus { outline: 2px solid #ffb02e; outline-offset: 0; border-color: transparent; }
+    .row { display: flex; justify-content: flex-end; gap: 6px; }
+    button { font: 600 12px "Segoe UI", sans-serif; border-radius: 6px; padding: 6px 12px; cursor: pointer; border: 1px solid rgba(255, 255, 255, .1); background: #2b2b31; color: #f2efe9; }
+    button[type="submit"] { background: #ffb02e; color: #2b1d0e; border-color: transparent; }
+    button:focus-visible { outline: 2px solid #ffb02e; outline-offset: 1px; }
+  </style>
+</head>
+<body>
+  <form id="f">
+    <label for="v" id="label"></label>
+    <input id="v" autocomplete="off" spellcheck="false">
+    <p class="hint" id="hint"></p>
+    <div class="row">
+      <button type="button" id="cancel">Abbrechen</button>
+      <button type="submit">OK</button>
+    </div>
+  </form>
+  <script src="prompt.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# Baut die Desktop Ente auf einem Windows-Rechner und veröffentlicht sie als GitHub-Release.
+# Die installierte App holt sich neue Versionen von dort automatisch.
+# Läuft, sobald sich package.json ändert (neue Versionsnummer = neues Release) oder manuell unter Actions.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: ['package.json']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Auf Windows kann das Enten-Symbol direkt in die .exe geschrieben werden
+      - run: npx electron-builder --win nsis --x64 --publish always --config.win.signAndEditExecutable=true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
