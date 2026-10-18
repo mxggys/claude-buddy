@@ -67,6 +67,9 @@ const DEFAULT_SETTINGS = {
   spielAbzeichen: {}, // { 'ball:100': '2026-10-18' }
   farbe: 'original', // Farbvariante der Figur
   farbe2: 'original', // Farbvariante der zweiten Figur
+  sammlung: [], // Zubehör aus den täglichen Geschenken
+  zubehoer: null, // gerade getragenes Zubehör
+  geschenkTag: '', // an welchem Tag das letzte Geschenk geöffnet wurde
   mikrofon: false,
   tastatur: true,
   energiesparen: 0, // 0 aus, 1 leicht, 2 mittel, 3 hart
@@ -75,6 +78,7 @@ const DEFAULT_SETTINGS = {
     weihnachten: true, // Mütze im Dezember
     ostern: true, // Hasenohren und Osterei von Karfreitag bis Ostermontag
     halloween: true, // Kürbis und Fledermäuse vom 24. bis 31. Oktober
+    winterschnee: true, // Dezember bis Februar: an Schneetagen schneit es, Schneemann
     silvester: true, // Partyhut an Silvester und Neujahr
     geburtstag: true, // Partyhut und Konfetti am Geburtstag
     geburtstagDatum: '', // "TT.MM."
@@ -121,6 +125,9 @@ function loadSettings() {
     extras: { ...DEFAULT_SETTINGS.extras, ...saved.extras },
     zaehler: { ...DEFAULT_SETTINGS.zaehler, ...saved.zaehler },
     spielzeit: { ...DEFAULT_SETTINGS.spielzeit, ...saved.spielzeit },
+    abzeichen: { ...saved.abzeichen },
+    spielAbzeichen: { ...saved.spielAbzeichen },
+    sammlung: Array.isArray(saved.sammlung) ? [...saved.sammlung] : [],
   };
   if ((settings.version || 1) < 2) settings.mikrofon = false; // war früher standardmäßig an
   for (const key of REMOVED_KEYS) delete settings[key];
@@ -548,6 +555,8 @@ const petSettings = () => ({
   launeAn: settings.launeAn,
   laune: settings.laune,
   zweiteFigur: Boolean(settings.zweiteFigur),
+  zubehoer: settings.zubehoer,
+  geschenk: settings.geschenkTag !== dayKey(),
   extras: { ...settings.extras, ort: undefined },
 });
 
@@ -590,6 +599,57 @@ function playMenu() {
   });
   return items;
 }
+
+// ---------- Tägliches Geschenk: jeden Tag ein Päckchen mit einem Zubehör ----------
+const ACCESSORIES = [
+  ['CROWN', 'Krone'], ['WIZARD', 'Zauberhut'], ['BOW', 'Schleife'], ['FLOWER', 'Blume'], ['CAP', 'Basecap'],
+  ['BEANIE', 'Wollmütze'], ['TOPHAT', 'Zylinder'], ['HALO', 'Heiligenschein'], ['HORNS', 'Teufelshörner'], ['SHADES', 'Coole Brille'],
+];
+const accessoryName = (key) => (ACCESSORIES.find(([k]) => k === key) || [key, key])[1];
+function openGift(sender) {
+  if (settings.geschenkTag === dayKey()) return;
+  settings.geschenkTag = dayKey();
+  const missing = ACCESSORIES.filter(([k]) => !settings.sammlung.includes(k));
+  let item = null;
+  if (missing.length) {
+    [item] = missing[Math.floor(Math.random() * missing.length)];
+    settings.sammlung.push(item);
+    settings.zubehoer = item; // gleich anziehen
+  }
+  saveSettings();
+  log('geschenk', item || 'alles gesammelt');
+  sender.send('command', { type: 'gift', item, name: item ? accessoryName(item) : null });
+  changeMood(10);
+  sendSettings();
+  buildMenu();
+}
+function accessoryMenu() {
+  const owned = ACCESSORIES.filter(([k]) => settings.sammlung.includes(k));
+  return [
+    { label: 'Keins', type: 'radio', checked: !settings.zubehoer, click: () => setAccessory(null) },
+    ...owned.map(([k, name]) => ({ label: name, type: 'radio', checked: settings.zubehoer === k, click: () => setAccessory(k) })),
+    { type: 'separator' },
+    {
+      label: owned.length < ACCESSORIES.length
+        ? `Noch ${ACCESSORIES.length - owned.length} im täglichen Geschenk zu finden`
+        : 'Alles gesammelt!',
+      enabled: false,
+    },
+  ];
+}
+function setAccessory(key) {
+  settings.zubehoer = key;
+  saveSettings();
+  sendSettings();
+  buildMenu();
+}
+// neuer Tag: Geschenk liegt wieder bereit
+let lastGiftCheck = '';
+setInterval(() => {
+  if (!settings || lastGiftCheck === dayKey()) return;
+  lastGiftCheck = dayKey();
+  sendSettings();
+}, 5 * 60 * 1000);
 
 // ---------- Farbvarianten ----------
 const COLORS = [
@@ -891,6 +951,7 @@ function extrasMenu() {
     check('Partyhut an Silvester und Neujahr', 'silvester'),
     check('Hasenohren und Osterei an Ostern', 'ostern'),
     check('Kürbis und Fledermäuse an Halloween', 'halloween'),
+    check('Schnee im Winter (Schneemann, Dez. bis Feb.)', 'winterschnee'),
     check('Geburtstag: Partyhut und Konfetti', 'geburtstag'),
     { label: e.geburtstagDatum ? `Geburtstag ändern … (${e.geburtstagDatum})` : 'Geburtstag eintragen …', click: askBirthday },
     { type: 'separator' },
@@ -952,6 +1013,10 @@ function buildMenu() {
             { type: 'separator' },
             ...ORDER.map((id) => ({ label: CHARACTERS[id].name, type: 'radio', checked: settings.zweiteFigur === id, click: () => setSecondPet(id) })),
           ],
+        },
+        {
+          label: `Zubehör (${settings.sammlung.length} von ${ACCESSORIES.length})${settings.zubehoer ? `: ${accessoryName(settings.zubehoer)}` : ''}`,
+          submenu: accessoryMenu(),
         },
         { label: `Farbe: ${COLORS.find(([k]) => k === settings.farbe)?.[1] || 'Original'}`, submenu: colorMenu(false) },
         ...(settings.zweiteFigur ? [{ label: `Farbe der zweiten Figur: ${COLORS.find(([k]) => k === settings.farbe2)?.[1] || 'Original'}`, submenu: colorMenu(true) }] : []),
@@ -1117,6 +1182,7 @@ if (!app.requestSingleInstanceLock()) {
     if (other && !other.isDestroyed()) other.webContents.send('friend', state);
   });
   ipcMain.on('stat', (_e, key) => countStat(String(key)));
+  ipcMain.on('gift-open', (e) => { if (!isSecond(e.sender)) openGift(e.sender); });
   ipcMain.on('ball-state', (_e, on) => { ballOn = Boolean(on); buildMenu(); });
   ipcMain.on('mood', (_e, delta) => { if (typeof delta === 'number' && Number.isFinite(delta)) changeMood(Math.max(-20, Math.min(20, delta))); });
   // Ballspiel: Fenster wird zum breiten Streifen, danach wieder klein

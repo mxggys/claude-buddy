@@ -69,6 +69,12 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Abzeichen bei 1.000 bis 1 Million Tastendrücken mit Medaille und Konfetti, Liste im Tippzähler-Menü.
 - Ist ein Download fertig, hüpft sie kurz vor Freude.
 - Neue Datei auf dem Desktop: sie erschrickt kurz und schaut mit der Lupe nach.
+- Schnee im Winter (abschaltbar): Dezember bis Februar ist jeder dritte Tag ein Schneetag (bei echtem Schneewetter
+  sowieso). Schnee bleibt auf der Taskleiste und auf dem Fenster liegen, sie baut einen Schneemann und bekommt
+  eine kleine Schneehaube.
+- Tägliches Geschenk: jeden Tag ein Päckchen neben ihr, Klick packt es aus. Darin eins von 10 Zubehörteilen
+  (Krone, Zauberhut, Schleife, Blume, Basecap, Wollmütze, Zylinder, Heiligenschein, Teufelshörner, Coole Brille),
+  wechselbar unter Aussehen → Zubehör.
 - Farbvarianten unter Aussehen: Original, Blau, Grün, Lila, Rosa, Gold, Mitternacht (auch für die zweite Figur).
 - Spielzeit im Menü: wie oft gefüttert, gestreichelt, abgeklatscht, geworfen und mit dem Ball gespielt wurde,
   mit eigenen Abzeichen (Sterne) und Feier.

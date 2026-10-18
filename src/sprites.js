@@ -751,6 +751,35 @@
   // Medaille für Abzeichen (Tasten-Meilensteine)
   const MEDAL = small(['.b.b.', '..z..', '.iii.', 'iIiii', 'iiiii', '.iii.']);
   const STONE = small(['.jj.', 'jJjj', 'jjjj', '.jj.']); // Otter jongliert
+
+  // Tägliches Geschenk und das Zubehör, das darin stecken kann
+  const GIFT = small(['.i..i.', '..ii..', 'ddiidd', 'ddiidd', 'DDiiDD', 'DDiiDD']);
+  const ACCESSORIES = {
+    CROWN: small(['i..i..i', 'ii.i.ii', 'iIiRiIi', 'iiiiiii']),
+    WIZARD: small(['....S....', '...SS....', '...SiS...', '..SSSST..', '..SiSSS..', '.SSSSSTT.', 'TTTTTTTTT']),
+    BOW: small(['pp.pp', 'ppapp', 'pp.pp']),
+    FLOWER: small(['.p.p.', 'ppipp', '.p.p.', '..V..']),
+    CAP: small(['..bbbbb...', '.bbbbbbb..', 'bbbbbbbbzz']),
+    BEANIE: small(['...a...', '..ddd..', '.ddddd.', 'ddddddd', 'DDDDDDD']),
+    TOPHAT: small(['.KKKKK.', '.KKKKK.', '.KsKKK.', '.ddddd.', 'KKKKKKK']),
+    HALO: ['.iiiii.', 'i.....i', '.iiiii.'],
+    HORNS: small(['d.....d', 'dd...dd', '.D...D.']),
+  };
+  // Schnee: Schneemann neben der Figur, kleine Schneehaube auf dem Kopf
+  const SNOWMAN = small([
+    '...KK...',
+    '..KKKK..',
+    '.aaaaa..',
+    '.akaka..',
+    '.aayyy..',
+    '..aaa...',
+    '.aaaaaa.',
+    'aaakaaan',
+    'aaaaaaan',
+    'aaakaaan',
+    '.aaaaan.',
+  ]);
+  const SNOWCAP = ['.aaaa.', 'aaaaaa'];
   // Snacks zum Füttern
   const APPLE = small(['..V..', '.RRR.', 'RRRRR', 'RRRrR', '.RRr.']);
   const COOKIE = small(['.uuu.', 'uUkUu', 'uUUku', 'ukUUu', '.uuu.']);
@@ -779,7 +808,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

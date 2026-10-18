@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('duckApp', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   onKey: (cb) => ipcRenderer.on('key', () => cb()),
   stat: (key) => ipcRenderer.send('stat', key),
+  openGift: () => ipcRenderer.send('gift-open'),
   onPower: (cb) => ipcRenderer.on('power', (_e, battery) => cb(battery)),
   onWeather: (cb) => ipcRenderer.on('weather', (_e, w) => cb(w)),
   onClaude: (cb) => ipcRenderer.on('claude', (_e, active) => cb(active)),

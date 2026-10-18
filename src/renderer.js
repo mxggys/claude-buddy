@@ -46,6 +46,8 @@ let twoPets = false;              // es laufen zwei Figuren
 let pauses = true;                // Pausen-Erinnerung
 let moodOn = true;                // Laune an
 let moodValue = 70;               // Laune 0 … 100 (kommt aus dem Hauptprogramm)
+let accessory = null;             // getragenes Zubehör aus dem täglichen Geschenk
+let giftReady = false;            // heutiges Geschenk liegt bereit
 
 const frameCache = new Map(); // fertig gemalte Posen der aktuellen Figur
 
@@ -416,12 +418,16 @@ function paintFigure(t) {
 
   // Extras: Sonnenbrille, Mütze/Partyhut, Regenschirm
   const offY = frame.eyeDy || 0;
-  if (sunny() && movingEye) paint(CHAR.props.GLASSES, ANCHORS.glasses[0], ANCHORS.glasses[1] + offY, flip);
+  if ((sunny() || accessory === 'SHADES') && movingEye) paint(CHAR.props.GLASSES, ANCHORS.glasses[0], ANCHORS.glasses[1] + offY, flip);
   const hat = activeHat(t);
   if (hat) {
-    // Hüte sind verschieden hoch: an Mitte und Unterkante ausrichten
+    // Hüte sind verschieden hoch: an Mitte und Unterkante ausrichten (Heiligenschein schwebt darüber)
     const rows = CHAR.props[hat];
-    paint(rows, ANCHORS.hat[0] - Math.floor(rows[0].length / 2), ANCHORS.hat[1] - rows.length + 1 + offY, flip);
+    const lift = hat === 'HALO' ? 3 + Math.round(Math.sin(t / 400)) : 0;
+    paint(rows, ANCHORS.hat[0] - Math.floor(rows[0].length / 2), ANCHORS.hat[1] - rows.length + 1 + offY - lift, flip);
+  } else if (snow.cap > 0.5) {
+    // kleine Schneehaube auf dem Kopf
+    paint(CHAR.props.SNOWCAP, ANCHORS.hat[0] - 3, ANCHORS.hat[1] - 1 + offY, flip);
   }
   if (rainy()) paint(CHAR.props.UMBRELLA, ...ANCHORS.umbrella, flip);
   // Wecker: Glocke über dem Kopf, wackelt beim Klingeln
@@ -456,6 +462,8 @@ function draw(t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(1, 0, 0, 1, -view.x, -view.y);
+  drawSnow();
+  drawGift(t);
   drawShadow();
   paintFigure(t);
   // groß: harte Pixel; sehr klein: weich verkleinern, damit nichts verschwindet
@@ -683,7 +691,7 @@ function isEaster() {
 }
 const isHalloween = () => { const { day, month } = todayParts(); return month === 10 && day >= 24; };
 // „Extras kurz zeigen“: nacheinander Mütze, Partyhut, Ostern, Halloween, Regen, Sonne (je 3 s)
-const PREVIEW_PHASES = ['santa', 'party', 'easter', 'halloween', 'rain', 'sun'];
+const PREVIEW_PHASES = ['santa', 'party', 'easter', 'halloween', 'snow', 'rain', 'sun'];
 const PREVIEW_MS = PREVIEW_PHASES.length * 3000;
 function previewPhase(t) {
   if (previewExtrasUntil <= t) return null;
@@ -701,6 +709,7 @@ function activeHat(t) {
   if (extras.weihnachten && todayParts().month === 12) return 'SANTA';
   if (extras.ostern !== false && isEaster()) return 'EARS';
   if (extras.halloween !== false && isHalloween()) return 'PUMPKIN';
+  if (accessory && CHAR.props[accessory]) return accessory; // Zubehör aus dem Geschenk
   if (duck.state === 'sleep' && late()) return 'NIGHTCAP'; // nachts mit Schlafmütze
   return null;
 }
@@ -740,15 +749,25 @@ const wCode = () => (weather && extras.wetter ? weather.code : -1);
 const rainy = () => { const c = wCode(); return (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95 || previewPhase(now()) === 'rain'; };
 const snowy = () => { const c = wCode(); return (c >= 71 && c <= 77) || c === 85 || c === 86; };
 const sunny = () => (weather && extras.wetter && weather.isDay && wCode() <= 1 && weather.temp >= 22) || previewPhase(now()) === 'sun';
-const weatherFalling = () => rainy() || snowy();
+// Schnee im Winter: Dezember bis Februar ist jeder dritte Tag ein Schneetag (auch ohne Wetter-Ort)
+function winterSnow() {
+  if (previewPhase(now()) === 'snow') return true;
+  if (extras.winterschnee === false) return false;
+  const d = new Date();
+  const m = d.getMonth() + 1;
+  if (m !== 12 && m > 2) return false;
+  return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000) % 3 === 0;
+}
+const snowFalls = () => snowy() || winterSnow();
+const weatherFalling = () => rainy() || snowFalls();
 let dropAcc = 0;
 function updateWeather(dt, t) {
   if (!weatherFalling() || hardSave() || (duck.state === 'sleep' && energy >= 2)) return;
-  dropAcc += dt * (energy >= 2 ? 6 : snowy() ? 10 : 22);
+  dropAcc += dt * (energy >= 2 ? 6 : snowFalls() ? 10 : 22);
   while (dropAcc >= 1) {
     dropAcc--;
     const x = duck.x + rand(-DW * 0.8, DW * 1.8);
-    particles.push(snowy()
+    particles.push(snowFalls()
       ? { type: 'snow', x, y: duck.y - rand(30, 70) * Math.max(0.6, SIZE), vx: rand(-12, 12), vy: rand(25, 45), life: 1 }
       : { type: 'rain', x, y: duck.y - rand(30, 70) * Math.max(0.6, SIZE), vx: -20, vy: rand(260, 340), life: 1 });
   }
@@ -1062,6 +1081,8 @@ function update(dt, t) {
 
   updateWeather(dt, t);
   updateExtras(t, dt);
+  updateSnow(dt, t);
+  if (giftReady && duck.onGround && !perch && !duck.walkTo) placeGift();
 
   if (isTyping(t) || micMouth() > 0) return; // beim Tippen / Reden keine Extras
 
@@ -1406,6 +1427,127 @@ function desktopFile() {
 }
 function stat(key) { if (bridge && bridge.stat) bridge.stat(key); }
 
+// ---------- Schnee: liegt mit der Zeit auf der Taskleiste, dann baut sie einen Schneemann ----------
+const snow = { depth: 0, cap: 0, man: 0, manX: null };
+function updateSnow(dt, t) {
+  const falling = snowFalls() && !hardSave();
+  if (falling) { snow.depth = Math.min(1, snow.depth + dt / 150); snow.cap = Math.min(1, snow.cap + dt / 40); }
+  else { snow.depth = Math.max(0, snow.depth - dt / 900); snow.cap = Math.max(0, snow.cap - dt / 20); }
+  if (duck.state === 'sleep') snow.cap = Math.min(snow.cap, 0.4);
+  // genug Schnee: Schneemann bauen (einmal, neben ihrem Platz)
+  if (snow.depth > 0.6 && snow.man === 0 && duck.state === 'idle' && duck.onGround && !perch && !ball.on && !acting(t) && !dnd()) {
+    const w = CHAR.props.SNOWMAN[0].length * SCALE;
+    snow.manX = duck.x + DW + 4 * SCALE + w < W ? duck.x + DW + 4 * SCALE : duck.x - w - 4 * SCALE;
+    snow.man = 0.01;
+    ACTIONS.build = ACTIONS.build || { frames: ['tapL', 'tapR'], step: 220, ms: 5000 };
+    startAction('build', t);
+  }
+  if (duck.action === 'build' && acting(t)) snow.man = Math.min(1, snow.man + dt / 4.5);
+  else if (snow.man > 0 && snow.man < 1) {
+    snow.man = 1; // fertig: Freude
+    duck.happyUntil = t + 1500;
+    sparkle(3);
+    moodPing('snowman', 3, 3600000);
+  }
+  // kein Schnee mehr: Schneemann schmilzt langsam
+  if (!falling && snow.depth === 0 && snow.man > 0) snow.man = Math.max(0, snow.man - dt / 600);
+}
+function drawSnow() {
+  if (snow.depth > 0) {
+    const h = Math.max(1, Math.round(snow.depth * 4 * Math.max(0.6, SIZE)));
+    const left = FOLLOW ? view.x : 0;
+    const width = FOLLOW ? canvas.width : W;
+    // auf der Taskleiste (sichtbarer Bereich) und auf dem Fenster, auf dem sie sitzt
+    ctx.fillStyle = '#f4f8ff';
+    ctx.fillRect(left, bottomY() + DH - h, width, h);
+    ctx.fillStyle = '#d8e4f4';
+    ctx.fillRect(left, bottomY() + DH - Math.max(1, Math.round(h / 3)), width, Math.max(1, Math.round(h / 3)));
+    if (perch && perch.side === 'top') { ctx.fillStyle = '#f4f8ff'; ctx.fillRect(perch.left, perch.top - h, perch.width, h); }
+  }
+  if (snow.man > 0 && snow.manX !== null) {
+    const rows = CHAR.props.SNOWMAN;
+    const show = Math.ceil(rows.length * Math.min(1, snow.man)); // von unten nach oben gebaut
+    const px = SCALE;
+    const baseY = bottomY() + DH - rows.length * px;
+    for (let r = rows.length - show; r < rows.length; r++) {
+      for (let c = 0; c < rows[r].length; c++) {
+        const color = PALETTE[rows[r][c]];
+        if (!color) continue;
+        ctx.fillStyle = color;
+        ctx.fillRect(Math.round(snow.manX + c * px), Math.round(baseY + r * px), Math.ceil(px), Math.ceil(px));
+      }
+    }
+  }
+}
+
+// ---------- Tägliches Geschenk ----------
+let giftX = null;
+const giftRows = () => CHAR.props.GIFT;
+function giftBox() {
+  if (!giftReady || SECOND || ball.on || giftX === null) return null;
+  const rows = giftRows();
+  const px = SCALE * 0.9;
+  return { x: giftX, y: bottomY() + DH - rows.length * px, w: rows[0].length * px, h: rows.length * px, px };
+}
+function placeGift() {
+  if (!giftReady || giftX !== null) return;
+  const w = giftRows()[0].length * SCALE * 0.9;
+  giftX = duck.x - w - 6 * SCALE >= 0 ? duck.x - w - 6 * SCALE : duck.x + DW + 6 * SCALE;
+}
+function overGift(x, y) {
+  const g = giftBox();
+  return Boolean(g && x >= g.x - 4 && x <= g.x + g.w + 4 && y >= g.y - 6 && y <= g.y + g.h + 4);
+}
+function drawGift(t) {
+  const g = giftBox();
+  if (g) {
+    const hop = Math.floor(t / 1600) % 3 === 0 ? Math.round(Math.abs(Math.sin(t / 120)) * 2 * Math.max(0.6, SIZE)) : 0; // wackelt ab und zu
+    giftRows().forEach((line, r) => [...line].forEach((ch, c) => {
+      const color = PALETTE[ch];
+      if (!color) return;
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(g.x + c * g.px), Math.round(g.y + r * g.px - hop), Math.ceil(g.px), Math.ceil(g.px));
+    }));
+  }
+  // ausgepacktes Zubehör steigt kurz aus dem Päckchen auf
+  if (reveal && reveal.until > t && CHAR.props[reveal.item]) {
+    const rows = CHAR.props[reveal.item];
+    const k = 1 - (reveal.until - t) / 2500;
+    const px = SCALE;
+    const x = reveal.x - (rows[0].length * px) / 2;
+    const y = reveal.y - k * 40 * Math.max(0.6, SIZE);
+    rows.forEach((line, r) => [...line].forEach((ch, c) => {
+      const color = PALETTE[ch];
+      if (!color) return;
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(x + c * px), Math.round(y + r * px), Math.ceil(px), Math.ceil(px));
+    }));
+  }
+}
+let reveal = null;
+function openGift() {
+  const g = giftBox();
+  if (!g) return;
+  giftReady = false;
+  const t = now();
+  for (let i = 0; i < 24; i++) spawn('confetti', g.x + g.w / 2 + rand(-10, 10), g.y);
+  squash(0.9, 1.1, 140);
+  duck.lookTarget = { x: g.x + g.w / 2, y: g.y, until: t + 2500 };
+  reveal = { item: null, x: g.x + g.w / 2, y: g.y - 6, until: t + 2500 };
+  if (bridge && bridge.openGift) bridge.openGift();
+  else onGift({ item: Object.keys(CHAR.props).includes('CROWN') ? 'CROWN' : null });
+  kick();
+}
+function onGift({ item }) {
+  if (reveal) reveal.item = item === 'SHADES' ? 'GLASSES' : item;
+  setTimeout(() => {
+    react('cheer', now());
+    giftX = null;
+    if (item) accessory = item;
+    kick();
+  }, 1600);
+}
+
 // ---------- Pausen-Erinnerung ----------
 const work = { start: 0, nextAt: 0 };
 let pauseUntil = 0;
@@ -1693,6 +1835,9 @@ function applyAppSettings(s) {
   twoPets = Boolean(s.zweiteFigur);
   pauses = s.pausen !== false && !SECOND; // eine Erinnerung reicht
   moodOn = s.launeAn !== false;
+  accessory = s.zubehoer || null;
+  giftReady = Boolean(s.geschenk) && !SECOND;
+  if (!giftReady) giftX = null;
   if (typeof s.laune === 'number') moodValue = s.laune;
   if (!sitOnWindows && !windowJumps && perch) { perch = null; duck.onGround = false; fallStartY = duck.y; }
   // Hart: Mikrofon-Auswertung aus (kostet die meiste Rechenzeit)
@@ -1800,7 +1945,7 @@ window.addEventListener('mousemove', (e) => {
     if (Math.abs(x - duck.downAt.x) + Math.abs(y - duck.downAt.y) > 6) duck.downAt.moved = true;
     return;
   }
-  setPassThrough(!overDuck(x, y) && !overBall(x, y));
+  setPassThrough(!overDuck(x, y) && !overBall(x, y) && !overGift(x, y));
 });
 
 const dragTrail = []; // letzte Mauspositionen beim Ziehen (für den Wurf)
@@ -1824,6 +1969,7 @@ window.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   const x = mouseX(e);
   const y = mouseY(e);
+  if (overGift(x, y) && !overDuck(x, y)) { openGift(); return; } // Geschenk auspacken
   if (overBall(x, y)) { grabBall(x, y); return; } // Ball festhalten (oder Klick: hochspielen), hat Vorrang vor der Figur
   if (!overDuck(x, y)) return;
   duck.dragging = true;
@@ -2088,6 +2234,7 @@ if (bridge) {
     if (cmd && cmd.type === 'badge') celebrateBadge();
     if (cmd && cmd.type === 'download') downloadDone();
     if (cmd && cmd.type === 'desktop') desktopFile();
+    if (cmd && cmd.type === 'gift') onGift(cmd);
     if (cmd === 'record') celebrateRecord();
     if (cmd === 'sleep') { duck.state = 'sleep'; duck.until = now() + 60000; lastActivity = -Infinity; }
     if (cmd === 'preview-extras') { previewExtrasUntil = now() + PREVIEW_MS; nextConfetti = 0; kick(); }
@@ -2117,7 +2264,8 @@ if (bridge) {
     ring, celebrateRecord, onWindowMove, feed, toggleBall, ball, celebrateBadge, downloadDone, onFriend,
     showPause() { work.start = 1; work.nextAt = 0; duck.lastKeyAt = performance.now(); updatePause(performance.now()); },
     setMood(v) { moodValue = v; }, pounceNow() { pounceCooldown = 0; },
-    desktopFile,
+    desktopFile, snow, openGift,
+    setGift(on) { giftReady = on; giftX = null; }, setAccessory(a) { accessory = a; },
     setColor(v) { CONFIG.farbe = v; applyCharacter(CHAR.id); },
     setWalking(on) { walking = on; }, maybeWalk, launchTo,
     jumpOnto(rect) { jumpTarget = rect; launchTo(Math.min(Math.max(duck.x, rect.left + 8), rect.left + rect.width - DW - 8), rect.top - DH); }, jumpHome,
