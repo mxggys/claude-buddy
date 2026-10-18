@@ -165,15 +165,6 @@ function createWin32() {
         if (cloaked(hwnd)) return { gone: 'versteckt' };
         return visibleRect(hwnd) || { gone: 'keine Lage' };
       },
-      // dasselbe Fenster über seine Adresse wiederfinden (falls der gemerkte Zeiger nicht mehr taugt)
-      findByAddress(address) {
-        let found = null;
-        EnumWindows((hwnd) => {
-          if (String(koffi.address(hwnd)) === address) { found = hwnd; return 0; }
-          return 1;
-        }, 0);
-        return found;
-      },
       address: (hwnd) => String(koffi.address(hwnd)),
       // Vordergrund-Fenster mit Lage in physischen Pixeln
       foreground() {
@@ -199,7 +190,14 @@ function createWin32() {
 function watchKeys(onKey) {
   try {
     const { uIOhook } = require('uiohook-napi');
-    uIOhook.on('keydown', () => onKey());
+    // gedrückt gehaltene Taste (Wiederholung) nur einmal zählen
+    const down = new Set();
+    uIOhook.on('keydown', (e) => {
+      if (down.has(e.keycode)) return;
+      down.add(e.keycode);
+      onKey();
+    });
+    uIOhook.on('keyup', (e) => down.delete(e.keycode));
     uIOhook.start();
     return () => uIOhook.stop();
   } catch (err) {

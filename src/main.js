@@ -140,9 +140,12 @@ function loadSettings() {
   saveSettings();
 }
 
+// erst in eine Hilfsdatei schreiben, dann umbenennen: ein Absturz mitten im Schreiben zerstört nichts
 function saveSettings() {
   fs.mkdirSync(path.dirname(settingsPath()), { recursive: true });
-  fs.writeFileSync(settingsPath(), JSON.stringify(settings, null, 2));
+  const tmp = `${settingsPath()}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(settings, null, 2));
+  fs.renameSync(tmp, settingsPath());
 }
 
 // Der Update-Schlüssel wird mit Windows-Verschlüsselung (DPAPI) dauerhaft gespeichert.
@@ -240,18 +243,25 @@ function createWindow(second = false) {
     hangTimer = setTimeout(() => {
       if (w.isDestroyed()) return;
       log('renderer neu geladen');
-      w.webContents.forcefullyCrashRenderer();
-      w.webContents.reload();
+      w.webContents.forcefullyCrashRenderer(); // „render-process-gone“ lädt dann neu
     }, 8000);
   });
   w.webContents.on('responsive', () => clearTimeout(hangTimer));
+  // Neu laden (Farbe, Figur, Bildschirm, Absturz): alte Zustände im Hauptprogramm zurücksetzen
+  w.webContents.on('did-start-loading', () => {
+    wideWindows.delete(w);
+    w.setIgnoreMouseEvents(true, { forward: true });
+    if (w === win) { ballOn = false; perch = null; clearTimeout(perchTimer); }
+    fitPetWindow();
+  });
   w.webContents.on('did-finish-load', () => {
+    setTimeout(() => { crashes = 0; }, 60000); // läuft wieder stabil
     log('geladen', second ? '(zweite Figur)' : '', JSON.stringify(workArea()));
     sendPower();
     if (weather) w.webContents.send('weather', weather);
     w.webContents.send('claude', claudeActive);
   });
-  w.on('closed', () => { if (second) win2 = null; });
+  w.on('closed', () => { wideWindows.delete(w); if (second) win2 = null; });
 }
 
 // Bildschirm geändert (Auflösung, Skalierung): Figuren neu starten lassen
@@ -420,7 +430,9 @@ async function refreshWeather() {
   const { wetter, ort } = settings.extras;
   if (!wetter || !ort) return;
   try {
-    weather = await weatherApi.currentWeather(ort);
+    const w = await weatherApi.currentWeather(ort);
+    if (!settings.extras.wetter) return; // inzwischen ausgeschaltet
+    weather = w;
     weatherProblem = '';
     sendAll('weather', weather);
   } catch (err) {
@@ -428,6 +440,7 @@ async function refreshWeather() {
     log('wetter', err.message);
   }
   buildMenu();
+  clearTimeout(weatherTimer);
   weatherTimer = setTimeout(refreshWeather, WEATHER_EVERY);
 }
 
@@ -517,12 +530,7 @@ function startPerchWatch() {
   const tick = () => {
     if (!perch || !win || win.isDestroyed()) return;
     const win32 = loadWin32();
-    let r = win32 ? win32.rectOf(perch.hwnd) : { gone: 'keine Windows-Funktionen' };
-    if (r.gone === 'geschlossen' && perch.address) {
-      // Zeiger erneut über die Adresse holen, bevor die Figur runterfällt
-      const again = win32.findByAddress(perch.address);
-      if (again) { perch.hwnd = again; r = win32.rectOf(again); }
-    }
+    const r = win32 ? win32.rectOf(perch.hwnd) : { gone: 'keine Windows-Funktionen' };
     const off = !(settings.aufFenstern || settings.fensterSpringen);
     if (r.gone || off) {
       // Fenster zu oder minimiert: Figur fällt runter
@@ -1232,7 +1240,7 @@ if (!app.requestSingleInstanceLock()) {
       return null;
     }
     log('fenster', `${hit.side}:`, hit.seen[hit.seen.length - 1] || '');
-    perch = { hwnd: hit.hwnd, address: loadWin32().address(hit.hwnd), key: '' };
+    perch = { hwnd: hit.hwnd, key: '' };
     const result = { side: hit.side, rect: perchRect(hit.rect) };
     startPerchWatch();
     return result;
@@ -1251,7 +1259,7 @@ if (!app.requestSingleInstanceLock()) {
     const hit = win32.windowEdgeAt(Math.round(fg.x + fg.width / 2), fg.y + 4, 8, 8);
     if (!hit.hwnd || win32.address(hit.hwnd) !== fg.hwnd) return null;
     if (hit.rect.top < pa.y + 20) return null; // Kante zu weit oben: kein Platz zum Sitzen
-    perch = { hwnd: hit.hwnd, address: win32.address(hit.hwnd), key: '' };
+    perch = { hwnd: hit.hwnd, key: '' };
     const result = perchRect(hit.rect);
     startPerchWatch();
     log('fenster', 'springt auf', fg.cls, `"${fg.title.slice(0, 30)}"`);
@@ -1271,6 +1279,7 @@ if (!app.requestSingleInstanceLock()) {
     if (typeof size !== 'number' || !Number.isFinite(size)) return;
     settings.groesse = Math.round(Math.min(MAX_SIZE, Math.max(MIN_SIZE, size)) * 100) / 100;
     fitPetWindow();
+    sendSettings(); // auch die andere Figur passt ihre Größe an
     clearTimeout(sizeTimer);
     sizeTimer = setTimeout(() => { saveSettings(); buildMenu(); }, 400);
   });

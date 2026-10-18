@@ -205,7 +205,10 @@ function resize() {
   W = FOLLOW ? AREA.width : canvas.width;
   H = FOLLOW ? AREA.height : canvas.height;
 }
-window.addEventListener('resize', resize);
+window.addEventListener('resize', () => {
+  resize();
+  view.x = view.y = NaN; // Fenster hat sich geändert (z. B. nach dem Ballspiel): beim nächsten Bild neu platzieren
+});
 resize();
 duck.y = groundY();
 // Stammplatz: unten rechts, oder wo du die Figur zuletzt hingesetzt hast
@@ -826,12 +829,15 @@ function drawTemperature() {
 }
 
 // ---------- Mikrofon → Mund ----------
+let micSeq = 0;
 async function setMic(on) {
   if (on === mic.on) return;
   mic.on = on;
+  const seq = ++micSeq;
   if (!on) {
     if (mic.stream) mic.stream.getTracks().forEach((tr) => tr.stop());
-    mic.stream = mic.analyser = null;
+    if (mic.ac) mic.ac.close().catch(() => {});
+    mic.stream = mic.analyser = mic.ac = null;
     mic.level = 0;
     return;
   }
@@ -839,8 +845,10 @@ async function setMic(on) {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
-    if (!mic.on) return stream.getTracks().forEach((tr) => tr.stop());
+    // inzwischen wieder aus- oder neu eingeschaltet: dieses Ergebnis verwerfen
+    if (!mic.on || seq !== micSeq) return stream.getTracks().forEach((tr) => tr.stop());
     const ac = new AudioContext();
+    mic.ac = ac;
     const analyser = ac.createAnalyser();
     analyser.fftSize = 1024;
     ac.createMediaStreamSource(stream).connect(analyser); // nur messen, nicht abspielen
@@ -1314,19 +1322,16 @@ function updateBall(dt, t) {
     squash(0.85, 1.15, 140);
     duck.happyUntil = t + 600;
     spawn('star', ball.x, ball.y);
-    ball.lastTouch = t;
     moodPing('ball', 2, 15000);
     return;
   }
   if (t - ball.lastTouch > 60000) { stopBall(); return; } // keiner spielt mehr
   // die Figur jagt den Ball
   if (duck.dragging || duck.state === 'sleep' || dnd() || !duck.onGround || (acting(t) && ACTIONS[duck.action].priority)) return;
-  lastActivity = t;
   const d = ball.x - (duck.x + DW / 2);
   const low = ball.y > floor - DH * 0.8;
   if (Math.abs(d) < DW * 0.55 && low && t > ball.kickCool) {
     ball.kickCool = t + 700;
-    ball.lastTouch = t;
     stopWalk();
     if (Math.random() < 0.25 && homeX !== null && Math.abs(duck.x - homeX) > 150) {
       ball.carried = true; // zurückbringen
@@ -1604,7 +1609,7 @@ function downloadDone() {
 // ---------- Auf das aktive Fenster springen ----------
 let nextWindowJump = 0;
 function maybeJumpToWindow(t, r) {
-  if (!windowJumps || !bridge || duck.state !== 'idle' || !duck.onGround || mood() !== 'awake') return false;
+  if (!windowJumps || !bridge || ball.on || duck.state !== 'idle' || !duck.onGround || mood() !== 'awake') return false;
   // sitzt schon auf einem Fenster: nach einer Weile wieder runter nach Hause
   if (perch) {
     if (t > nextWindowJump && r < 0.25) { jumpHome(t); return true; }
@@ -1981,7 +1986,8 @@ window.addEventListener('mousedown', (e) => {
   duck.sliding = false;
   duck.vx = 0;
   dragTrail.length = 0;
-  if (perch) { perch = null; if (bridge) bridge.releasePerch(); }
+  if ((perch || jumpTarget) && bridge) bridge.releasePerch();
+  perch = null;
   stopWalk();
   sneak = false;
   ball.carried = false;
@@ -2051,7 +2057,7 @@ window.addEventListener('mouseup', (e) => {
     duck.vy = 0;
     duck.x = Math.min(Math.max(duck.x, 0), W - DW);
     // auf einer Fensterkante losgelassen: dort sitzen bleiben (hat Vorrang vor dem Werfen)
-    if (sitOnWindows && bridge) {
+    if (sitOnWindows && bridge && !ball.on) {
       const edge = bridge.findPerch({ x: duck.x, y: duck.y, width: DW, height: DH });
       if (edge) {
         attachPerch(edge.rect, edge.side);
