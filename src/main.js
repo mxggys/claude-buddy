@@ -56,6 +56,13 @@ const DEFAULT_SETTINGS = {
   aufFenstern: false, // Figur kann auf die Oberkante von Fenstern gesetzt werden
   laufen: false, // läuft ab und zu ein Stück an der Taskleiste entlang
   fensterSpringen: false, // springt ab und zu auf das Fenster, in dem du gerade arbeitest
+  pausen: true, // nach 60 Minuten Tippen am Stück an eine Pause erinnern
+  zweiteFigur: null, // zweite Figur daneben (Name der Figur) oder aus
+  home2X: null, // Stammplatz der zweiten Figur
+  launeAn: true, // Laune: Füttern, Streicheln, Spielen machen fröhlich, Ignorieren traurig
+  laune: 70, // 0 … 100
+  launeZeit: 0, // wann die Laune zuletzt gesunken ist bzw. gespeichert wurde
+  abzeichen: {}, // erreichte Tasten-Meilensteine: { 10000: '2026-10-18' }
   mikrofon: false,
   tastatur: true,
   energiesparen: 0, // 0 aus, 1 leicht, 2 mittel, 3 hart
@@ -78,7 +85,13 @@ const SETTINGS_VERSION = 4;
 // Einstellungen früherer Versionen, die es nicht mehr gibt
 const REMOVED_KEYS = ['taskleisteDurchsichtig', 'lautstaerke', 'shoppingWaechter', 'shopSeiten', 'kaufWoerter', 'starkeKaufWoerter', 'stoebernWoerter', 'verweilSekunden'];
 
-let win = null;
+let win = null;  // Haupt-Figur
+let win2 = null; // zweite Figur (optional)
+const pets = () => [win, win2].filter((w) => w && !w.isDestroyed());
+// an beide Figuren schicken
+function sendAll(channel, ...args) { for (const w of pets()) w.webContents.send(channel, ...args); }
+const isSecond = (wc) => Boolean(win2 && !win2.isDestroyed() && wc === win2.webContents);
+const wideWindows = new Set(); // Fenster, die gerade breit sind (Ballspiel)
 let promptWin = null;
 let tray = null;
 let settings = null;
@@ -142,6 +155,21 @@ function logPath() {
   return path.join(app.getPath('userData'), 'ente-log.txt');
 }
 
+// Fehler-Log klein halten: über 512 KB bleiben die letzten 256 KB
+function trimLog() {
+  try {
+    const p = logPath();
+    const size = fs.statSync(p).size;
+    if (size < 512 * 1024) return;
+    const fd = fs.openSync(p, 'r');
+    const buf = Buffer.alloc(256 * 1024);
+    fs.readSync(fd, buf, 0, buf.length, size - buf.length);
+    fs.closeSync(fd);
+    const text = buf.toString('utf8');
+    fs.writeFileSync(p, text.slice(text.indexOf('\n') + 1));
+  } catch { /* noch kein Log */ }
+}
+
 function log(...parts) {
   try {
     fs.appendFileSync(logPath(), `[${new Date().toISOString()}] ${parts.join(' ')}\n`);
@@ -158,10 +186,10 @@ function petSize() {
   return { width: Math.round(BASE_W * k), height: Math.round(BASE_H * k) };
 }
 
-function createWindow() {
+function createWindow(second = false) {
   const area = workArea();
   const size = petSize();
-  win = new BrowserWindow({
+  const w = new BrowserWindow({
     x: area.x + area.width - size.width,
     y: area.y + area.height - size.height,
     ...size,
@@ -175,25 +203,54 @@ function createWindow() {
     backgroundColor: '#00000000',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), spellcheck: false, enableWebSQL: false },
   });
-  win.setAlwaysOnTop(true, 'screen-saver');
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  win.setIgnoreMouseEvents(true, { forward: true });
-  win.loadFile(path.join(__dirname, 'index.html'));
-  win.webContents.on('console-message', (e) => {
+  if (second) win2 = w; else win = w;
+  w.setAlwaysOnTop(true, 'screen-saver');
+  w.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  w.setIgnoreMouseEvents(true, { forward: true });
+  w.loadFile(path.join(__dirname, 'index.html'));
+  w.webContents.on('console-message', (e) => {
     if (e.level === 'warning' || e.level === 'error') {
       log('renderer', e.message, `${path.basename(e.sourceId || '')}:${e.lineNumber}`);
     }
   });
-  win.webContents.on('render-process-gone', (_e, details) => log('renderer weg', details.reason));
-  win.webContents.on('did-finish-load', () => {
-    log('geladen', JSON.stringify(workArea()));
-    sendPower();
-    if (weather) win.webContents.send('weather', weather);
-    win.webContents.send('claude', claudeActive);
+  // Absturz-Schutz: stürzt die Figur ab oder hängt sie, wird sie neu geladen
+  let crashes = 0;
+  w.webContents.on('render-process-gone', (_e, details) => {
+    log('renderer weg', details.reason);
+    if (details.reason === 'clean-exit' || w.isDestroyed() || ++crashes > 5) return;
+    setTimeout(() => { if (!w.isDestroyed()) w.webContents.reload(); }, 1500);
   });
+  let hangTimer = null;
+  w.webContents.on('unresponsive', () => {
+    log('renderer hängt');
+    clearTimeout(hangTimer);
+    hangTimer = setTimeout(() => {
+      if (w.isDestroyed()) return;
+      log('renderer neu geladen');
+      w.webContents.forcefullyCrashRenderer();
+      w.webContents.reload();
+    }, 8000);
+  });
+  w.webContents.on('responsive', () => clearTimeout(hangTimer));
+  w.webContents.on('did-finish-load', () => {
+    log('geladen', second ? '(zweite Figur)' : '', JSON.stringify(workArea()));
+    sendPower();
+    if (weather) w.webContents.send('weather', weather);
+    w.webContents.send('claude', claudeActive);
+  });
+  w.on('closed', () => { if (second) win2 = null; });
+}
 
-  // Bildschirm geändert (Auflösung, Skalierung): Figur neu starten lassen
-  screen.on('display-metrics-changed', () => win.reload());
+// Bildschirm geändert (Auflösung, Skalierung): Figuren neu starten lassen
+function watchDisplays() {
+  screen.on('display-metrics-changed', () => pets().forEach((w) => w.reload()));
+}
+
+// Zweite Figur an- oder ausschalten
+function applySecondPet() {
+  const want = settings.zweiteFigur && CHARACTERS[settings.zweiteFigur];
+  if (want && !win2) createWindow(true);
+  else if (!want && win2) { win2.destroy(); win2 = null; }
 }
 
 // Energiesparmodus in Stufen: wie oft abgefragt wird und mit welcher Priorität die App läuft
@@ -214,21 +271,29 @@ function applyEnergyMode() {
 setInterval(() => {
   if (!settings || settings.energiesparen < 2 || !win) return;
   win.webContents.session.clearCache().catch(() => {});
-  win.webContents.send('command', 'trim');
+  sendAll('command', 'trim');
   applyEnergyMode(); // neu gestartete Hilfsprozesse auch herunterstufen
 }, 5 * 60 * 1000);
 
 // Im Akkubetrieb zeichnet die Figur seltener
 function sendPower() {
-  if (win) win.webContents.send('power', powerMonitor.isOnBatteryPower());
+  sendAll('power', powerMonitor.isOnBatteryPower());
 }
 
 // Fenstergröße an die Figurengröße anpassen, unten bündig
 function fitPetWindow() {
-  const b = win.getBounds();
+  for (const w of pets()) {
+    const b = w.getBounds();
+    const size = windowSize(w);
+    if (b.width === size.width && b.height === size.height) continue;
+    w.setBounds({ x: b.x, y: b.y + b.height - size.height, ...size });
+  }
+}
+// normal so groß wie die Figur; beim Ballspiel ein breiter Streifen über die ganze Breite
+function windowSize(w) {
   const size = petSize();
-  if (b.width === size.width && b.height === size.height) return;
-  win.setBounds({ x: b.x, y: b.y + b.height - size.height, ...size });
+  if (!wideWindows.has(w)) return size;
+  return { width: workArea().width, height: size.height + Math.round(170 * Math.max(1, settings.groesse || 1)) };
 }
 
 let hiddenForFullscreen = false;
@@ -236,8 +301,7 @@ function updateFullscreen(fullscreen) {
   const hide = fullscreen && !settings.imVollbild;
   if (hide === hiddenForFullscreen) return;
   hiddenForFullscreen = hide;
-  if (hide) win.hide();
-  else win.showInactive();
+  for (const w of pets()) { if (hide) w.hide(); else w.showInactive(); }
 }
 
 // Mini-Claude merkt, wenn ein Claude-Fenster vorne ist (Desktop-App oder claude.ai im Browser)
@@ -246,7 +310,7 @@ function updateClaude(title) {
   const active = /\bClaude\b/.test(title || '') && !/Claude Buddy|Desktop Ente/.test(title);
   if (active === claudeActive) return;
   claudeActive = active;
-  if (win) win.webContents.send('claude', active);
+  sendAll('claude', active);
 }
 
 // ---------- Tippzähler ----------
@@ -255,16 +319,40 @@ const fmt = (n) => n.toLocaleString('de-DE');
 const shortDay = (key, opts = { weekday: 'short', day: 'numeric', month: 'numeric' }) => new Date(key + 'T12:00').toLocaleDateString('de-DE', opts);
 let counterDirty = false;
 
+// Meilensteine für Abzeichen (Tastendrücke insgesamt)
+const BADGES = [1000, 10000, 50000, 100000, 250000, 500000, 1000000];
+function markOldBadges() {
+  // was vor dieser Version schon erreicht war, gilt als „früher“ erreicht (ohne Feier)
+  for (const m of BADGES) if (settings.zaehler.gesamt >= m && !settings.abzeichen[m]) settings.abzeichen[m] = 'früher';
+}
+function badgesMenu() {
+  const next = BADGES.find((m) => !settings.abzeichen[m]);
+  const done = BADGES.filter((m) => settings.abzeichen[m]);
+  return [
+    ...(done.length ? done.map((m) => ({
+      label: `★ ${fmt(m)} Tasten${settings.abzeichen[m] !== 'früher' ? ` (am ${shortDay(settings.abzeichen[m], { day: 'numeric', month: 'numeric', year: '2-digit' })})` : ''}`,
+      enabled: false,
+    })) : [{ label: 'Noch keins – das erste gibt es bei 1.000 Tasten', enabled: false }]),
+    ...(next ? [{ type: 'separator' }, { label: `Nächstes: ${fmt(next)} (noch ${fmt(next - settings.zaehler.gesamt)})`, enabled: false }] : []),
+  ];
+}
+
 function countKey() {
   const z = settings.zaehler;
   const tag = dayKey();
   if (z.tag !== tag) { z.tag = tag; z.heute = 0; } // neuer Tag
   z.heute++;
   z.gesamt++;
+  if (BADGES.includes(z.gesamt) && !settings.abzeichen[z.gesamt]) {
+    settings.abzeichen[z.gesamt] = tag;
+    sendAll('command', { type: 'badge', count: z.gesamt });
+    log('abzeichen', z.gesamt);
+    saveSettings();
+  }
   z.tage[tag] = z.heute;
   if (z.heute > z.rekord) {
     // alter Rekord eines anderen Tages gerade geknackt: die Figur feiert
-    if (z.rekordTag && z.rekordTag !== tag && z.rekord > 0 && win) win.webContents.send('command', 'record');
+    if (z.rekordTag && z.rekordTag !== tag && z.rekord > 0) sendAll('command', 'record');
     z.rekord = z.heute;
     z.rekordTag = tag;
   }
@@ -303,6 +391,7 @@ function counterMenu() {
       })),
     },
     { label: `Gesamt ${fmt(z.gesamt)} · Rekord ${fmt(z.rekord)}${rekord ? ` (${rekord})` : ''}`, enabled: false },
+    { label: `Abzeichen (${BADGES.filter((m) => settings.abzeichen[m]).length} von ${BADGES.length})`, submenu: badgesMenu() },
   ];
 }
 
@@ -315,7 +404,7 @@ async function refreshWeather() {
   try {
     weather = await weatherApi.currentWeather(ort);
     weatherProblem = '';
-    if (win) win.webContents.send('weather', weather);
+    sendAll('weather', weather);
   } catch (err) {
     weatherProblem = 'Wetter gerade nicht erreichbar';
     log('wetter', err.message);
@@ -334,7 +423,7 @@ function startWatchers() {
     getInterval: () => energy().watchMs,
     onKey: () => {
       countKey();
-      if (settings.tastatur && win) win.webContents.send('key');
+      if (settings.tastatur) sendAll('key');
     },
     onState: ({ fullscreen, title }) => {
       if (!win) return;
@@ -362,30 +451,34 @@ function startWatchers() {
       // Zeiger über der Figur: Fenster wieder ganz nach vorne holen. Die Taskleiste (auch mit
       // TranslucentTB) schiebt sich sonst nach einem Klick über die Figur, und die lässt sich
       // erst wieder anfassen, wenn die Taskleiste den Fokus verliert.
-      const b = win.getBounds();
-      const over = p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height;
-      if (over && Date.now() - lastRaise > 400) {
-        lastRaise = Date.now();
-        win.setAlwaysOnTop(true, 'screen-saver');
-        win.moveTop();
+      for (const w of pets()) {
+        const b = w.getBounds();
+        const over = p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height;
+        if (over && Date.now() - lastRaise > 400) {
+          lastRaise = Date.now();
+          w.setAlwaysOnTop(true, 'screen-saver');
+          w.moveTop();
+        }
       }
       const a = workArea();
       const pos = { x: p.x - a.x, y: p.y - a.y };
       // Fenster wird verschoben oder vergrößert: Position an die Figur schicken (nicht im Modus Hart)
-      if (win32 && settings.energiesparen < 3 && Date.now() - lastWinPoll >= 100) {
+      // nur wenn sich der Zeiger bewegt (Fenster werden mit der Maus verschoben) – spart Rechenzeit
+      const cursorMoved = pos.x + ',' + pos.y !== lastPos;
+      if (win32 && cursorMoved && settings.energiesparen < 3 && Date.now() - lastWinPoll >= 100) {
         lastWinPoll = Date.now();
         const fg = win32.foreground();
         if (fg && !/Claude Buddy/.test(fg.title) && !IGNORED_WINDOW_CLASSES.has(fg.cls) && !fg.maximized) {
           const key = `${fg.hwnd}:${fg.x},${fg.y},${fg.width},${fg.height}`;
           if (lastRect && key !== lastRect && lastRect.split(':')[0] === String(fg.hwnd)) {
             const r = screen.screenToDipRect(null, { x: fg.x, y: fg.y, width: fg.width, height: fg.height });
-            win.webContents.send('window', { x: r.x - a.x, y: r.y - a.y, width: r.width, height: r.height });
+            sendAll('window', { x: r.x - a.x, y: r.y - a.y, width: r.width, height: r.height });
           }
           lastRect = key;
         } else lastRect = '';
       }
       const key = pos.x + ',' + pos.y;
-      if (key !== lastPos) win.webContents.send('cursor', pos);
+      if (key !== lastPos) sendAll('cursor', pos);
       lastPos = key;
     }
     setTimeout(pollCursor, energy().cursorMs);
@@ -440,11 +533,38 @@ const petSettings = () => ({
   aufFenstern: settings.aufFenstern,
   laufen: settings.laufen,
   fensterSpringen: settings.fensterSpringen,
+  pausen: settings.pausen,
+  launeAn: settings.launeAn,
+  laune: settings.laune,
+  zweiteFigur: Boolean(settings.zweiteFigur),
   extras: { ...settings.extras, ort: undefined },
 });
 
 function sendSettings() {
-  if (win) win.webContents.send('settings', petSettings());
+  sendAll('settings', petSettings());
+}
+
+// ---------- Laune ----------
+const moodWord = (v) => (v >= 80 ? 'überglücklich' : v >= 60 ? 'fröhlich' : v >= 40 ? 'okay' : v >= 20 ? 'traurig' : 'sehr traurig');
+let moodSaveTimer = null;
+function changeMood(delta) {
+  if (!settings.launeAn) return;
+  const before = Math.round(settings.laune);
+  settings.laune = Math.min(100, Math.max(0, settings.laune + delta));
+  if (delta > 0) settings.launeZeit = Date.now();
+  if (Math.round(settings.laune) === before) return;
+  sendSettings();
+  clearTimeout(moodSaveTimer);
+  moodSaveTimer = setTimeout(() => { saveSettings(); buildMenu(); }, 2000);
+}
+// ohne Beachtung sinkt die Laune langsam: 3 Punkte pro halber Stunde (auch während die App aus war, höchstens 30)
+function decayMood() {
+  if (!settings.launeAn) return;
+  const since = Date.now() - (settings.launeZeit || Date.now());
+  const steps = Math.min(10, Math.floor(since / (30 * 60 * 1000)));
+  if (steps < 1) return;
+  settings.launeZeit = Date.now();
+  changeMood(-3 * steps);
 }
 
 function setSize(size) {
@@ -461,6 +581,38 @@ function setFigur(id) {
   saveSettings();
   win.reload();
   buildMenu();
+}
+
+function setSecondPet(id) {
+  const before = settings.zweiteFigur;
+  settings.zweiteFigur = id && CHARACTERS[id] ? id : null;
+  saveSettings();
+  if (win2 && before && settings.zweiteFigur && before !== settings.zweiteFigur) win2.reload();
+  applySecondPet();
+  sendSettings();
+  buildMenu();
+}
+
+// ---------- Downloads: fertige Datei im Download-Ordner → Figur freut sich ----------
+function watchDownloads() {
+  let dir;
+  try { dir = app.getPath('downloads'); } catch { return; }
+  const pending = /\.(crdownload|part|partial|tmp|download|opdownload)$/i;
+  let timer = null;
+  try {
+    fs.watch(dir, (_type, name) => {
+      if (!name || pending.test(name) || name.startsWith('.')) return;
+      const file = path.join(dir, name);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        try {
+          const st = fs.statSync(file);
+          if (!st.isFile() || st.size === 0 || Date.now() - st.mtimeMs > 15000) return;
+          sendAll('command', { type: 'download' });
+        } catch { /* Datei schon wieder weg */ }
+      }, 1500);
+    });
+  } catch (err) { log('downloads', err.message); }
 }
 
 function setExtra(key, value) {
@@ -595,6 +747,7 @@ function fireTimer(id) {
   if (!tm) return;
   timers.splice(timers.indexOf(tm), 1);
   if (win) win.webContents.send('command', { type: 'alarm' });
+  if (win2) win2.webContents.send('command', { type: 'alarm' });
   if (tray && process.platform === 'win32') tray.displayBalloon({ title: 'Claude Buddy', content: tm.label, iconType: 'info' });
   log('erinnerung', tm.label);
   buildMenu();
@@ -662,7 +815,7 @@ function extrasMenu() {
     { label: e.ort ? 'Ort ändern …' : 'Ort eintragen …', click: askPlace },
     check('Wetter-Schild neben der Figur', 'temperatur'),
     { type: 'separator' },
-    { label: 'Extras kurz zeigen', click: () => win.webContents.send('command', 'preview-extras') },
+    { label: 'Extras kurz zeigen', click: () => sendAll('command', 'preview-extras') },
   ];
 }
 
@@ -699,7 +852,17 @@ function buildMenu() {
       ],
     },
     { label: 'Extras', submenu: extrasMenu() },
-    { label: 'Füttern', click: () => win && win.webContents.send('command', { type: 'feed' }) },
+    { label: 'Füttern', click: () => sendAll('command', { type: 'feed' }) },
+    { label: 'Ball zum Spielen', click: () => win && win.webContents.send('command', { type: 'ball' }) },
+    {
+      label: settings.zweiteFigur ? `Zweite Figur: ${CHARACTERS[settings.zweiteFigur].name}` : 'Zweite Figur',
+      submenu: [
+        { label: 'Aus', type: 'radio', checked: !settings.zweiteFigur, click: () => setSecondPet(null) },
+        { type: 'separator' },
+        ...ORDER.map((id) => ({ label: CHARACTERS[id].name, type: 'radio', checked: settings.zweiteFigur === id, click: () => setSecondPet(id) })),
+      ],
+    },
+    ...(settings.launeAn ? [{ label: `Laune: ${moodWord(settings.laune)} (${Math.round(settings.laune)} %)`, enabled: false }] : []),
     { label: 'Zurückholen (Doppelklick aufs Symbol)', click: resetPet },
     {
       label: timers.length ? `Erinnerung (nächste um ${clock(timers[0].at)})` : 'Erinnerung / Wecker',
@@ -719,6 +882,8 @@ function buildMenu() {
     toggle('Auf Fenster setzen (auf die Oberkante ziehen)', 'aufFenstern'),
     toggle('Springt auf das aktive Fenster', 'fensterSpringen'),
     toggle('Läuft herum', 'laufen'),
+    toggle('Pausen-Erinnerung (nach 60 Min. Tippen)', 'pausen'),
+    toggle('Laune (Füttern, Streicheln, Spielen)', 'launeAn'),
     {
       label: `Energiesparmodus (${energy().name})`,
       submenu: ENERGY.map((level, i) => ({
@@ -746,8 +911,7 @@ function buildMenu() {
 }
 
 function resetPet() {
-  win.showInactive();
-  win.webContents.send('command', 'reset');
+  for (const w of pets()) { w.showInactive(); w.webContents.send('command', 'reset'); }
 }
 
 function openMenu() {
@@ -780,11 +944,18 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', openMenu);
   app.whenReady().then(() => {
     loadSettings();
+    trimLog();
+    markOldBadges();
+    decayMood();
+    setInterval(decayMood, 10 * 60 * 1000);
     moveOldAutostart();
     // Mikrofon nur für die eigene Figur freigeben (nur messen, nie speichern)
     session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'media'));
     session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'media');
     createWindow();
+    applySecondPet();
+    watchDisplays();
+    watchDownloads();
     buildTray();
     startWatchers();
     win.webContents.once('did-finish-load', applyEnergyMode);
@@ -803,6 +974,10 @@ if (!app.requestSingleInstanceLock()) {
       setTimeout(async () => {
         const img = await win.webContents.capturePage();
         fs.writeFileSync(process.env.DUCK_SELFTEST, img.toPNG());
+        if (win2) {
+          fs.writeFileSync(process.env.DUCK_SELFTEST.replace(/\.png$/, '-2.png'), (await win2.webContents.capturePage()).toPNG());
+          log('selbsttest zweite Figur', JSON.stringify(win2.getBounds()));
+        }
         const mb = app.getAppMetrics().reduce((sum, m) => sum + m.memory.workingSetSize, 0) / 1024;
         log('selbsttest', JSON.stringify(win.getBounds()), `speicher ${mb.toFixed(0)} MB`, `prozesse ${app.getAppMetrics().length}`);
         app.quit();
@@ -813,12 +988,33 @@ if (!app.requestSingleInstanceLock()) {
   ipcMain.handle('get-settings', () => petSettings());
   ipcMain.on('get-area', (e) => { e.returnValue = workArea(); });
   ipcMain.on('get-config', (e) => {
+    const second = isSecond(e.sender);
     e.returnValue = settings
       ? {
-        figur: settings.figur, homeX: settings.homeX, homeBottom: settings.homeBottom, schwerkraft: settings.schwerkraft,
+        figur: second ? settings.zweiteFigur : settings.figur,
+        homeX: second ? settings.home2X : settings.homeX,
+        homeBottom: second ? null : settings.homeBottom,
+        schwerkraft: settings.schwerkraft,
         size: settings.groesse, energiesparen: settings.energiesparen, extras: petSettings().extras,
+        second,
       }
       : {};
+  });
+  // zwei Figuren: Position und Zustand an die jeweils andere weitergeben
+  ipcMain.on('pet-state', (e, state) => {
+    const other = isSecond(e.sender) ? win : win2;
+    if (other && !other.isDestroyed()) other.webContents.send('friend', state);
+  });
+  ipcMain.on('mood', (_e, delta) => { if (typeof delta === 'number' && Number.isFinite(delta)) changeMood(Math.max(-20, Math.min(20, delta))); });
+  // Ballspiel: Fenster wird zum breiten Streifen, danach wieder klein
+  ipcMain.on('wide', (e, on) => {
+    const w = BrowserWindow.fromWebContents(e.sender);
+    if (!w) return;
+    if (on) wideWindows.add(w); else wideWindows.delete(w);
+    const a = workArea();
+    const size = windowSize(w);
+    const b = w.getBounds();
+    w.setBounds(on ? { x: a.x, y: a.y + a.height - size.height, ...size } : { x: b.x + Math.round((b.width - size.width) / 2), y: b.y + b.height - size.height, ...size });
   });
   // „Auf Fenster setzen“: Kante suchen, dann regelmäßig nachsehen, wo das Fenster ist
   // box: Figur im Arbeitsbereich (DIP) → Fensterrand in der Nähe (physische Pixel)
@@ -883,8 +1079,9 @@ if (!app.requestSingleInstanceLock()) {
     return result;
   }));
 
-  ipcMain.on('set-home', (_e, x, bottom) => {
+  ipcMain.on('set-home', (e, x, bottom) => {
     if (typeof x !== 'number' || !Number.isFinite(x)) return;
+    if (isSecond(e.sender)) { settings.home2X = x; saveSettings(); return; }
     settings.homeX = x;
     settings.homeBottom = typeof bottom === 'number' && Number.isFinite(bottom) ? bottom : null;
     saveSettings();
@@ -899,13 +1096,15 @@ if (!app.requestSingleInstanceLock()) {
     sizeTimer = setTimeout(() => { saveSettings(); buildMenu(); }, 400);
   });
   ipcMain.on('open-menu', openMenu);
-  ipcMain.on('move-window', (_e, x, y) => {
-    if (!win) return;
+  ipcMain.on('move-window', (e, x, y) => {
+    const w = BrowserWindow.fromWebContents(e.sender);
+    if (!w) return;
     const a = workArea();
-    win.setBounds({ x: Math.round(a.x + x), y: Math.round(a.y + y), ...petSize() });
+    w.setBounds({ x: Math.round(a.x + x), y: Math.round(a.y + y), ...windowSize(w) });
   });
-  ipcMain.on('ignore-mouse', (_e, ignore) => {
-    if (win) win.setIgnoreMouseEvents(ignore, { forward: true });
+  ipcMain.on('ignore-mouse', (e, ignore) => {
+    const w = BrowserWindow.fromWebContents(e.sender);
+    if (w) w.setIgnoreMouseEvents(ignore, { forward: true });
   });
 
   process.on('uncaughtException', (err) => log('main fehler', err.stack || err.message));

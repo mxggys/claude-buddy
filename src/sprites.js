@@ -682,6 +682,8 @@
   const BELL = small(['...k...', '..iii..', '.iIiii.', '.iIiii.', 'iiiiiii', '...k...']);
   const BAMBOO = small(['..ZM', '.MZ.', '.M..', '.Z..', '.M..', '.M..']);
   const EGG = small(['.CC.', 'CCCC', 'pppp', 'CiCi', '.CC.']);
+  // Medaille für Abzeichen (Tasten-Meilensteine)
+  const MEDAL = small(['.b.b.', '..z..', '.iii.', 'iIiii', 'iiiii', '.iii.']);
   // Snacks zum Füttern
   const APPLE = small(['..V..', '.RRR.', 'RRRRR', 'RRRrR', '.RRr.']);
   const COOKIE = small(['.uuu.', 'uUkUu', 'uUUku', 'ukUUu', '.uuu.']);
@@ -709,7 +711,7 @@
       ...c,
       palette: { ...SHARED, ...c.palette },
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

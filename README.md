@@ -56,6 +56,19 @@ Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda).
 - Abklatschen: Zeiger auf ihr ruhen lassen, bis sie die Arme hochreckt, dann klicken.
 - Mausrad über der Figur: sie dreht sich einmal im Kreis. Zeiger zweimal um sie kreisen lassen: ihr wird schwindelig.
 - Neue Leerlauf-Aktionen für alle: Niesen (mit Staubwolke) und Pirouette.
+- Ball zum Spielen (im Menü): die Figur jagt den Ball, schießt ihn weg oder bringt ihn nach Hause; Klick auf den Ball
+  stößt ihn an. Nach einer Minute ohne Spiel räumt sie ihn weg.
+- Anschleichen: Ruht der Zeiger in ihrer Nähe am Boden, schleicht sie sich heran und springt drauf.
+- Zweite Figur (im Menü wählbar oder aus): beide schauen sich an, winken sich zu und schauen hin, wenn die andere hüpft.
+- Laune (abschaltbar): Füttern, Streicheln, Abklatschen und Spielen machen fröhlich, ohne Beachtung sinkt sie langsam.
+  Steht im Menü; traurig ist sie öfter betrübt, überglücklich tanzt sie mehr.
+- Pausen-Erinnerung (abschaltbar): nach 60 Minuten Tippen am Stück streckt sie sich und hält ein „Pause?“-Schild hoch.
+- Abzeichen bei 1.000 bis 1 Million Tastendrücken mit Medaille und Konfetti, Liste im Tippzähler-Menü.
+- Ist ein Download fertig, hüpft sie kurz vor Freude.
+- Sitzt sie auf einem Fenster: Schütteln lässt sie herunterpurzeln, beim Minimieren springt sie ab und läuft nach Hause,
+  schnelles Verschieben genießt sie.
+- Stabiler und sparsamer: abgestürzte oder hängende Figur wird neu geladen, Posen werden zwischengespeichert,
+  das Fehler-Log wird automatisch gekürzt.
 - Eigenheiten: Pando kaut Bambus und kugelt sich bei Klick-Spam, Boo wird beim Anklicken durchsichtig und verblasst
   ab und zu, Hopsi macht Freudensprünge, Glibber zerfließt und ploppt zurück, alle hüpfen ab und zu vor Freude.
 - Ostern (Hasenohren, Osterei) und Halloween (Kürbis, Fledermäuse am Abend), abschaltbar unter Extras.
