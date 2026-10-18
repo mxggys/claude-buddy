@@ -31,6 +31,16 @@
     I: '#fff4c4',
     j: '#c9c2b5', // Lupe / Sockel
     J: '#6f9c98',
+    a: '#f7f3ee', // Hasenohren / Bommel
+    g: '#f6a3bd',
+    y: '#f08a24', // Kürbis
+    Q: '#c45f16',
+    V: '#4f8a3a',
+    S: '#3d5aa8', // Schlafmütze
+    T: '#2b3f80',
+    M: '#7bbf4a', // Bambus
+    Z: '#4a8a2c',
+    C: '#9fd3ff', // Osterei
   };
 
   const grid = (w, h) => Array.from({ length: h }, () => Array(w).fill('.'));
@@ -144,6 +154,10 @@
     wink: { eye: 'wink' },
     dance1: { arms: 'danceL', eye: 'happy', feet: 'step1' },
     dance2: { arms: 'danceR', eye: 'happy', feet: 'step2' },
+    // auf dem Bauch rutschen (Pinguin), Bambus kauen (Panda)
+    slide: { eye: 'happy', sit: true, feet: 'none', wing: 'up', arms: 'cheer' },
+    chew1: { beak: 1 },
+    chew2: { eye: 'happy' },
   };
   const framesOf = (draw) => Object.fromEntries(Object.entries(POSES).map(([k, o]) => [k, draw(o)]));
 
@@ -317,7 +331,7 @@
     arms: true,
     thinks: true, // denkt mit, wenn ein Claude-Fenster vorne ist
     voice: 'blip',
-    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink'],
+    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce'],
     typingFrames: ['tapL', 'tapR'],
     anchors: { keyboard: [8, 16], tap: [15, 17], idea: [13, -7], lens: [26, 4], mushroom: [-9, 16], snore: [17, 11],
       hat: [15, 7], umbrella: [9, -11], glasses: [6, 7] },
@@ -418,12 +432,13 @@
     return rows.map((r) => r.join(''));
   }
 
-  const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink'];
+  const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce'];
   const critterDefs = {
     boo: {
       name: 'Boo (Geist)',
       palette: { W: '#f4f6ff', w: '#dfe3fa', v: '#c3c9ee', h: '#ffffff', X: '#3a3f66', x: '#7a80b4', E: '#1c1d2e', e: '#1c1d2e', P: '#ffb3c8', m: '#3a2a40', t: '#ff8fa8' },
       float: true, // schwebt über dem Boden
+      extraActions: ['vanish'],
       eyes: { xs: [8, 14], y: 8, w: 2, h: 3 },
       pattern: ['HE', 'EE', 'EE'],
       cheeks: [7, 16],
@@ -442,6 +457,7 @@
       palette: { W: '#3a4360', w: '#2c344c', v: '#20263a', h: '#525e82', B: '#f7f8fb', N: '#dfe3ec', X: '#0f131d', x: '#3a4360', E: '#10131c', e: '#10131c', O: '#ffa733', o: '#e07d12', F: '#ffa733', m: '#5a1d10', t: '#ff7d6b', P: '#ffb0b8' },
       eyeBg: 'B',
       waddle: true, // watschelt beim Tippen
+      slides: true, // rutscht nach dem Absetzen auf dem Bauch weiter
       eyes: { xs: [9, 13], y: 8, w: 2, h: 2 },
       pattern: ['HE', 'EE'],
       cheeks: [8, 15],
@@ -460,7 +476,8 @@
     glibber: {
       name: 'Glibber (Schleim)',
       palette: { W: '#5ab4ff', w: '#3a96e8', v: '#2a74c4', h: '#a8dbff', X: '#15386a', x: '#3a6aa8', E: '#0d1b33', e: '#0d1b33', m: '#0d1b33', t: '#ff7d9a', P: '#ff9ec7' },
-      squishy: true, // wabbelt beim Tippen, stärker plattgedrückt beim Landen
+      squishy: true, // wabbelt beim Tippen, stärker plattgedrückt beim Landen, prallt ab
+      extraActions: ['melt'],
       eyes: { xs: [8, 14], y: 13, w: 2, h: 3 },
       pattern: ['HE', 'EE', 'EE'],
       cheeks: [7, 16],
@@ -497,11 +514,13 @@
       },
       face(g, o) { set(g, [[11, 13 + o.hy], [12, 13 + o.hy], [10, 12 + o.hy], [13, 12 + o.hy]], 'e'); },
       anchors: { hat: [12, 6], glasses: [7, 9] },
+      record: true, // freut sich besonders über einen Tipp-Rekord
     },
     hopsi: {
       name: 'Hopsi (Hase)',
       palette: { W: '#f3efe8', w: '#e2dace', v: '#cbbfae', h: '#ffffff', B: '#fff8f0', A: '#f39bb4', X: '#5b5048', x: '#9a8d82', E: '#1d1714', e: '#1d1714', m: '#5a2a24', t: '#f07a8a', P: '#ffa8b8' },
       jump: 1.35, // springt beim Doppelklick höher
+      extraActions: ['binky', 'binky'],
       eyes: { xs: [8, 14], y: 12, w: 2, h: 2 },
       pattern: ['HE', 'EE'],
       cheeks: [7, 16],
@@ -529,6 +548,8 @@
       palette: { W: '#f5f5f7', w: '#e3e3ea', v: '#cbcbd5', h: '#ffffff', G: '#25252d', X: '#121217', x: '#4a4a55', E: '#ffffff', e: '#ffffff', H: '#25252d', m: '#25252d', t: '#ff7d8a', P: '#ffb3c0' },
       eyeBg: 'G',
       shutKey: 'e',
+      rolls: true, // kugelt sich bei Klick-Spam
+      extraActions: ['bamboo', 'bamboo'],
       eyes: { xs: [8, 15], y: 10, w: 1, h: 2 },
       pattern: ['E', 'E'],
       cheeks: [6, 18],
@@ -547,7 +568,7 @@
         rect(g, 14, 19, 17, 20, 'G');
       },
       face(g, o) { rect(g, 11, 14 + o.hy, 12, 14 + o.hy, 'G'); set(g, [[11, 15 + o.hy], [12, 15 + o.hy]], 'G'); },
-      anchors: { hat: [12, 6], glasses: [7, 9] },
+      anchors: { hat: [12, 6], glasses: [7, 9], bamboo: [17, 10] },
     },
   };
 
@@ -565,7 +586,10 @@
       float: def.float || false,
       squishy: def.squishy || false,
       jump: def.jump || 1,
-      idleActions: CRITTER_ACTIONS,
+      slides: def.slides || false,
+      rolls: def.rolls || false,
+      record: def.record || false,
+      idleActions: [...CRITTER_ACTIONS, ...(def.extraActions || [])],
       typingFrames: ['tapL', 'tapR'],
       glasses: glassesFor(def.eyes),
       anchors: {
@@ -629,6 +653,36 @@
   const GLASSES_SIDE = ['KKKKK', 'KsKKK', '.KKK.'];
   const GLASSES_FRONT = ['KKKKKKKKKKKKKKKKK', 'KsKKKK.......KsKK', 'KKKKK........KKKK', '.KKK..........KK.'];
 
+  // Ostern, Halloween, nachts beim Schlafen, Wecker, Panda-Snack
+  const EARS = small([
+    '.aa...aa.',
+    '.ag...ga.',
+    '.ag...ga.',
+    '.ag...ga.',
+    '.aa...aa.',
+    'aaaaaaaaa',
+  ]);
+  const PUMPKIN = small([
+    '....VV...',
+    '..yyVyyy.',
+    '.yyQyyQyy',
+    'yyQkyykQy',
+    'yyQyyyyQy',
+    'yyQkkkkQy',
+    '.yyyyyyy.',
+  ]);
+  const NIGHTCAP = small([
+    '.......a',
+    '......SS',
+    '....SSS.',
+    '..SSSST.',
+    '.SSSSSTT',
+    'aaaaaaaa',
+  ]);
+  const BELL = small(['...k...', '..iii..', '.iIiii.', '.iIiii.', 'iiiiiii', '...k...']);
+  const BAMBOO = small(['..ZM', '.MZ.', '.M..', '.Z..', '.M..', '.M..']);
+  const EGG = small(['.CC.', 'CCCC', 'pppp', 'CiCi', '.CC.']);
+
   const IDEA = small(['.iii.', 'iIiii', 'iiiii', '.iii.', '.jjj.', '..j..']);
   const LENS = small(['.jjjj.', 'jJJJJj', 'jJJJJj', 'jJJJJj', '.jjjj.', '....jj', '.....j']);
 
@@ -650,7 +704,7 @@
       ...c,
       palette: { ...SHARED, ...c.palette },
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

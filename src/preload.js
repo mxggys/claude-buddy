@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('duckApp', {
   onWeather: (cb) => ipcRenderer.on('weather', (_e, w) => cb(w)),
   onClaude: (cb) => ipcRenderer.on('claude', (_e, active) => cb(active)),
   onCursor: (cb) => ipcRenderer.on('cursor', (_e, pos) => cb(pos)),
+  onWindow: (cb) => ipcRenderer.on('window', (_e, rect) => cb(rect)),
   onSettings: (cb) => ipcRenderer.on('settings', (_e, s) => cb(s)),
   onCommand: (cb) => ipcRenderer.on('command', (_e, cmd) => {
     if (cmd === 'trim') webFrame.clearCache(); // Energiesparmodus: Bild- und Skript-Zwischenspeicher leeren

@@ -64,8 +64,21 @@ const duck = {
   frameT: 0, blinkUntil: 0, nextBlink: 0, beakUntil: 0, happyUntil: 0,
   lastKeyAt: -Infinity, wingDown: false,
   squash: { sx: 1, sy: 1, start: 0, ms: 0 }, // Stauchen/Strecken bei Sprung, Landung, Drehung
+  vx: 0, thrown: false, sliding: false, bounces: 0, // geworfen / rutscht / hüpft mehrmals
+  rollStart: -Infinity, fadeUntil: 0,              // Panda kugelt, Geist wird durchsichtig
+  lookTarget: null,                                 // schaut zu einem Fenster statt zum Zeiger
   pressedKey: null, pressedUntil: 0,          // gerade gedrückte Taste auf der Mini-Tastatur
 };
+
+// Geist: beim Erschrecken und beim Verblassen halb durchsichtig
+function figureAlpha(t) {
+  if (duck.fadeUntil > t) return 0.35;
+  if (duck.action === 'vanish' && acting(t)) {
+    const k = (duck.actionUntil - t) / ACTIONS.vanish.ms; // 1 → 0
+    return 0.15 + 0.85 * Math.abs(k * 2 - 1);
+  }
+  return 1;
+}
 
 // Schwebende Figuren (Geist) wippen sanft auf und ab
 function floatLift(t) {
@@ -144,16 +157,31 @@ function mood() {
   if (quiet > TIRED_AFTER[key]) return 'tired';
   return 'awake';
 }
+let greetedDay = '';
 function wake() {
   if (dnd()) return;
-  lastActivity = now();
+  const t = now();
+  const away = t - lastActivity;
+  lastActivity = t;
+  const busy = duck.action && ACTIONS[duck.action].priority && acting(t);
+  if (duck.action === 'nap') duck.action = null;
+  const today = new Date().toDateString();
   if (duck.state === 'sleep') {
-    // aufwachen: erst mal strecken
+    // aufwachen: erst mal strecken, morgens danach winken
     duck.state = 'idle';
-    duck.until = now() + 2500;
-    if (!(duck.action && ACTIONS[duck.action].priority)) startAction('stretch', now());
+    duck.until = t + 2500;
+    if (!busy) startAction('stretch', t);
+    if (hour() >= 5 && hour() < 11 && greetedDay !== today) {
+      greetedDay = today;
+      setTimeout(() => { if (!dnd()) { startAction(CHAR.front ? 'wave' : 'hop', now()); sparkle(4); } }, 1350);
+    }
+  } else if (away > 10 * 60 * 1000 && !busy) {
+    // nach einer längeren Pause: willkommen zurück
+    startAction(CHAR.front ? 'wave' : 'hop', t);
+    for (let i = 0; i < 2; i++) spawn('heart', duck.x + rand(0, DW), duck.y + rand(0, DH * 0.3));
   }
 }
+function sparkle(n) { for (let i = 0; i < n; i++) spawn('star', duck.x + rand(0, DW), duck.y + rand(0, DH * 0.4)); }
 
 // ---------- Animationen ----------
 const ACTIONS = {
@@ -172,12 +200,19 @@ const ACTIONS = {
   wink: { frames: ['wink'], ms: 480 },
   dance: { frames: ['dance1', 'dance2'], step: 260, ms: 3100 },
   mushroom: { frames: ['idle', 'idle', 'happy', 'happy'], step: 750, ms: 3000 },
+  bounce: { frames: ['happy'], ms: 1300 },                 // zwei, drei kleine Freudenhüpfer
+  bamboo: { frames: ['chew1', 'chew2'], step: 230, ms: 3600 }, // Panda kaut Bambus
+  melt: { frames: ['happy'], ms: 1900 },                   // Schleim zerfließt und ploppt zurück
+  vanish: { frames: ['idle'], ms: 3000 },                  // Geist verblasst kurz
+  binky: { frames: ['cheer1', 'cheer2'], step: 160, ms: 900 }, // Hase: Freudensprung
+  nap: { frames: ['sleep', 'sleep2'], step: 1300, ms: 15000 }, // Mittagsschläfchen
   // Reaktionen haben Vorrang vor allem anderen
   startle: { frames: ['startle'], ms: 900, priority: true },
   dizzy: { frames: ['dizzy1', 'dizzy2'], step: 200, ms: 2400, priority: true },
   cheer: { frames: ['cheer1', 'cheer2'], step: 250, ms: 2200, priority: true },
+  alarm: { frames: ['cheer1', 'cheer2'], step: 200, ms: 30000, priority: true }, // Wecker / Timer
 };
-const DUCK_ACTIONS = ['yawn', 'stretch', 'preen', 'look', 'idea', 'hop', 'peck', 'shake', 'waddle', 'mushroom'];
+const DUCK_ACTIONS = ['yawn', 'stretch', 'preen', 'look', 'idea', 'hop', 'peck', 'shake', 'waddle', 'mushroom', 'bounce'];
 
 function actionFrame(t) {
   const a = ACTIONS[duck.action];
@@ -191,6 +226,7 @@ const acting = (t) => duck.action && duck.actionUntil > t;
 function currentFrame(t) {
   // 1. festgehalten: zappeln
   if (duck.dragging) return Math.floor(t / 140) % 2 ? FRAMES.drag1 : FRAMES.drag2;
+  if (duck.sliding) return FRAMES.slide;
   // 2. Reaktionen (erschrecken, schwindelig, jubeln)
   if (acting(t) && ACTIONS[duck.action].priority) return actionFrame(t);
   // 3. in der Luft (Hüpfer, Sprung, Fall)
@@ -221,12 +257,13 @@ function lookOffset(t, flip) {
   if (hardSave()) return { dx: 0, dy: 0 };                    // Hart: Augen folgen nicht
   if (duck.action === 'look' && acting(t)) return { dx: Math.floor(t / 500) % 2 ? 1 : -1, dy: 0 };
   if (duck.action === 'mushroom' && acting(t)) return { dx: 1, dy: 1 }; // guckt auf den Pilz
-  if (cursor.x < 0) return { dx: 0, dy: 0 };
+  const target = duck.lookTarget && duck.lookTarget.until > t ? duck.lookTarget : cursor;
+  if (target.x < 0) return { dx: 0, dy: 0 };
   const [col, row] = EYE.positions[0];
   const ex = duck.x + (CHAR.front ? WIDTH / 2 : flip ? WIDTH - 1 - col : col) * SCALE;
   const ey = duck.y + row * SCALE;
-  const vx = (cursor.x - ex) * (flip ? -1 : 1);
-  const vy = cursor.y - ey;
+  const vx = (target.x - ex) * (flip ? -1 : 1);
+  const vy = target.y - ey;
   return {
     dx: vx > 30 ? 1 : vx < -30 ? -1 : 0,
     dy: vy < -50 ? -1 : vy > 50 ? 1 : 0,
@@ -287,6 +324,13 @@ function paintFigure(t) {
     paint(rows, ANCHORS.hat[0] - Math.floor(rows[0].length / 2), ANCHORS.hat[1] - rows.length + 1 + offY, flip);
   }
   if (rainy()) paint(CHAR.props.UMBRELLA, ...ANCHORS.umbrella, flip);
+  // Wecker: Glocke über dem Kopf, wackelt beim Klingeln
+  if (duck.action === 'alarm' && acting(t)) {
+    const [bx, by] = ANCHORS.idea;
+    paint(CHAR.props.BELL, bx + (Math.floor(t / 90) % 2 ? 1 : -1), by + 2, flip);
+  }
+  if (duck.action === 'bamboo' && acting(t) && ANCHORS.bamboo) paint(CHAR.props.BAMBOO, ...ANCHORS.bamboo, flip);
+  if ((extras.ostern !== false && isEaster()) || previewPhase(t) === 'easter') paint(CHAR.props.EGG, -7, HEIGHT - 6, flip);
 }
 
 // Fenster so verschieben, dass die Figur unten mittig drin steht
@@ -312,13 +356,26 @@ function draw(t) {
   // groß: harte Pixel; sehr klein: weich verkleinern, damit nichts verschwindet
   ctx.imageSmoothingEnabled = SCALE < 1;
   // Stauchen/Strecken mit Fußpunkt unten in der Mitte
-  const { sx, sy } = squashNow(t);
+  let { sx, sy } = squashNow(t);
+  if (duck.sliding) { sx *= 1.18; sy *= 0.82; } // flach auf dem Bauch
   const w = sprite.width * SCALE * sx;
   const h = sprite.height * SCALE * sy;
   const footX = duck.x + DW / 2;
   const footY = duck.y + DH - floatLift(t);
-  ctx.drawImage(sprite, Math.round(footX - w / 2), Math.round(footY - (HEIGHT + PAD) * SCALE * sy), Math.round(w), Math.round(h));
-  if (duck.state === 'sleep') { drawZzz(t); drawSnore(t); }
+  ctx.globalAlpha = figureAlpha(t);
+  const roll = t - duck.rollStart;
+  if (roll >= 0 && roll < 900) {
+    // einmal um sich selbst kugeln (Drehpunkt in der Mitte der Figur)
+    ctx.save();
+    ctx.translate(footX, footY - DH / 2);
+    ctx.rotate((roll / 900) * Math.PI * 2);
+    ctx.drawImage(sprite, Math.round(-w / 2), Math.round(DH / 2 - (HEIGHT + PAD) * SCALE * sy), Math.round(w), Math.round(h));
+    ctx.restore();
+  } else {
+    ctx.drawImage(sprite, Math.round(footX - w / 2), Math.round(footY - (HEIGHT + PAD) * SCALE * sy), Math.round(w), Math.round(h));
+  }
+  ctx.globalAlpha = 1;
+  if (duck.state === 'sleep' || (duck.action === 'nap' && acting(t))) { drawZzz(t); drawSnore(t); }
   if (claudeActive && CHAR.thinks && duck.state !== 'sleep' && !isTyping(t)) drawThinking(t);
   drawTemperature();
   if (duck.action === 'dizzy' && acting(t)) drawDizzyStars(t);
@@ -417,7 +474,7 @@ function updateParticles(dt) {
     // Regen/Schnee verschwindet am Boden
     if ((p.type === 'rain' || p.type === 'snow') && p.y > groundY() + DH) p.life = 0;
     if (p.type === 'dust') { p.vy *= 0.9; p.vx *= 0.94; }
-    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2 }[p.type] || 2.2);
+    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
@@ -442,6 +499,9 @@ function drawParticles() {
     } else if (p.type === 'confetti') {
       ctx.fillStyle = p.color;
       ctx.fillRect(Math.round(p.x), Math.round(p.y), px + 1, Math.max(1, Math.round(px * (Math.sin(p.life * 30) > 0 ? 2 : 1))));
+    } else if (p.type === 'bat') {
+      const wings = Math.floor(p.life * 40) % 2 ? ['k...k', 'kkkkk', '.kkk.'] : ['.....', 'kkkkk', 'k.k.k'];
+      drawSmall(wings, p.x, p.y + Math.sin(p.life * 25) * 3, px);
     } else if (p.type === 'rain') {
       ctx.fillStyle = 'rgba(159, 208, 255, .8)';
       ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.max(1, Math.round(px / 2)), px * 3);
@@ -485,24 +545,57 @@ function isBirthday() {
   return bd === day && bm === month;
 }
 const isNewYear = () => { const { day, month } = todayParts(); return (month === 12 && day === 31) || (month === 1 && day === 1); };
-// „Extras kurz zeigen“: nacheinander Mütze, Partyhut, Regen, Sonne (je 3 s)
-const PREVIEW_MS = 12000;
+// Ostersonntag (anonymer gregorianischer Algorithmus); Hasenohren von Karfreitag bis Ostermontag
+function easterSunday(year) {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day, 12);
+}
+function isEaster() {
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const diff = Math.round((today - easterSunday(today.getFullYear())) / 86400000);
+  return diff >= -2 && diff <= 1;
+}
+const isHalloween = () => { const { day, month } = todayParts(); return month === 10 && day >= 24; };
+// „Extras kurz zeigen“: nacheinander Mütze, Partyhut, Ostern, Halloween, Regen, Sonne (je 3 s)
+const PREVIEW_PHASES = ['santa', 'party', 'easter', 'halloween', 'rain', 'sun'];
+const PREVIEW_MS = PREVIEW_PHASES.length * 3000;
 function previewPhase(t) {
   if (previewExtrasUntil <= t) return null;
-  return ['santa', 'party', 'rain', 'sun'][Math.min(3, Math.floor((t - (previewExtrasUntil - PREVIEW_MS)) / 3000))];
+  return PREVIEW_PHASES[Math.min(PREVIEW_PHASES.length - 1, Math.floor((t - (previewExtrasUntil - PREVIEW_MS)) / 3000))];
 }
 function activeHat(t) {
   const phase = previewPhase(t);
   if (phase === 'santa') return 'SANTA';
   if (phase === 'party') return 'PARTY';
+  if (phase === 'easter') return 'EARS';
+  if (phase === 'halloween') return 'PUMPKIN';
   if (phase) return null;
   if (extras.silvester && isNewYear()) return 'PARTY';
   if (isBirthday()) return 'PARTY';
   if (extras.weihnachten && todayParts().month === 12) return 'SANTA';
+  if (extras.ostern !== false && isEaster()) return 'EARS';
+  if (extras.halloween !== false && isHalloween()) return 'PUMPKIN';
+  if (duck.state === 'sleep' && late()) return 'NIGHTCAP'; // nachts mit Schlafmütze
   return null;
 }
 let nextConfetti = 0;
+// Halloween-Abend: ab und zu flattert eine Fledermaus vorbei
+let nextBat = 0;
+function updateHalloween(t) {
+  const on = previewPhase(t) === 'halloween' || (extras.halloween !== false && isHalloween() && hour() >= 17);
+  if (!on || t < nextBat || dnd() || hardSave()) return;
+  nextBat = t + (previewPhase(t) ? 900 : rand(20000, 45000));
+  const fromLeft = Math.random() < 0.5;
+  particles.push({ type: 'bat', x: duck.x + (fromLeft ? -DW : DW * 2), y: duck.y - rand(10, 40) * Math.max(0.6, SIZE),
+    vx: (fromLeft ? 1 : -1) * rand(70, 110), vy: rand(-12, 6), life: 1 });
+}
 function updateExtras(t) {
+  updateHalloween(t);
   const party = previewPhase(t) === 'party' || isBirthday() || (extras.silvester && isNewYear());
   if (!party || t < nextConfetti || dnd()) return;
   nextConfetti = t + (previewPhase(t) ? 1200 : rand(15000, 30000));
@@ -654,6 +747,10 @@ function startAction(name, t) {
   duck.actionUntil = t + ACTIONS[name].ms;
   if (name === 'look' && !CHAR.front) duck.lookUntil = t + ACTIONS.look.ms;
   if (name === 'hop') { duck.onGround = false; duck.vy = -320; squash(0.9, 1.12, 160); }
+  if (name === 'bounce') { duck.bounces = 2; duck.onGround = false; duck.vy = -240; squash(0.9, 1.1, 140); }
+  if (name === 'binky') { duck.onGround = false; duck.vy = -560; squash(0.85, 1.18, 180); sparkle(3); }
+  if (name === 'melt') squash(1.45, 0.5, ACTIONS.melt.ms);
+  if (name === 'alarm') { duck.state = 'idle'; duck.until = t + ACTIONS.alarm.ms; }
 }
 
 // Reaktion mit Effekten starten
@@ -678,6 +775,7 @@ function pickState(t) {
   const m = mood();
   if (m === 'sleep') {
     duck.state = 'sleep';
+    if (!(duck.action && ACTIONS[duck.action].priority)) duck.action = null; // Bambus & Co. weglegen
     duck.until = t + rand(20000, 40000);
     return;
   }
@@ -690,6 +788,10 @@ function pickState(t) {
   // lange nicht beachtet: wird traurig
   else if (m === 'awake' && t - lastAttention > 45 * 60 * 1000 && r < 0.35) startAction('sad', t);
   else if (m === 'tired' && r < 0.45) startAction('yawn', t);
+  // mittags ab und zu ein Nickerchen, wenn gerade nicht getippt wird
+  else if (hour() >= 12 && hour() < 14 && t - duck.lastKeyAt > 3 * 60 * 1000 && r < 0.12) startAction('nap', t);
+  // abends öfter gähnen
+  else if (hour() >= 18 && hour() < 21 && r < 0.18) startAction('yawn', t);
   else if (r < 0.5 && !hardSave()) startAction(list[Math.floor(Math.random() * list.length)], t);
 }
 
@@ -724,15 +826,41 @@ function update(dt, t) {
 
   if (duck.dragging) return;
 
+  if (duck.sliding) { updateSlide(dt, t); return; }
+
   if (!duck.onGround) {
     duck.vy += GRAVITY * dt;
     duck.y += duck.vy * dt * Math.max(0.4, SIZE);
+    // geworfen: seitlich weiterfliegen, an den Bildschirmrändern abprallen
+    if (duck.vx) {
+      duck.x += duck.vx * dt;
+      if (duck.x < 0 || duck.x > W - DW) {
+        duck.x = Math.min(Math.max(duck.x, 0), W - DW);
+        duck.vx *= -0.55;
+        squash(0.8, 1.1, 120);
+      }
+      if (duck.y < 0) { duck.y = 0; duck.vy = Math.abs(duck.vy) * 0.3; }
+    }
     if (duck.y >= groundY()) {
       // aus großer Höhe gefallen: kurz schwindelig
       const fell = fallStartY !== null ? groundY() - fallStartY : 0;
       fallStartY = null;
       duck.y = groundY();
-      if (fell > Math.max(110, DH * 1.5) && !dnd()) { duck.vy = 0; duck.onGround = true; react('dizzy', t); return; }
+      // Pinguin: landet auf dem Bauch und rutscht weiter
+      if (CHAR.slides && (fell > 30 || Math.abs(duck.vx) > 60) && !dnd()) {
+        if (Math.abs(duck.vx) < 120) duck.vx = (duck.x + DW / 2 < W / 2 ? 1 : -1) * rand(160, 240);
+        duck.vy = 0; duck.onGround = true; duck.sliding = true;
+        squash(1.25, 0.75, 160);
+        return;
+      }
+      // Schleim: prallt nach einem Wurf noch einmal ab
+      if (CHAR.squishy && duck.vy > 600 && duck.bounces === 0 && duck.thrown) {
+        duck.bounces = -1;
+        duck.vy = -duck.vy * 0.42;
+        squash(1.5, 0.55, 220);
+        return;
+      }
+      if (fell > Math.max(110, DH * 1.5) && !dnd()) { duck.vy = 0; duck.vx = 0; duck.onGround = true; settle(); react('dizzy', t); return; }
       // Landung: je schneller, desto stärker plattgedrückt
       const hit = Math.min(1, duck.vy / 1400);
       const soft = CHAR.squishy ? 1.8 : 1; // Schleim wird beim Landen richtig platt
@@ -746,6 +874,10 @@ function update(dt, t) {
       }
       duck.vy = 0;
       duck.onGround = true;
+      duck.vx = 0;
+      // Freudenhüpfer: noch einmal
+      if (duck.bounces > 0) { duck.bounces--; duck.onGround = false; duck.vy = -200; squash(0.9, 1.1, 120); }
+      else { duck.bounces = 0; settle(); }
     }
     return;
   }
@@ -773,10 +905,35 @@ function update(dt, t) {
   if (duck.state === 'idle' && !dnd()) faceCursor(t);
 }
 
+// Rutschen auf dem Bauch: wenig Reibung, Staub, an Rändern abprallen
+function updateSlide(dt, t) {
+  duck.x += duck.vx * dt;
+  duck.vx *= Math.exp(-1.4 * dt);
+  if (duck.x < 0 || duck.x > W - DW) { duck.x = Math.min(Math.max(duck.x, 0), W - DW); duck.vx *= -0.6; }
+  if (Math.random() < dt * 12 && !hardSave()) {
+    particles.push({ type: 'dust', x: duck.x + (duck.vx > 0 ? 0 : DW), y: groundY() + DH - 4,
+      vx: -Math.sign(duck.vx) * rand(20, 50), vy: rand(-15, -5), life: 1 });
+  }
+  if (Math.abs(duck.vx) < 25) {
+    duck.sliding = false;
+    duck.vx = 0;
+    startAction('stretch', t); // wieder aufstehen
+    settle();
+  }
+}
+
+// Nach Wurf oder Rutschpartie zur Ruhe gekommen: hier ist der neue Stammplatz
+function settle() {
+  if (!duck.thrown && !CHAR.slides) return;
+  duck.thrown = false;
+  if (!gravity) restBottom = Math.round(Math.min(duck.y, bottomY()) + DH);
+  if (bridge) bridge.setHome(Math.round(duck.x), gravity ? null : restBottom);
+}
+
 // ---------- Bildrate: nur so oft zeichnen wie nötig (spart Akku) ----------
 let lastCursorMove = 0;
 function targetFps(t) {
-  const busy = duck.dragging || !duck.onGround || particles.some((p) => p.type !== 'rain' && p.type !== 'snow') || isTyping(t) || acting(t)
+  const busy = duck.dragging || duck.sliding || !duck.onGround || particles.some((p) => p.type !== 'rain' && p.type !== 'snow') || isTyping(t) || acting(t)
     || micMouth() > 0 || duck.happyUntil > t || duck.beakUntil > t || t - duck.squash.start < duck.squash.ms
     || (hoverSince && t - hoverSince < 1200);
   // Bilder pro Sekunde je Stufe: [Bewegung, Zeiger bewegt, Ruhe, Schlaf]
@@ -831,6 +988,62 @@ setTimeout(() => {
   if (CHAR.front) startAction('wave', t);
   else { startAction('stretch', t); setTimeout(() => startAction('hop', now()), 1300); }
 }, 900);
+
+// Wecker / Timer: klingelt und hüpft (höchstens 30 s), bis man auf die Figur klickt
+let ringing = false;
+let ringTimer = null;
+function stopRing() {
+  ringing = false;
+  clearInterval(ringTimer);
+  if (duck.action === 'alarm') duck.action = null;
+}
+function ring() {
+  const t = now();
+  lastActivity = t;
+  ringing = true;
+  startAction('alarm', t);
+  clearInterval(ringTimer);
+  ringTimer = setInterval(() => {
+    const n = now();
+    if (duck.action !== 'alarm' || !acting(n)) { stopRing(); return; }
+    if (duck.onGround && !duck.dragging) { duck.onGround = false; duck.vy = -260; squash(0.9, 1.1, 120); }
+    spawn('bang', duck.x + DW * 0.5, duck.y - 6);
+    kick();
+  }, 650);
+  kick();
+}
+
+// neuer Tipp-Rekord: Jubel mit Konfetti (Axolotl feiert doppelt)
+function celebrateRecord() {
+  if (dnd()) return;
+  react('cheer', now());
+  const n = CHAR.record ? 36 : 16;
+  for (let i = 0; i < n; i++) spawn('confetti', duck.x + rand(-DW * 0.4, DW * 1.4), duck.y - rand(10, 50) * Math.max(0.5, SIZE));
+  if (CHAR.record) setTimeout(() => startAction('dance', now()), ACTIONS.cheer.ms);
+  kick();
+}
+
+// Ein Fenster wird nah an der Figur verschoben: hinschauen, bei Berührung erschrecken
+let windowStartle = 0;
+function onWindowMove(r) {
+  if (dnd() || duck.dragging) return;
+  const t = now();
+  const dx = Math.max(r.x - (duck.x + DW), duck.x - (r.x + r.width), 0);
+  const dy = Math.max(r.y - (duck.y + DH), duck.y - (r.y + r.height), 0);
+  const dist = Math.hypot(dx, dy);
+  if (dist > 160 * Math.max(0.6, SIZE)) return;
+  // auf den nächsten Punkt des Fensters schauen
+  const tx = Math.min(Math.max(duck.x + DW / 2, r.x), r.x + r.width);
+  const ty = Math.min(Math.max(duck.y + DH / 2, r.y), r.y + r.height);
+  duck.lookTarget = { x: tx, y: ty, until: t + 1500 };
+  if (dist === 0 && t > windowStartle) {
+    // Fenster schiebt sich über die Figur: aufwachen und erschrecken
+    windowStartle = t + 6000;
+    wake();
+    react('startle', t);
+  }
+  kick();
+}
 
 // Einstellungen aus dem Menü übernehmen
 function applyAppSettings(s) {
@@ -909,12 +1122,15 @@ window.addEventListener('mousemove', (e) => {
   if (duck.dragging) {
     duck.x = x - duck.dragDX;
     duck.y = Math.min(y - duck.dragDY, bottomY());
+    dragTrail.push({ x, y, t: now() });
+    while (dragTrail.length > 6) dragTrail.shift();
     if (Math.abs(x - duck.downAt.x) + Math.abs(y - duck.downAt.y) > 6) duck.downAt.moved = true;
     return;
   }
   setPassThrough(!overDuck(x, y));
 });
 
+const dragTrail = []; // letzte Mauspositionen beim Ziehen (für den Wurf)
 window.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   const x = mouseX(e);
@@ -926,6 +1142,9 @@ window.addEventListener('mousedown', (e) => {
   duck.dragDY = y - duck.y;
   duck.downAt = { x, y, moved: false };
   duck.action = null;
+  duck.sliding = false;
+  duck.vx = 0;
+  dragTrail.length = 0;
   wake();
   kick();
 });
@@ -939,12 +1158,21 @@ window.addEventListener('mouseup', (e) => {
     const t = now();
     if (dnd()) { duck.vy = 0; return; }
     cheerUp();
+    // Wecker klingelt: Klick macht ihn aus
+    if (ringing) {
+      stopRing(); duck.vy = 0; duck.onGround = true; duck.happyUntil = t + 1500;
+      for (let i = 0; i < 3; i++) spawn('heart', duck.x + rand(0, DW), duck.y + rand(0, DH * 0.3));
+      return;
+    }
+    // Geist erschrickt und wird kurz durchsichtig
+    if (CHAR.float) { duck.fadeUntil = t + 1300; react('startle', t); return; }
     // ganz oft hintereinander geklickt: schwindelig
     clickTimes.push(t);
     while (clickTimes.length && clickTimes[0] < t - 2500) clickTimes.shift();
     if (clickTimes.length >= 5) {
       clickTimes.length = 0;
       duck.vy = 0;
+      if (CHAR.rolls) duck.rollStart = t; // Panda kugelt sich erst einmal
       react('dizzy', t);
       return;
     }
@@ -966,6 +1194,22 @@ window.addEventListener('mouseup', (e) => {
     fallStartY = duck.y; // merken, wie hoch sie losgelassen wurde
     duck.vy = 0;
     duck.x = Math.min(Math.max(duck.x, 0), W - DW);
+    // Schwung mitnehmen: schnell losgelassen = geworfen
+    const first = dragTrail[0];
+    const lastP = dragTrail[dragTrail.length - 1];
+    const span = first && lastP ? (lastP.t - first.t) / 1000 : 0;
+    if (gravity && span > 0.01 && now() - lastP.t < 80) {
+      const vx = (lastP.x - first.x) / span;
+      const vy = (lastP.y - first.y) / span;
+      if (Math.abs(vx) > 250 || vy < -350) {
+        duck.vx = Math.max(-1800, Math.min(1800, vx));
+        duck.vy = Math.max(-1400, Math.min(0, vy));
+        duck.thrown = true;
+        duck.bounces = 0;
+        lastAttention = now();
+        return;
+      }
+    }
     if (!gravity) restBottom = Math.round(Math.min(duck.y, bottomY()) + DH);
     if (bridge) bridge.setHome(Math.round(duck.x), gravity ? null : restBottom);
   }
@@ -1017,7 +1261,10 @@ if (bridge) {
     kick();
   });
   bridge.getSettings().then((s) => { setMic(s.mikrofon && energyLevel(s.energiesparen) < 3); applyAppSettings(s); });
+  bridge.onWindow(onWindowMove);
   bridge.onCommand((cmd) => {
+    if (cmd && cmd.type === 'alarm') ring();
+    if (cmd === 'record') celebrateRecord();
     if (cmd === 'sleep') { duck.state = 'sleep'; duck.until = now() + 60000; lastActivity = -Infinity; }
     if (cmd === 'preview-extras') { previewExtrasUntil = now() + PREVIEW_MS; nextConfetti = 0; kick(); }
     if (cmd === 'reset') {
@@ -1043,6 +1290,7 @@ if (bridge) {
       duck.x = Math.min(duck.x, W - DW);
     },
     setHour(h) { window.duckConfig.hour = h; },
+    ring, celebrateRecord, onWindowMove,
     setIdle(minutes) { lastActivity = now() - minutes * 60 * 1000; duck.until = 0; if (!minutes) wake(); kick(); },
     setWeather(w) { weather = w; extras = { ...extras, wetter: true, temperatur: true }; },
     setExtras(e) { extras = { ...extras, ...e }; },

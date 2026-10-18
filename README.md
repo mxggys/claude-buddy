@@ -36,6 +36,17 @@ Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda).
   jubelt nach 10 Minuten konzentriertem Tippen, wird traurig, wenn sie lange nicht beachtet wird.
 - Müde und Schlaf nur nach längerer Pause (tagsüber 6 / 12 Minuten, abends 4 / 7 Minuten).
 - Nicht stören: 1 Stunde schlafen und auf nichts reagieren.
+- Erinnerung / Wecker im Menü: in 5 bis 60 Minuten, eigene Minuten oder eine Uhrzeit. Dann klingelt die Figur
+  mit Glocke und hüpft (bis du draufklickst, höchstens 30 s), und am Symbol erscheint eine Windows-Meldung.
+- Werfen: schnell ziehen und loslassen, die Figur fliegt, prallt an den Bildschirmrändern ab und bleibt dort, wo sie landet.
+  Frosti rutscht danach auf dem Bauch weiter, Glibber prallt noch einmal ab.
+- Tageszeit: morgens nach dem Aufwachen ein Winken, mittags ab und zu ein Nickerchen, abends öfter Gähnen,
+  nachts schläft sie mit Schlafmütze. Nach über 10 Minuten Pause: Willkommen zurück.
+- Fenster: Wird ein Fenster nah an der Figur verschoben, schaut sie hin; schiebt es sich über sie, erschrickt sie.
+- Neuer Tipp-Rekord: Jubel mit Konfetti (Axo feiert doppelt und tanzt).
+- Eigenheiten: Pando kaut Bambus und kugelt sich bei Klick-Spam, Boo wird beim Anklicken durchsichtig und verblasst
+  ab und zu, Hopsi macht Freudensprünge, Glibber zerfließt und ploppt zurück, alle hüpfen ab und zu vor Freude.
+- Ostern (Hasenohren, Osterei) und Halloween (Kürbis, Fledermäuse am Abend), abschaltbar unter Extras.
 - Vollbild-Spiele und -Videos: wird ausgeblendet (abschaltbar).
 - Läuft zusammen mit TranslucentTB (durchsichtige Taskleiste): Fährt der Zeiger über die Figur, holt sie sich
   wieder nach vorne, damit sie sich auch direkt nach einem Klick auf die Taskleiste anfassen und ziehen lässt.

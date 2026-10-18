@@ -4,7 +4,7 @@ const {
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { startWatching } = require('./watcher');
+const { startWatching, loadWin32 } = require('./watcher');
 const { CHARACTERS, ORDER } = require('./sprites');
 const { setupUpdater } = require('./update');
 const weatherApi = require('./weather');
@@ -59,6 +59,8 @@ const DEFAULT_SETTINGS = {
   nichtStoerenBis: 0,
   extras: {
     weihnachten: true, // Mütze im Dezember
+    ostern: true, // Hasenohren und Osterei von Karfreitag bis Ostermontag
+    halloween: true, // Kürbis und Fledermäuse vom 24. bis 31. Oktober
     silvester: true, // Partyhut an Silvester und Neujahr
     geburtstag: true, // Partyhut und Konfetti am Geburtstag
     geburtstagDatum: '', // "TT.MM."
@@ -257,7 +259,12 @@ function countKey() {
   z.heute++;
   z.gesamt++;
   z.tage[tag] = z.heute;
-  if (z.heute > z.rekord) { z.rekord = z.heute; z.rekordTag = tag; }
+  if (z.heute > z.rekord) {
+    // alter Rekord eines anderen Tages gerade geknackt: die Figur feiert
+    if (z.rekordTag && z.rekordTag !== tag && z.rekord > 0 && win) win.webContents.send('command', 'record');
+    z.rekord = z.heute;
+    z.rekordTag = tag;
+  }
   counterDirty = true;
 }
 
@@ -343,6 +350,9 @@ function startWatchers() {
   // Mauszeiger verfolgen, damit die Figur hinschauen kann (im Energiesparmodus seltener)
   let lastPos = '';
   let lastRaise = 0;
+  let lastWinPoll = 0;
+  let lastRect = '';
+  const win32 = loadWin32();
   const pollCursor = () => {
     if (win && !hiddenForFullscreen) {
       const p = screen.getCursorScreenPoint();
@@ -358,6 +368,19 @@ function startWatchers() {
       }
       const a = workArea();
       const pos = { x: p.x - a.x, y: p.y - a.y };
+      // Fenster wird verschoben oder vergrößert: Position an die Figur schicken (nicht im Modus Hart)
+      if (win32 && settings.energiesparen < 3 && Date.now() - lastWinPoll >= 100) {
+        lastWinPoll = Date.now();
+        const fg = win32.foreground();
+        if (fg && !/Claude Buddy/.test(fg.title) && !IGNORED_WINDOW_CLASSES.has(fg.cls) && !fg.maximized) {
+          const key = `${fg.hwnd}:${fg.x},${fg.y},${fg.width},${fg.height}`;
+          if (lastRect && key !== lastRect && lastRect.split(':')[0] === String(fg.hwnd)) {
+            const r = screen.screenToDipRect(null, { x: fg.x, y: fg.y, width: fg.width, height: fg.height });
+            win.webContents.send('window', { x: r.x - a.x, y: r.y - a.y, width: r.width, height: r.height });
+          }
+          lastRect = key;
+        } else lastRect = '';
+      }
       const key = pos.x + ',' + pos.y;
       if (key !== lastPos) win.webContents.send('cursor', pos);
       lastPos = key;
@@ -366,6 +389,9 @@ function startWatchers() {
   };
   pollCursor();
 }
+
+// Desktop, Taskleiste und Startmenü sind keine Fenster, die man verschiebt
+const IGNORED_WINDOW_CLASSES = new Set(['Progman', 'WorkerW', 'Shell_TrayWnd', 'Shell_SecondaryTrayWnd', 'Windows.UI.Core.CoreWindow', 'XamlExplorerHostIslandWindow']);
 
 // Die Figur bekommt nur, was sie braucht (der Update-Schlüssel bleibt im Hauptprozess)
 const petSettings = () => ({
@@ -502,6 +528,68 @@ async function askPlace() {
   }
 }
 
+// ---------- Erinnerungen: Timer und Wecker ----------
+// Bei Ablauf klingelt die Figur (Glocke, hüpft) und Windows zeigt eine Meldung am Taskleisten-Symbol.
+const timers = []; // { id, at, label, handle }
+let timerSeq = 0;
+const clock = (ms) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+const minutesText = (m) => (m === 1 ? '1 Minute' : `${fmt(m)} Minuten`);
+
+function addTimer(at, label) {
+  const id = ++timerSeq;
+  // setTimeout kann höchstens ca. 24 Tage; Wecker liegen immer innerhalb von 24 Stunden
+  const handle = setTimeout(() => fireTimer(id), Math.max(0, at - Date.now()));
+  timers.push({ id, at, label, handle });
+  timers.sort((a, b) => a.at - b.at);
+  buildMenu();
+}
+function cancelTimer(id) {
+  const i = timers.findIndex((tm) => tm.id === id);
+  if (i < 0) return;
+  clearTimeout(timers[i].handle);
+  timers.splice(i, 1);
+  buildMenu();
+}
+function fireTimer(id) {
+  const tm = timers.find((x) => x.id === id);
+  if (!tm) return;
+  timers.splice(timers.indexOf(tm), 1);
+  if (win) win.webContents.send('command', { type: 'alarm' });
+  if (tray && process.platform === 'win32') tray.displayBalloon({ title: 'Claude Buddy', content: tm.label, iconType: 'info' });
+  log('erinnerung', tm.label);
+  buildMenu();
+}
+async function askMinutes() {
+  const value = await askText({ label: 'Erinnerung in Minuten', hint: 'Zum Beispiel 25 für eine Lern- oder Arbeitsrunde.', value: '25' });
+  const m = parseFloat(String(value || '').replace(',', '.'));
+  if (Number.isFinite(m) && m > 0 && m <= 24 * 60) addTimer(Date.now() + m * 60000, `${minutesText(Math.round(m * 10) / 10)} sind um`);
+}
+async function askAlarm() {
+  const value = await askText({ label: 'Wecker stellen (Uhrzeit)', hint: 'Zum Beispiel 7:30 oder 14 – klingelt beim nächsten Mal, wenn es so spät ist.', value: '' });
+  const match = String(value || '').trim().match(/^(\d{1,2})(?:[:.](\d{2}))?$/);
+  if (!match) return;
+  const h = Number(match[1]);
+  const m = Number(match[2] || 0);
+  if (h > 23 || m > 59) return;
+  const at = new Date();
+  at.setHours(h, m, 0, 0);
+  if (at <= new Date()) at.setDate(at.getDate() + 1);
+  addTimer(at.getTime(), `Wecker: ${clock(at.getTime())}`);
+}
+function timerMenu() {
+  return [
+    ...[5, 10, 15, 30, 60].map((m) => ({ label: `In ${minutesText(m)}`, click: () => addTimer(Date.now() + m * 60000, `${minutesText(m)} sind um`) })),
+    { label: 'Eigene Minuten …', click: askMinutes },
+    { label: 'Wecker stellen …', click: askAlarm },
+    ...(timers.length ? [
+      { type: 'separator' },
+      ...timers.map((tm) => ({ label: `${tm.label.replace(' sind um', '')} – klingelt um ${clock(tm.at)} (abbrechen)`, click: () => cancelTimer(tm.id) })),
+    ] : []),
+    { type: 'separator' },
+    { label: 'Klingeln kurz zeigen', click: () => win && win.webContents.send('command', { type: 'alarm' }) },
+  ];
+}
+
 // ---------- Menü am Taskleisten-Symbol (Links- und Rechtsklick, auch Rechtsklick auf die Figur) ----------
 let updateStatus = { text: 'Noch nicht geprüft', ready: false, token: null };
 
@@ -524,6 +612,8 @@ function extrasMenu() {
   return [
     check('Weihnachtsmütze im Dezember', 'weihnachten'),
     check('Partyhut an Silvester und Neujahr', 'silvester'),
+    check('Hasenohren und Osterei an Ostern', 'ostern'),
+    check('Kürbis und Fledermäuse an Halloween', 'halloween'),
     check('Geburtstag: Partyhut und Konfetti', 'geburtstag'),
     { label: e.geburtstagDatum ? `Geburtstag ändern … (${e.geburtstagDatum})` : 'Geburtstag eintragen …', click: askBirthday },
     { type: 'separator' },
@@ -570,6 +660,10 @@ function buildMenu() {
     },
     { label: 'Extras', submenu: extrasMenu() },
     { label: 'Zurückholen (Doppelklick aufs Symbol)', click: resetPet },
+    {
+      label: timers.length ? `Erinnerung (nächste um ${clock(timers[0].at)})` : 'Erinnerung / Wecker',
+      submenu: timerMenu(),
+    },
     {
       label: dnd
         ? `Nicht stören bis ${new Date(settings.nichtStoerenBis).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – aufheben`
