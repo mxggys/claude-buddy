@@ -37,11 +37,13 @@ Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda).
 - Müde und Schlaf nur nach längerer Pause (tagsüber 6 / 12 Minuten, abends 4 / 7 Minuten).
 - Nicht stören: 1 Stunde schlafen und auf nichts reagieren.
 - Vollbild-Spiele und -Videos: wird ausgeblendet (abschaltbar).
+- Taskleiste durchsichtig (im Menü). Nutzt dieselbe Windows-Funktion wie TranslucentTB, ohne etwas in den Explorer
+  einzuschleusen. Beim Ausschalten oder Beenden sieht die Taskleiste wieder normal aus.
 
 ## Menü
 Links- oder Rechtsklick auf das Symbol unten rechts in der Taskleiste, oder Rechtsklick auf die Figur:
 Tippzähler, Figur, Größe (10 bis 300 %, auch eigene Werte und Strg + Mausrad auf der Figur), Zurückholen,
-Extras, Nicht stören, Mittippen, Mikrofon, Vollbild, Energiesparmodus, Autostart, Updates, Fehler-Log, Beenden.
+Extras, Nicht stören, Mittippen, Mikrofon, Vollbild, Taskleiste durchsichtig, Energiesparmodus, Autostart, Updates, Fehler-Log, Beenden.
 Läuft der Update-Schlüssel bald ab (oder ist abgelaufen), steht ganz oben im Menü ein Hinweis.
 
 ## Installieren
