@@ -8,6 +8,10 @@ contextBridge.exposeInMainWorld('duckApp', {
   openMenu: () => ipcRenderer.send('open-menu'),
   moveWindow: (x, y) => ipcRenderer.send('move-window', x, y),
   setIgnoreMouse: (ignore) => ipcRenderer.send('ignore-mouse', ignore),
+  // „Auf Fenster setzen“: Fensterkante unter den Füßen suchen / wieder loslassen
+  findPerch: (x, y) => ipcRenderer.sendSync('perch-find', x, y),
+  releasePerch: () => ipcRenderer.send('perch-release'),
+  onPerch: (cb) => ipcRenderer.on('perch', (_e, rect) => cb(rect)),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   onKey: (cb) => ipcRenderer.on('key', () => cb()),
   onPower: (cb) => ipcRenderer.on('power', (_e, battery) => cb(battery)),

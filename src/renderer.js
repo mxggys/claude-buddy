@@ -35,6 +35,8 @@ let claudeActive = false;         // Claude-Fenster ist vorne: Mini-Claude denkt
 let weather = null;               // { code, temp, isDay } von Open-Meteo
 let extras = CONFIG.extras || {};
 let previewExtrasUntil = 0;       // „Extras kurz zeigen“ im Menü
+let sitOnWindows = Boolean(CONFIG.aufFenstern); // „Auf Fenster setzen“ ist an
+let perch = null;                 // Fenster, auf dem die Figur sitzt: { left, top, width }
 
 // Aktuelle Figur und davon abhängige Werte
 let CHAR, PALETTE, FRAMES, EYE, ANCHORS, WIDTH, HEIGHT, SCALE, DW, DH;
@@ -134,6 +136,7 @@ duck.x = typeof CONFIG.homeX === 'number' ? Math.min(Math.max(CONFIG.homeX, 0), 
 // echter Boden (Taskleiste) und der Platz, auf dem die Figur gerade steht
 function bottomY() { return H - DH - GROUND_OFFSET; }
 function groundY() {
+  if (perch) return Math.max(0, perch.top - DH);
   if (!gravity && restBottom !== null) return Math.min(bottomY(), Math.max(0, restBottom - DH));
   return bottomY();
 }
@@ -826,6 +829,7 @@ function update(dt, t) {
 
   if (duck.dragging) return;
 
+  checkPerchEdge();
   if (duck.sliding) { updateSlide(dt, t); return; }
 
   if (!duck.onGround) {
@@ -909,7 +913,8 @@ function update(dt, t) {
 function updateSlide(dt, t) {
   duck.x += duck.vx * dt;
   duck.vx *= Math.exp(-1.4 * dt);
-  if (duck.x < 0 || duck.x > W - DW) { duck.x = Math.min(Math.max(duck.x, 0), W - DW); duck.vx *= -0.6; }
+  if (!perch && (duck.x < 0 || duck.x > W - DW)) { duck.x = Math.min(Math.max(duck.x, 0), W - DW); duck.vx *= -0.6; }
+  if (perch && (duck.x + DW / 2 < perch.left || duck.x + DW / 2 > perch.left + perch.width)) { duck.sliding = false; checkPerchEdge(); return; }
   if (Math.random() < dt * 12 && !hardSave()) {
     particles.push({ type: 'dust', x: duck.x + (duck.vx > 0 ? 0 : DW), y: groundY() + DH - 4,
       vx: -Math.sign(duck.vx) * rand(20, 50), vy: rand(-15, -5), life: 1 });
@@ -925,6 +930,7 @@ function updateSlide(dt, t) {
 // Nach Wurf oder Rutschpartie zur Ruhe gekommen: hier ist der neue Stammplatz
 function settle() {
   if (!duck.thrown && !CHAR.slides) return;
+  if (perch) { duck.thrown = false; return; } // auf einem Fenster: Stammplatz bleibt
   duck.thrown = false;
   if (!gravity) restBottom = Math.round(Math.min(duck.y, bottomY()) + DH);
   if (bridge) bridge.setHome(Math.round(duck.x), gravity ? null : restBottom);
@@ -1055,6 +1061,8 @@ function applyAppSettings(s) {
     else restBottom = Math.round(duck.y + DH);                  // bleibt, wo sie gerade ist
   }
   extras = s.extras || {};
+  sitOnWindows = Boolean(s.aufFenstern);
+  if (!sitOnWindows && perch) { perch = null; duck.onGround = false; fallStartY = duck.y; }
   // Hart: Mikrofon-Auswertung aus (kostet die meiste Rechenzeit)
   if (hardSave()) setMic(false);
   const wasDnd = dnd();
@@ -1145,6 +1153,7 @@ window.addEventListener('mousedown', (e) => {
   duck.sliding = false;
   duck.vx = 0;
   dragTrail.length = 0;
+  if (perch) { perch = null; if (bridge) bridge.releasePerch(); }
   wake();
   kick();
 });
@@ -1210,10 +1219,51 @@ window.addEventListener('mouseup', (e) => {
         return;
       }
     }
+    if (sitOnWindows && bridge) {
+      const edge = bridge.findPerch(duck.x + DW / 2, duck.y + DH);
+      if (edge) {
+        perch = edge;
+        duck.y = groundY();
+        duck.onGround = true;
+        fallStartY = null;
+        squash(1.15, 0.88, 140);
+        return; // Stammplatz an der Taskleiste bleibt, wie er war
+      }
+    }
     if (!gravity) restBottom = Math.round(Math.min(duck.y, bottomY()) + DH);
     if (bridge) bridge.setHome(Math.round(duck.x), gravity ? null : restBottom);
   }
 });
+
+// Das Fenster unter der Figur hat sich bewegt (oder ist weg)
+function onPerch(rect) {
+  if (!perch) return;
+  if (!rect) {
+    // Fenster geschlossen oder minimiert: runterfallen
+    perch = null;
+    duck.onGround = false;
+    duck.vy = -120;
+    fallStartY = duck.y;
+    react('startle', now());
+    return;
+  }
+  if (duck.dragging) return;
+  duck.x += rect.left - perch.left; // mitfahren
+  perch = rect;
+  if (duck.onGround) duck.y = groundY();
+  kick();
+}
+// über die Kante hinaus gerutscht oder geschoben: runterfallen
+function checkPerchEdge() {
+  if (!perch || duck.dragging) return;
+  const cx = duck.x + DW / 2;
+  if (cx < perch.left - 2 || cx > perch.left + perch.width + 2) {
+    perch = null;
+    if (bridge) bridge.releasePerch();
+    duck.onGround = false;
+    fallStartY = duck.y;
+  }
+}
 
 // Doppelklick → großer Sprung
 window.addEventListener('dblclick', (e) => {
@@ -1262,6 +1312,7 @@ if (bridge) {
   });
   bridge.getSettings().then((s) => { setMic(s.mikrofon && energyLevel(s.energiesparen) < 3); applyAppSettings(s); });
   bridge.onWindow(onWindowMove);
+  bridge.onPerch(onPerch);
   bridge.onCommand((cmd) => {
     if (cmd && cmd.type === 'alarm') ring();
     if (cmd === 'record') celebrateRecord();
@@ -1291,6 +1342,8 @@ if (bridge) {
     },
     setHour(h) { window.duckConfig.hour = h; },
     ring, celebrateRecord, onWindowMove,
+    sitOn(rect) { perch = rect; duck.y = groundY(); duck.onGround = true; }, onPerch,
+    get perch() { return perch; },
     setIdle(minutes) { lastActivity = now() - minutes * 60 * 1000; duck.until = 0; if (!minutes) wake(); kick(); },
     setWeather(w) { weather = w; extras = { ...extras, wetter: true, temperatur: true }; },
     setExtras(e) { extras = { ...extras, ...e }; },

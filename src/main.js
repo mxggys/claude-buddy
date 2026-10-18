@@ -53,6 +53,7 @@ const DEFAULT_SETTINGS = {
   homeBottom: null, // ohne Schwerkraft: Fußhöhe, an der die Figur stehen bleibt
   schwerkraft: true, // an: fällt immer nach unten; aus: bleibt, wo man sie hinzieht
   imVollbild: false, // auch über Spielen / Videos im Vollbild anzeigen
+  aufFenstern: false, // Figur kann auf die Oberkante von Fenstern gesetzt werden
   mikrofon: false,
   tastatur: true,
   energiesparen: 0, // 0 aus, 1 leicht, 2 mittel, 3 hart
@@ -354,7 +355,7 @@ function startWatchers() {
   let lastRect = '';
   const win32 = loadWin32();
   const pollCursor = () => {
-    if (win && !hiddenForFullscreen) {
+    if (win && !win.isDestroyed() && !hiddenForFullscreen) {
       const p = screen.getCursorScreenPoint();
       // Zeiger über der Figur: Fenster wieder ganz nach vorne holen. Die Taskleiste (auch mit
       // TranslucentTB) schiebt sich sonst nach einem Klick über die Figur, und die lässt sich
@@ -390,6 +391,33 @@ function startWatchers() {
   pollCursor();
 }
 
+// ---------- Auf Fenster setzen ----------
+let perch = null; // { hwnd, key }
+let perchTimer = null;
+function perchRect(r) {
+  const a = workArea();
+  const d = screen.screenToDipRect(null, { x: r.left, y: r.top, width: r.right - r.left, height: r.bottom - r.top });
+  return { left: d.x - a.x, top: d.y - a.y, width: d.width };
+}
+function startPerchWatch() {
+  clearTimeout(perchTimer);
+  const tick = () => {
+    if (!perch || !win || win.isDestroyed()) return;
+    const win32 = loadWin32();
+    const r = win32 && win32.rectOf(perch.hwnd);
+    if (!r || !settings.aufFenstern) {
+      // Fenster zu oder minimiert: Figur fällt runter
+      perch = null;
+      win.webContents.send('perch', null);
+      return;
+    }
+    const key = `${r.left},${r.top},${r.right}`;
+    if (key !== perch.key) { perch.key = key; win.webContents.send('perch', perchRect(r)); }
+    perchTimer = setTimeout(tick, settings.energiesparen >= 3 ? 250 : 40); // flüssig mitfahren
+  };
+  tick();
+}
+
 // Desktop, Taskleiste und Startmenü sind keine Fenster, die man verschiebt
 const IGNORED_WINDOW_CLASSES = new Set(['Progman', 'WorkerW', 'Shell_TrayWnd', 'Shell_SecondaryTrayWnd', 'Windows.UI.Core.CoreWindow', 'XamlExplorerHostIslandWindow']);
 
@@ -400,6 +428,7 @@ const petSettings = () => ({
   groesse: settings.groesse,
   energiesparen: settings.energiesparen,
   nichtStoerenBis: settings.nichtStoerenBis,
+  aufFenstern: settings.aufFenstern,
   extras: { ...settings.extras, ort: undefined },
 });
 
@@ -675,6 +704,7 @@ function buildMenu() {
     toggle('Tippt mit, wenn ich tippe', 'tastatur'),
     toggle(settings.energiesparen === 3 ? 'Mund bewegt sich mit Mikrofon (im Modus Hart aus)' : 'Mund bewegt sich mit Mikrofon', 'mikrofon'),
     toggle('Im Vollbild anzeigen (Spiele, Videos)', 'imVollbild'), // greift bei der nächsten Abfrage
+    toggle('Auf Fenster setzen (auf die Oberkante ziehen)', 'aufFenstern'),
     {
       label: `Energiesparmodus (${energy().name})`,
       submenu: ENERGY.map((level, i) => ({
@@ -776,6 +806,21 @@ if (!app.requestSingleInstanceLock()) {
       }
       : {};
   });
+  // „Auf Fenster setzen“: Kante suchen, dann regelmäßig nachsehen, wo das Fenster ist
+  ipcMain.on('perch-find', (e, x, y) => {
+    e.returnValue = null;
+    const win32 = loadWin32();
+    if (!win32 || !settings.aufFenstern) return;
+    const a = workArea();
+    const p = screen.dipToScreenPoint({ x: Math.round(x + a.x), y: Math.round(y + a.y) });
+    const hit = win32.windowEdgeAt(p.x, p.y, Math.round(40 * screen.getPrimaryDisplay().scaleFactor));
+    if (!hit) return;
+    perch = { hwnd: hit.hwnd, key: '' };
+    e.returnValue = perchRect(hit.rect);
+    startPerchWatch();
+  });
+  ipcMain.on('perch-release', () => { perch = null; });
+
   ipcMain.on('set-home', (_e, x, bottom) => {
     if (typeof x !== 'number' || !Number.isFinite(x)) return;
     settings.homeX = x;

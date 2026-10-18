@@ -43,6 +43,8 @@ Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda).
 - Tageszeit: morgens nach dem Aufwachen ein Winken, mittags ab und zu ein Nickerchen, abends öfter Gähnen,
   nachts schläft sie mit Schlafmütze. Nach über 10 Minuten Pause: Willkommen zurück.
 - Fenster: Wird ein Fenster nah an der Figur verschoben, schaut sie hin; schiebt es sich über sie, erschrickt sie.
+- Auf Fenster setzen (im Menü einschalten): Figur auf die Oberkante eines Fensters ziehen, z. B. auf das Claude-Fenster.
+  Sie sitzt dort, fährt mit, wenn du das Fenster verschiebst, und fällt runter, wenn es zugeht oder minimiert wird.
 - Neuer Tipp-Rekord: Jubel mit Konfetti (Axo feiert doppelt und tanzt).
 - Eigenheiten: Pando kaut Bambus und kugelt sich bei Klick-Spam, Boo wird beim Anklicken durchsichtig und verblasst
   ab und zu, Hopsi macht Freudensprünge, Glibber zerfließt und ploppt zurück, alle hüpfen ab und zu vor Freude.

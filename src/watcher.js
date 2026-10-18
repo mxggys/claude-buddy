@@ -3,6 +3,7 @@
 // - Titel des Fensters im Vordergrund, damit Mini-Claude merkt, wenn Claude offen ist (user32.dll)
 // - Tastendrücke über uiohook (nur DASS getippt wird, nicht welche Taste)
 // - Lage des Fensters im Vordergrund, damit die Figur auf verschobene Fenster reagiert (user32.dll)
+// - Fensterkanten, auf die man die Figur setzen kann („Auf Fenster setzen“, user32 + dwmapi)
 
 let cached;
 function loadWin32() {
@@ -24,6 +25,35 @@ function createWin32() {
     const GetWindowRect = user32.func('int __stdcall GetWindowRect(void* hWnd, _Out_ RECT* rect)');
     const GetClassNameW = user32.func('int __stdcall GetClassNameW(void* hWnd, _Out_ uint16_t* text, int max)');
     const IsZoomed = user32.func('int __stdcall IsZoomed(void* hWnd)');
+    const IsWindow = user32.func('int __stdcall IsWindow(void* hWnd)');
+    const IsWindowVisible = user32.func('int __stdcall IsWindowVisible(void* hWnd)');
+    const IsIconic = user32.func('int __stdcall IsIconic(void* hWnd)');
+    const GetWindowThreadProcessId = user32.func('uint32 __stdcall GetWindowThreadProcessId(void* hWnd, _Out_ uint32* pid)');
+    const EnumWindowsProc = koffi.proto('int __stdcall EnumWindowsProc(void* hWnd, intptr lParam)');
+    const EnumWindows = user32.func('int __stdcall EnumWindows(EnumWindowsProc* cb, intptr lParam)');
+    let DwmGetWindowAttribute = null;
+    try {
+      const dwmapi = koffi.load('dwmapi.dll');
+      DwmGetWindowAttribute = dwmapi.func('long __stdcall DwmGetWindowAttribute(void* hWnd, uint32 attr, void* value, uint32 size)');
+    } catch { /* ohne DWM: GetWindowRect reicht */ }
+    // Sichtbarer Rahmen ohne den unsichtbaren Rand zum Größeziehen (Windows 10/11)
+    const visibleRect = (hwnd) => {
+      if (DwmGetWindowAttribute) {
+        const buf = Buffer.alloc(16);
+        if (DwmGetWindowAttribute(hwnd, 9, buf, 16) === 0) {
+          return { left: buf.readInt32LE(0), top: buf.readInt32LE(4), right: buf.readInt32LE(8), bottom: buf.readInt32LE(12) };
+        }
+      }
+      const r = {};
+      return GetWindowRect(hwnd, r) ? r : null;
+    };
+    // versteckte Store-Apps zählen nicht als sichtbar
+    const cloaked = (hwnd) => {
+      if (!DwmGetWindowAttribute) return false;
+      const buf = Buffer.alloc(4);
+      return DwmGetWindowAttribute(hwnd, 14, buf, 4) === 0 && buf.readInt32LE(0) !== 0;
+    };
+    const SKIP_CLASSES = new Set(['Progman', 'WorkerW', 'Shell_TrayWnd', 'Shell_SecondaryTrayWnd', 'Windows.UI.Core.CoreWindow', 'XamlExplorerHostIslandWindow']);
     const text = (fn, hwnd) => {
       const buf = new Uint16Array(256);
       const len = fn(hwnd, buf, buf.length);
@@ -39,6 +69,29 @@ function createWin32() {
       title() {
         const hwnd = GetForegroundWindow();
         return hwnd ? text(GetWindowTextW, hwnd) : '';
+      },
+      // Fenster, auf dessen Oberkante (x, y) liegt (physische Pixel). Geht die Fenster von vorne
+      // nach hinten durch; liegt der Punkt vorher mitten in einem anderen Fenster, ist die Kante verdeckt.
+      windowEdgeAt(x, y, grab = 40) {
+        let found = null;
+        EnumWindows((hwnd) => {
+          if (!IsWindowVisible(hwnd) || IsIconic(hwnd) || cloaked(hwnd)) return 1;
+          const pid = [0];
+          GetWindowThreadProcessId(hwnd, pid);
+          if (pid[0] === process.pid || SKIP_CLASSES.has(text(GetClassNameW, hwnd))) return 1;
+          const r = visibleRect(hwnd);
+          if (!r || r.right - r.left < 120 || r.bottom - r.top < 60) return 1;
+          if (x < r.left || x > r.right) return 1;
+          if (y >= r.top - grab && y <= r.top + grab) { found = { hwnd, rect: r }; return 0; }
+          if (y > r.top && y < r.bottom) return 0; // verdeckt von diesem Fenster
+          return 1;
+        }, 0);
+        return found;
+      },
+      // aktuelle Lage eines Fensters; null, wenn es zu, versteckt oder minimiert ist
+      rectOf(hwnd) {
+        if (!IsWindow(hwnd) || !IsWindowVisible(hwnd) || IsIconic(hwnd) || cloaked(hwnd)) return null;
+        return visibleRect(hwnd);
       },
       // Vordergrund-Fenster mit Lage in physischen Pixeln
       foreground() {
