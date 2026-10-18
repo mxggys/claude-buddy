@@ -36,7 +36,7 @@ let weather = null;               // { code, temp, isDay } von Open-Meteo
 let extras = CONFIG.extras || {};
 let previewExtrasUntil = 0;       // „Extras kurz zeigen“ im Menü
 let sitOnWindows = Boolean(CONFIG.aufFenstern); // „Auf Fenster setzen“ ist an
-let perch = null;                 // Fenster, auf dem die Figur sitzt: { left, top, width }
+let perch = null;                 // Fenster, an dem die Figur sitzt/hängt: { side, left, top, width, height, dy }
 let walking = Boolean(CONFIG.laufen);         // „Läuft herum“
 let windowJumps = Boolean(CONFIG.fensterSpringen); // „Springt auf das aktive Fenster“
 let jumpTarget = null;            // Fenster, auf das sie gerade springt
@@ -145,7 +145,7 @@ function saveHome(bottom) {
 // echter Boden (Taskleiste) und der Platz, auf dem die Figur gerade steht
 function bottomY() { return H - DH - GROUND_OFFSET; }
 function groundY() {
-  if (perch) return Math.max(0, perch.top - DH);
+  if (perch) return perch.side === 'top' ? Math.max(0, perch.top - DH) : perchAnchorY(perch) + perch.dy;
   if (!gravity && restBottom !== null) return Math.min(bottomY(), Math.max(0, restBottom - DH));
   return bottomY();
 }
@@ -239,6 +239,7 @@ function currentFrame(t) {
   // 1. festgehalten: zappeln
   if (duck.dragging) return Math.floor(t / 140) % 2 ? FRAMES.drag1 : FRAMES.drag2;
   if (duck.sliding) return FRAMES.slide;
+  if (hanging()) return FRAMES.reach; // hält sich seitlich oder unten am Fenster fest
   // 2. Reaktionen (erschrecken, schwindelig, jubeln)
   if (acting(t) && ACTIONS[duck.action].priority) return actionFrame(t);
   // 3. in der Luft (Hüpfer, Sprung, Fall)
@@ -422,6 +423,7 @@ function drawSnore(t) {
 
 // weicher Schatten am Boden, wird kleiner, je höher die Figur ist
 function drawShadow() {
+  if (hanging()) return; // hängt am Fenster: kein Boden darunter
   const lift = Math.max(0, groundY() - duck.y);
   const k = Math.max(0.35, 1 - lift / 400);
   ctx.fillStyle = `rgba(20, 10, 15, ${0.22 * k})`;
@@ -803,6 +805,7 @@ function pickState(t) {
   }
   duck.state = 'idle';
   duck.until = t + rand(3000, 7000);
+  if (hanging()) return; // hält sich fest: keine Hüpfer oder Tänze
   const list = CHAR.idleActions || DUCK_ACTIONS;
   const r = Math.random();
   // Mini-Claude denkt mit, wenn Claude offen ist
@@ -859,7 +862,7 @@ function update(dt, t) {
     duck.y += duck.vy * dt * Math.max(0.4, SIZE);
     // Sprung aufs Fenster: auf der Oberkante landen, sobald es abwärts geht
     if (jumpTarget && duck.vy > 0 && duck.y >= jumpTarget.top - DH) {
-      perch = jumpTarget;
+      perch = { ...jumpTarget, side: 'top', dy: 0 };
       jumpTarget = null;
       duck.y = groundY();
       duck.vy = 0;
@@ -946,11 +949,11 @@ function update(dt, t) {
 const walkSpeed = () => 42 * Math.max(0.5, SIZE);
 // Bereich, in dem gelaufen wird: auf einem Fenster dessen Oberkante, sonst der ganze Bildschirm
 function walkBounds() {
-  if (perch) return [Math.max(0, perch.left), Math.min(W - DW, perch.left + perch.width - DW)];
+  if (perch) return [Math.max(0, perch.left - DW * 0.4), Math.min(W - DW, perch.left + perch.width - DW * 0.6)];
   return [0, W - DW];
 }
 function maybeWalk(t, r) {
-  if (!walking || duck.state !== 'idle' || !duck.onGround || mood() !== 'awake') return false;
+  if (!walking || hanging() || duck.state !== 'idle' || !duck.onGround || mood() !== 'awake') return false;
   const [lo, hi] = walkBounds();
   if (hi - lo < 10) return false;
   let to;
@@ -1021,7 +1024,7 @@ function updateSlide(dt, t) {
   duck.x += duck.vx * dt;
   duck.vx *= Math.exp(-1.4 * dt);
   if (!perch && (duck.x < 0 || duck.x > W - DW)) { duck.x = Math.min(Math.max(duck.x, 0), W - DW); duck.vx *= -0.6; }
-  if (perch && (duck.x + DW / 2 < perch.left || duck.x + DW / 2 > perch.left + perch.width)) { duck.sliding = false; checkPerchEdge(); return; }
+  if (perch && offEdge()) { duck.sliding = false; checkPerchEdge(); return; }
   if (Math.random() < dt * 12 && !hardSave()) {
     particles.push({ type: 'dust', x: duck.x + (duck.vx > 0 ? 0 : DW), y: groundY() + DH - 4,
       vx: -Math.sign(duck.vx) * rand(20, 50), vy: rand(-15, -5), life: 1 });
@@ -1349,13 +1352,9 @@ window.addEventListener('mouseup', (e) => {
     duck.x = Math.min(Math.max(duck.x, 0), W - DW);
     // auf einer Fensterkante losgelassen: dort sitzen bleiben (hat Vorrang vor dem Werfen)
     if (sitOnWindows && bridge) {
-      const edge = bridge.findPerch(duck.x + DW / 2, duck.y + DH);
+      const edge = bridge.findPerch({ x: duck.x, y: duck.y, width: DW, height: DH });
       if (edge) {
-        perch = edge;
-        duck.y = groundY();
-        duck.onGround = true;
-        fallStartY = null;
-        squash(1.15, 0.88, 140);
+        attachPerch(edge.rect, edge.side);
         return; // Stammplatz an der Taskleiste bleibt, wie er war
       }
     }
@@ -1380,6 +1379,35 @@ window.addEventListener('mouseup', (e) => {
   }
 });
 
+// Bezugspunkt je Kante: rechts hängt sie am rechten Rand, unten am unteren Rand
+const perchAnchorX = (p) => (p.side === 'right' ? p.left + p.width : p.left);
+const perchAnchorY = (p) => (p.side === 'bottom' ? p.top + p.height : p.top);
+const hanging = () => Boolean(perch && perch.side !== 'top');
+// oben: Mitte der Figur darf ein Stück über die Ecke hinausragen
+const offEdge = () => {
+  const cx = duck.x + DW / 2;
+  return cx < perch.left - DW * 0.2 || cx > perch.left + perch.width + DW * 0.2;
+};
+const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+function attachPerch(rect, side) {
+  const right = rect.left + rect.width;
+  const bottom = rect.top + rect.height;
+  let y = duck.y;
+  if (side === 'top') { duck.x = clamp(duck.x, rect.left - DW * 0.6, right - DW * 0.4); y = rect.top - DH; }
+  if (side === 'bottom') { duck.x = clamp(duck.x, rect.left - DW * 0.3, right - DW * 0.7); y = bottom - DH * 0.15; }
+  if (side === 'left' || side === 'right') {
+    duck.x = side === 'left' ? rect.left - DW * 0.75 : right - DW * 0.25;
+    y = clamp(duck.y, rect.top - DH * 0.3, bottom - DH * 0.7);
+    if (!CHAR.front) turnTo(side === 'left' ? 1 : -1); // zum Fenster schauen
+  }
+  perch = { ...rect, side, dy: 0 };
+  perch.dy = y - perchAnchorY(perch);
+  duck.y = y;
+  Object.assign(duck, { onGround: true, vx: 0, vy: 0, walkTo: null });
+  fallStartY = null;
+  squash(1.15, 0.88, 140);
+}
+
 // Das Fenster unter der Figur hat sich bewegt (oder ist weg)
 function onPerch(rect) {
   if (jumpTarget) { jumpTarget = rect; return; } // Fenster bewegt sich während des Sprungs
@@ -1394,16 +1422,16 @@ function onPerch(rect) {
     return;
   }
   if (duck.dragging) return;
-  duck.x += rect.left - perch.left; // mitfahren
-  perch = rect;
+  const next = { ...rect, side: perch.side, dy: perch.dy };
+  duck.x += perchAnchorX(next) - perchAnchorX(perch); // mitfahren (auch beim Größerziehen)
+  perch = next;
   if (duck.onGround) duck.y = groundY();
   kick();
 }
 // über die Kante hinaus gerutscht oder geschoben: runterfallen
 function checkPerchEdge() {
-  if (!perch || duck.dragging) return;
-  const cx = duck.x + DW / 2;
-  if (cx < perch.left - 2 || cx > perch.left + perch.width + 2) {
+  if (!perch || duck.dragging || hanging()) return;
+  if (offEdge()) {
     perch = null;
     if (bridge) bridge.releasePerch();
     duck.onGround = false;
@@ -1491,7 +1519,7 @@ if (bridge) {
     ring, celebrateRecord, onWindowMove, feed,
     setWalking(on) { walking = on; }, maybeWalk, launchTo,
     jumpOnto(rect) { jumpTarget = rect; launchTo(Math.min(Math.max(duck.x, rect.left + 8), rect.left + rect.width - DW - 8), rect.top - DH); }, jumpHome,
-    sitOn(rect) { perch = rect; duck.y = groundY(); duck.onGround = true; }, onPerch,
+    sitOn(rect, side = 'top') { attachPerch(rect, side); }, onPerch,
     get perch() { return perch; },
     setIdle(minutes) { lastActivity = now() - minutes * 60 * 1000; duck.until = 0; if (!minutes) wake(); kick(); },
     setWeather(w) { weather = w; extras = { ...extras, wetter: true, temperatur: true }; },

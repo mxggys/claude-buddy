@@ -106,6 +106,43 @@ function createWin32() {
         if (found) found.seen = seen;
         return found || { seen };
       },
+      // Rahmen eines Fensters, an dem die Figur (box, physische Pixel) losgelassen wurde:
+      // Oberkante (auch auf den Ecken), linke/rechte Kante oder Unterkante. Fenster werden von vorne
+      // nach hinten geprüft; liegt die Figur mitten in einem Fenster, gibt es keine Kante.
+      edgeNear(box, k = 1) {
+        const cx = box.x + box.width / 2;
+        const cy = box.y + box.height / 2;
+        const foot = box.y + box.height;
+        const side = 40 * k;
+        let found = null;
+        const seen = [];
+        EnumWindows((hwnd) => {
+          if (!IsWindowVisible(hwnd) || IsIconic(hwnd) || cloaked(hwnd)) return 1;
+          const pid = [0];
+          GetWindowThreadProcessId(hwnd, pid);
+          const cls = text(GetClassNameW, hwnd);
+          if (pid[0] === process.pid || SKIP_CLASSES.has(cls)) return 1;
+          const ex = Number(GetWindowLongPtrW(hwnd, -20));
+          if (ex & (WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)) return 1;
+          const title = text(GetWindowTextW, hwnd);
+          if (!title || GetWindow(hwnd, GW_OWNER)) return 1;
+          const r = visibleRect(hwnd);
+          if (!r || r.right - r.left < 120 || r.bottom - r.top < 60) return 1;
+          if (seen.length < 6) seen.push(`${cls} "${title.slice(0, 30)}" ${r.left},${r.top} ${r.right - r.left}x${r.bottom - r.top}`);
+          const overX = cx >= r.left - box.width * 0.4 && cx <= r.right + box.width * 0.4;
+          const overY = cy >= r.top && cy <= r.bottom;
+          let edge = null;
+          if (overX && foot >= r.top - 50 * k && foot <= r.top + 110 * k) edge = 'top';
+          else if (overY && Math.abs(cx - r.left) <= side + box.width / 2) edge = 'left';
+          else if (overY && Math.abs(cx - r.right) <= side + box.width / 2) edge = 'right';
+          else if (cx >= r.left && cx <= r.right && Math.abs(box.y - r.bottom) <= side + box.height * 0.3) edge = 'bottom';
+          if (edge) { found = { hwnd, rect: r, side: edge }; return 0; }
+          if (cx > r.left && cx < r.right && cy > r.top && cy < r.bottom) return 0; // mitten im Fenster
+          return 1;
+        }, 0);
+        if (found) found.seen = seen;
+        return found || { seen };
+      },
       // aktuelle Lage eines Fensters; null, wenn es zu, versteckt oder minimiert ist
       rectOf(hwnd) {
         if (!IsWindow(hwnd) || !IsWindowVisible(hwnd) || IsIconic(hwnd) || cloaked(hwnd)) return null;

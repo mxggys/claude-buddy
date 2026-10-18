@@ -399,7 +399,7 @@ let perchTimer = null;
 function perchRect(r) {
   const a = workArea();
   const d = screen.screenToDipRect(null, { x: r.left, y: r.top, width: r.right - r.left, height: r.bottom - r.top });
-  return { left: d.x - a.x, top: d.y - a.y, width: d.width };
+  return { left: d.x - a.x, top: d.y - a.y, width: d.width, height: d.height };
 }
 function startPerchWatch() {
   clearTimeout(perchTimer);
@@ -413,7 +413,7 @@ function startPerchWatch() {
       win.webContents.send('perch', null);
       return;
     }
-    const key = `${r.left},${r.top},${r.right}`;
+    const key = `${r.left},${r.top},${r.right},${r.bottom}`;
     if (key !== perch.key) { perch.key = key; win.webContents.send('perch', perchRect(r)); }
     perchTimer = setTimeout(tick, settings.energiesparen >= 3 ? 250 : 40); // flüssig mitfahren
   };
@@ -814,22 +814,22 @@ if (!app.requestSingleInstanceLock()) {
       : {};
   });
   // „Auf Fenster setzen“: Kante suchen, dann regelmäßig nachsehen, wo das Fenster ist
-  ipcMain.on('perch-find', (e, x, y) => {
+  ipcMain.on('perch-find', (e, box) => {
     e.returnValue = null;
     const win32 = loadWin32();
-    if (!win32 || !settings.aufFenstern) return;
+    if (!win32 || !settings.aufFenstern || !box) return;
     const a = workArea();
-    const p = screen.dipToScreenPoint({ x: Math.round(x + a.x), y: Math.round(y + a.y) });
-    const k = screen.getDisplayNearestPoint({ x: x + a.x, y: y + a.y }).scaleFactor;
-    // großzügig: knapp über der Kante bis runter über Titelleiste und Tabs
-    const hit = win32.windowEdgeAt(p.x, p.y, Math.round(50 * k), Math.round(110 * k));
+    const dip = { x: Math.round(box.x + a.x), y: Math.round(box.y + a.y), width: Math.round(box.width), height: Math.round(box.height) };
+    const p = screen.dipToScreenRect(null, dip);
+    const k = screen.getDisplayNearestPoint({ x: dip.x, y: dip.y }).scaleFactor;
+    const hit = win32.edgeNear(p, k);
     if (!hit.hwnd) {
-      log('fenster', `keine Oberkante bei ${p.x},${p.y}`, hit.seen.join(' | '));
+      log('fenster', `kein Rahmen bei ${p.x},${p.y} ${p.width}x${p.height}`, hit.seen.join(' | '));
       return;
     }
-    log('fenster', 'sitzt auf', hit.seen[hit.seen.length - 1] || '');
+    log('fenster', `${hit.side}:`, hit.seen[hit.seen.length - 1] || '');
     perch = { hwnd: hit.hwnd, key: '' };
-    e.returnValue = perchRect(hit.rect);
+    e.returnValue = { side: hit.side, rect: perchRect(hit.rect) };
     startPerchWatch();
   });
   ipcMain.on('perch-release', () => { perch = null; });
