@@ -136,11 +136,20 @@ function createWin32() {
           if (seen.length < 6) seen.push(`${cls} "${title.slice(0, 30)}" ${r.left},${r.top} ${r.right - r.left}x${r.bottom - r.top}`);
           const overX = cx >= r.left - box.width * 0.4 && cx <= r.right + box.width * 0.4;
           const overY = cy >= r.top && cy <= r.bottom;
+          // Ränder, die am Bildschirmrand liegen (z. B. maximierte Fenster), zählen nicht:
+          // sonst würde die Figur an der Taskleiste unten am Browser hängen statt normal zu stehen
+          const maxed = Boolean(IsZoomed(hwnd));
+          const vx = GetSystemMetrics(76), vy = GetSystemMetrics(77);
+          const vw = GetSystemMetrics(78), vh = GetSystemMetrics(79);
+          const room = 12 * k;
+          const canLeft = !maxed && r.left > vx + room;
+          const canRight = !maxed && r.right < vx + vw - room;
+          const canBottom = !maxed && r.bottom < vy + vh - room - box.height * 0.5;
           let edge = null;
           if (overX && foot >= r.top - 50 * k && foot <= r.top + 110 * k) edge = 'top';
-          else if (overY && Math.abs(cx - r.left) <= side + box.width / 2) edge = 'left';
-          else if (overY && Math.abs(cx - r.right) <= side + box.width / 2) edge = 'right';
-          else if (cx >= r.left && cx <= r.right && Math.abs(box.y - r.bottom) <= side + box.height * 0.3) edge = 'bottom';
+          else if (canLeft && overY && Math.abs(cx - r.left) <= side + box.width / 2) edge = 'left';
+          else if (canRight && overY && Math.abs(cx - r.right) <= side + box.width / 2) edge = 'right';
+          else if (canBottom && cx >= r.left && cx <= r.right && Math.abs(box.y - r.bottom) <= side + box.height * 0.3) edge = 'bottom';
           if (edge) { found = { hwnd, rect: r, side: edge }; return 0; }
           if (cx > r.left && cx < r.right && cy > r.top && cy < r.bottom) return 0; // mitten im Fenster
           return 1;
