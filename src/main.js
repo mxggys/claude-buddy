@@ -841,39 +841,47 @@ if (!app.requestSingleInstanceLock()) {
     const hit = findEdge(box);
     return hit.hwnd ? hit.side : null;
   });
-  ipcMain.on('perch-find', (e, box) => {
-    e.returnValue = null;
-    if (!settings.aufFenstern) return;
+  // Wichtig: Bei sendSync zählt nur die erste Zuweisung an e.returnValue (sie geht sofort raus).
+  // Darum wird das Ergebnis erst fertig berechnet und dann genau einmal zurückgegeben.
+  const answer = (e, what, fn) => {
+    let value = null;
+    try { value = fn(); } catch (err) { log('fenster fehler', what, err.message); }
+    e.returnValue = value === undefined ? null : value;
+  };
+  ipcMain.on('perch-find', (e, box) => answer(e, 'setzen', () => {
+    if (!settings.aufFenstern) return null;
     const hit = findEdge(box);
     if (!hit.hwnd) {
       const at = hit.at ? `${hit.at.x},${hit.at.y} ${hit.at.width}x${hit.at.height}` : '?';
       log('fenster', `kein Rahmen bei ${at}`, hit.seen.join(' | ') || 'keine passenden Fenster gefunden');
-      return;
+      return null;
     }
     log('fenster', `${hit.side}:`, hit.seen[hit.seen.length - 1] || '');
     perch = { hwnd: hit.hwnd, address: loadWin32().address(hit.hwnd), key: '' };
-    e.returnValue = { side: hit.side, rect: perchRect(hit.rect) };
+    const result = { side: hit.side, rect: perchRect(hit.rect) };
     startPerchWatch();
-  });
+    return result;
+  }));
   ipcMain.on('renderer-log', (_e, text) => log('figur', String(text).slice(0, 300)));
   ipcMain.on('perch-release', () => { perch = null; });
   // „Springt auf das aktive Fenster“: Oberkante des Vordergrund-Fensters, wenn sie frei sichtbar ist
-  ipcMain.on('perch-foreground', (e) => {
-    e.returnValue = null;
+  ipcMain.on('perch-foreground', (e) => answer(e, 'springen', () => {
     const win32 = loadWin32();
-    if (!win32 || !settings.fensterSpringen) return;
+    if (!win32 || !settings.fensterSpringen) return null;
     const fg = win32.foreground();
-    if (!fg || fg.maximized || /Claude Buddy/.test(fg.title) || IGNORED_WINDOW_CLASSES.has(fg.cls)) return;
+    if (!fg || fg.maximized || /Claude Buddy/.test(fg.title) || IGNORED_WINDOW_CLASSES.has(fg.cls)) return null;
     const a = workArea();
     const pa = screen.dipToScreenPoint({ x: a.x, y: a.y });
     // Mitte der Oberkante muss frei sein (nicht von einem anderen Fenster verdeckt)
     const hit = win32.windowEdgeAt(Math.round(fg.x + fg.width / 2), fg.y + 4, 8, 8);
-    if (!hit.hwnd || String(require('koffi').address(hit.hwnd)) !== fg.hwnd) return;
-    if (hit.rect.top < pa.y + 20) return; // Kante zu weit oben: kein Platz zum Sitzen
-    perch = { hwnd: hit.hwnd, key: '' };
-    e.returnValue = perchRect(hit.rect);
+    if (!hit.hwnd || win32.address(hit.hwnd) !== fg.hwnd) return null;
+    if (hit.rect.top < pa.y + 20) return null; // Kante zu weit oben: kein Platz zum Sitzen
+    perch = { hwnd: hit.hwnd, address: win32.address(hit.hwnd), key: '' };
+    const result = perchRect(hit.rect);
     startPerchWatch();
-  });
+    log('fenster', 'springt auf', fg.cls, `"${fg.title.slice(0, 30)}"`);
+    return result;
+  }));
 
   ipcMain.on('set-home', (_e, x, bottom) => {
     if (typeof x !== 'number' || !Number.isFinite(x)) return;
