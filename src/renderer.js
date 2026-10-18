@@ -218,13 +218,15 @@ const ACTIONS = {
   vanish: { frames: ['idle'], ms: 3000 },                  // Geist verblasst kurz
   binky: { frames: ['cheer1', 'cheer2'], step: 160, ms: 900 }, // Hase: Freudensprung
   nap: { frames: ['sleep', 'sleep2'], step: 1300, ms: 15000 }, // Mittagsschläfchen
+  sneeze: { frames: ['sleepy', 'yawn', 'startle', 'idle'], step: 330, ms: 1400 }, // Hatschi!
+  spin: { frames: ['happy'], ms: 900 },                    // einmal im Kreis drehen
   // Reaktionen haben Vorrang vor allem anderen
   startle: { frames: ['startle'], ms: 900, priority: true },
   dizzy: { frames: ['dizzy1', 'dizzy2'], step: 200, ms: 2400, priority: true },
   cheer: { frames: ['cheer1', 'cheer2'], step: 250, ms: 2200, priority: true },
   alarm: { frames: ['cheer1', 'cheer2'], step: 200, ms: 30000, priority: true }, // Wecker / Timer
 };
-const DUCK_ACTIONS = ['yawn', 'stretch', 'preen', 'look', 'idea', 'hop', 'peck', 'shake', 'waddle', 'mushroom', 'bounce'];
+const DUCK_ACTIONS = ['yawn', 'stretch', 'preen', 'look', 'idea', 'hop', 'peck', 'shake', 'waddle', 'mushroom', 'bounce', 'sneeze', 'spin'];
 
 function actionFrame(t) {
   const a = ACTIONS[duck.action];
@@ -237,7 +239,11 @@ const acting = (t) => duck.action && duck.actionUntil > t;
 // So vermischt sich nichts (z. B. Mikrofon-Mund, während man sie festhält).
 function currentFrame(t) {
   // 1. festgehalten: zappeln
-  if (duck.dragging) return Math.floor(t / 140) % 2 ? FRAMES.drag1 : FRAMES.drag2;
+  // festgehalten: zappeln, außer über einem Fensterrand (dann ruhig: hier kann man loslassen)
+  if (duck.dragging) {
+    if (edgeUnder) return edgeUnder === 'top' ? FRAMES.happy : FRAMES.reach;
+    return Math.floor(t / 140) % 2 ? FRAMES.drag1 : FRAMES.drag2;
+  }
   if (duck.sliding) return FRAMES.slide;
   if (hanging()) return FRAMES.reach; // hält sich seitlich oder unten am Fenster fest
   // 2. Reaktionen (erschrecken, schwindelig, jubeln)
@@ -774,6 +780,17 @@ function startAction(name, t) {
   if (name === 'bounce') { duck.bounces = 2; duck.onGround = false; duck.vy = -240; squash(0.9, 1.1, 140); }
   if (name === 'binky') { duck.onGround = false; duck.vy = -560; squash(0.85, 1.18, 180); sparkle(3); }
   if (name === 'melt') squash(1.45, 0.5, ACTIONS.melt.ms);
+  if (name === 'spin') duck.rollStart = t;
+  if (name === 'sneeze') {
+    setTimeout(() => {
+      if (duck.action !== 'sneeze') return;
+      const m = mouthPoint();
+      for (let i = 0; i < 7; i++) particles.push({ type: 'dust', x: m.x, y: m.y, vx: rand(-90, 90), vy: rand(-60, 10), life: 1 });
+      if (duck.onGround && !hanging()) { duck.onGround = false; duck.vy = -180; }
+      squash(1.2, 0.85, 160);
+      kick();
+    }, 700);
+  }
   if (name === 'alarm') { duck.state = 'idle'; duck.until = t + ACTIONS.alarm.ms; }
 }
 
@@ -1238,7 +1255,35 @@ function cheerUp() {
   lastAttention = now();
 }
 
+// Zeiger zwei Mal um die Figur kreisen lassen: ihr wird vom Hinterherschauen schwindelig
+const circle = { angle: null, sum: 0, at: 0, cooldown: 0 };
+function trackCircle(x, y) {
+  const t = now();
+  const cx = duck.x + DW / 2;
+  const cy = duck.y + DH / 2;
+  const d = Math.hypot(x - cx, y - cy);
+  if (d < Math.max(DW, DH) * 0.6 || d > 220 || t - circle.at > 700 || duck.dragging || dnd()) {
+    circle.angle = null; circle.sum = 0; circle.at = t; return;
+  }
+  const a = Math.atan2(y - cy, x - cx);
+  if (circle.angle !== null) {
+    let da = a - circle.angle;
+    if (da > Math.PI) da -= Math.PI * 2;
+    if (da < -Math.PI) da += Math.PI * 2;
+    circle.sum += da;
+  }
+  circle.angle = a;
+  circle.at = t;
+  if (Math.abs(circle.sum) > Math.PI * 4 && t > circle.cooldown) {
+    circle.sum = 0;
+    circle.cooldown = t + 15000;
+    wake();
+    react('dizzy', t);
+  }
+}
+
 function moveCursor(x, y) {
+  trackCircle(x, y);
   // Streicheln: Maus über der Figur hin und her bewegen
   if (!duck.dragging && !dnd() && overDuck(x, y) && cursor.x >= 0) {
     pet.amount += Math.abs(x - cursor.x) + Math.abs(y - cursor.y);
@@ -1277,6 +1322,7 @@ window.addEventListener('mousemove', (e) => {
     duck.y = Math.min(y - duck.dragDY, bottomY());
     dragTrail.push({ x, y, t: now() });
     while (dragTrail.length > 6) dragTrail.shift();
+    probeEdge();
     if (Math.abs(x - duck.downAt.x) + Math.abs(y - duck.downAt.y) > 6) duck.downAt.moved = true;
     return;
   }
@@ -1284,6 +1330,22 @@ window.addEventListener('mousemove', (e) => {
 });
 
 const dragTrail = []; // letzte Mauspositionen beim Ziehen (für den Wurf)
+// Beim Ziehen regelmäßig nachsehen, ob die Figur gerade an einem Fensterrand ist
+let edgeUnder = null;
+let probing = false;
+let lastProbe = 0;
+function probeEdge() {
+  if (!sitOnWindows || !bridge || probing || now() - lastProbe < 90) return;
+  probing = true;
+  lastProbe = now();
+  bridge.probePerch({ x: duck.x, y: duck.y, width: DW, height: DH }).then((side) => {
+    probing = false;
+    const was = edgeUnder;
+    edgeUnder = duck.dragging ? side : null;
+    if (edgeUnder && !was) squash(1.1, 0.92, 120); // kleines „Hier!“
+    kick();
+  }, () => { probing = false; });
+}
 window.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   const x = mouseX(e);
@@ -1301,6 +1363,7 @@ window.addEventListener('mousedown', (e) => {
   if (perch) { perch = null; if (bridge) bridge.releasePerch(); }
   duck.walkTo = null;
   jumpTarget = null;
+  edgeUnder = null;
   wake();
   kick();
 });
@@ -1309,6 +1372,7 @@ window.addEventListener('mousedown', (e) => {
 window.addEventListener('mouseup', (e) => {
   if (e.button !== 0 || !duck.dragging) return;
   duck.dragging = false;
+  edgeUnder = null;
   duck.until = now() + rand(1500, 3000);
   if (!duck.downAt.moved) {
     const t = now();
@@ -1330,6 +1394,13 @@ window.addEventListener('mouseup', (e) => {
       duck.vy = 0;
       if (CHAR.rolls) duck.rollStart = t; // Panda kugelt sich erst einmal
       react('dizzy', t);
+      return;
+    }
+    // Abklatschen: Zeiger ruht auf ihr (sie reckt die Arme), dann Klick
+    if (hoverSince && t - hoverSince > 800 && !hanging()) {
+      hoverSince = 0;
+      react('cheer', t);
+      for (let i = 0; i < 4; i++) spawn('heart', duck.x + rand(0, DW), duck.y + rand(0, DH * 0.3));
       return;
     }
     // Figuren mit Armen: Klick auf einen Arm → winkt mit genau diesem Arm
@@ -1456,8 +1527,15 @@ window.addEventListener('contextmenu', (e) => {
 });
 
 // Strg + Mausrad auf der Figur: Größe stufenlos ändern
+let lastSpin = 0;
 window.addEventListener('wheel', (e) => {
-  if (!e.ctrlKey || !overDuck(mouseX(e), mouseY(e))) return;
+  if (!overDuck(mouseX(e), mouseY(e))) return;
+  // ohne Strg: am Mausrad drehen = Figur dreht sich einmal im Kreis
+  if (!e.ctrlKey) {
+    const t = now();
+    if (t - lastSpin > 900 && !dnd() && !duck.dragging) { lastSpin = t; wake(); duck.rollStart = t; duck.happyUntil = t + 900; kick(); }
+    return;
+  }
   e.preventDefault();
   const step = SIZE < 0.5 ? 0.02 : 0.05;
   setSize(Math.round((SIZE + (e.deltaY < 0 ? step : -step)) * 100) / 100);

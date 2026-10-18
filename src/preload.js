@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('duckApp', {
   setIgnoreMouse: (ignore) => ipcRenderer.send('ignore-mouse', ignore),
   // „Auf Fenster setzen“: Fensterkante unter den Füßen suchen / wieder loslassen
   findPerch: (box) => ipcRenderer.sendSync('perch-find', box),
+  probePerch: (box) => ipcRenderer.invoke('perch-probe', box),
   releasePerch: () => ipcRenderer.send('perch-release'),
   perchForeground: () => ipcRenderer.sendSync('perch-foreground'),
   onPerch: (cb) => ipcRenderer.on('perch', (_e, rect) => cb(rect)),

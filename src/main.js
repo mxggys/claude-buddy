@@ -814,17 +814,33 @@ if (!app.requestSingleInstanceLock()) {
       : {};
   });
   // „Auf Fenster setzen“: Kante suchen, dann regelmäßig nachsehen, wo das Fenster ist
-  ipcMain.on('perch-find', (e, box) => {
-    e.returnValue = null;
+  // box: Figur im Arbeitsbereich (DIP) → Fensterrand in der Nähe (physische Pixel)
+  const findEdge = (box) => {
     const win32 = loadWin32();
-    if (!win32 || !settings.aufFenstern || !box) return;
+    if (!win32 || !box) return { seen: ['Windows-Funktionen nicht geladen'] };
     const a = workArea();
     const dip = { x: Math.round(box.x + a.x), y: Math.round(box.y + a.y), width: Math.round(box.width), height: Math.round(box.height) };
     const p = screen.dipToScreenRect(null, dip);
     const k = screen.getDisplayNearestPoint({ x: dip.x, y: dip.y }).scaleFactor;
-    const hit = win32.edgeNear(p, k);
+    try {
+      return { ...win32.edgeNear(p, k), at: p };
+    } catch (err) {
+      return { seen: [`Fehler: ${err.message}`], at: p };
+    }
+  };
+  // beim Ziehen: nur nachsehen, ob gerade ein Rand unter der Figur ist (sie hört dann auf zu zappeln)
+  ipcMain.handle('perch-probe', (_e, box) => {
+    if (!settings.aufFenstern) return null;
+    const hit = findEdge(box);
+    return hit.hwnd ? hit.side : null;
+  });
+  ipcMain.on('perch-find', (e, box) => {
+    e.returnValue = null;
+    if (!settings.aufFenstern) return;
+    const hit = findEdge(box);
     if (!hit.hwnd) {
-      log('fenster', `kein Rahmen bei ${p.x},${p.y} ${p.width}x${p.height}`, hit.seen.join(' | '));
+      const at = hit.at ? `${hit.at.x},${hit.at.y} ${hit.at.width}x${hit.at.height}` : '?';
+      log('fenster', `kein Rahmen bei ${at}`, hit.seen.join(' | ') || 'keine passenden Fenster gefunden');
       return;
     }
     log('fenster', `${hit.side}:`, hit.seen[hit.seen.length - 1] || '');

@@ -46,12 +46,16 @@ Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda).
 - Auf Fenster setzen (im Menü einschalten): Figur an den Rahmen eines Fensters ziehen, z. B. beim Claude-Fenster.
   Oben (auch auf den Ecken) sitzt sie, links und rechts hält sie sich seitlich fest, unten hängt sie dran.
   Sie fährt mit, wenn du das Fenster verschiebst oder größer ziehst, und fällt runter, wenn es zugeht oder minimiert wird.
+  Beim Ziehen hört sie über einem Fensterrand auf zu zappeln: dann einfach loslassen.
 - Springt auf das aktive Fenster (im Menü einschalten): ab und zu hüpft sie auf das Fenster, in dem du gerade arbeitest,
   bleibt ein paar Minuten oben und springt dann wieder nach Hause.
 - Läuft herum (im Menü einschalten): ab und zu ein Stück an der Taskleiste (oder auf dem Fenster) entlang und wieder zurück.
 - Füttern (im Menü): ein Snack fällt in den Mund, sie kaut und freut sich. Frosti bekommt Fisch, Hopsi eine Karotte,
   Pando Bambus, die anderen Apfel oder Keks.
 - Neuer Tipp-Rekord: Jubel mit Konfetti (Axo feiert doppelt und tanzt).
+- Abklatschen: Zeiger auf ihr ruhen lassen, bis sie die Arme hochreckt, dann klicken.
+- Mausrad über der Figur: sie dreht sich einmal im Kreis. Zeiger zweimal um sie kreisen lassen: ihr wird schwindelig.
+- Neue Leerlauf-Aktionen für alle: Niesen (mit Staubwolke) und Pirouette.
 - Eigenheiten: Pando kaut Bambus und kugelt sich bei Klick-Spam, Boo wird beim Anklicken durchsichtig und verblasst
   ab und zu, Hopsi macht Freudensprünge, Glibber zerfließt und ploppt zurück, alle hüpfen ab und zu vor Freude.
 - Ostern (Hasenohren, Osterei) und Halloween (Kürbis, Fledermäuse am Abend), abschaltbar unter Extras.

@@ -35,6 +35,10 @@ function createWin32() {
     const WS_EX_TRANSPARENT = 0x20;
     const WS_EX_TOOLWINDOW = 0x80;
     const WS_EX_NOACTIVATE = 0x8000000;
+    const WS_EX_TOPMOST = 0x8;
+    const GetSystemMetrics = user32.func('int __stdcall GetSystemMetrics(int index)');
+    // Overlays (Grafiktreiber, Game Bar, Aufnahme-Tools) liegen unsichtbar über dem ganzen Bildschirm
+    const coversScreen = (r) => r.right - r.left >= GetSystemMetrics(0) && r.bottom - r.top >= GetSystemMetrics(1);
     const GetWindowThreadProcessId = user32.func('uint32 __stdcall GetWindowThreadProcessId(void* hWnd, _Out_ uint32* pid)');
     const EnumWindowsProc = koffi.proto('int __stdcall EnumWindowsProc(void* hWnd, intptr lParam)');
     const EnumWindows = user32.func('int __stdcall EnumWindows(EnumWindowsProc* cb, intptr lParam)');
@@ -123,11 +127,12 @@ function createWin32() {
           const cls = text(GetClassNameW, hwnd);
           if (pid[0] === process.pid || SKIP_CLASSES.has(cls)) return 1;
           const ex = Number(GetWindowLongPtrW(hwnd, -20));
-          if (ex & (WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)) return 1;
+          if (ex & (WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TOPMOST)) return 1;
           const title = text(GetWindowTextW, hwnd);
           if (!title || GetWindow(hwnd, GW_OWNER)) return 1;
           const r = visibleRect(hwnd);
           if (!r || r.right - r.left < 120 || r.bottom - r.top < 60) return 1;
+          if (coversScreen(r) && !IsZoomed(hwnd)) return 1;
           if (seen.length < 6) seen.push(`${cls} "${title.slice(0, 30)}" ${r.left},${r.top} ${r.right - r.left}x${r.bottom - r.top}`);
           const overX = cx >= r.left - box.width * 0.4 && cx <= r.right + box.width * 0.4;
           const overY = cy >= r.top && cy <= r.bottom;

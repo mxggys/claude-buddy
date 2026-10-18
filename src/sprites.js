@@ -331,7 +331,7 @@
     arms: true,
     thinks: true, // denkt mit, wenn ein Claude-Fenster vorne ist
     voice: 'blip',
-    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce'],
+    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'],
     typingFrames: ['tapL', 'tapR'],
     anchors: { keyboard: [8, 16], tap: [15, 17], idea: [13, -7], lens: [26, 4], mushroom: [-9, 16], snore: [17, 11],
       hat: [15, 7], umbrella: [9, -11], glasses: [6, 7] },
@@ -432,7 +432,7 @@
     return rows.map((r) => r.join(''));
   }
 
-  const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce'];
+  const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'];
   const critterDefs = {
     boo: {
       name: 'Boo (Geist)',
