@@ -331,7 +331,7 @@
     arms: true,
     thinks: true, // denkt mit, wenn ein Claude-Fenster vorne ist
     voice: 'blip',
-    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin', 'read', 'yoyo', 'plane', 'butterfly', 'exercise'],
+    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'],
     typingFrames: ['tapL', 'tapR'],
     anchors: { keyboard: [8, 16], tap: [15, 17], idea: [13, -7], lens: [26, 4], mushroom: [-9, 16], snore: [17, 11],
       hat: [15, 7], umbrella: [9, -11], glasses: [6, 7] },
@@ -432,7 +432,7 @@
     return rows.map((r) => r.join(''));
   }
 
-  const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin', 'read', 'yoyo', 'plane', 'butterfly', 'exercise'];
+  const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'];
   const critterDefs = {
     boo: {
       name: 'Boo (Geist)',
@@ -751,7 +751,6 @@
   // Medaille für Abzeichen (Tasten-Meilensteine)
   const MEDAL = small(['.b.b.', '..z..', '.iii.', 'iIiii', 'iiiii', '.iii.']);
   const STONE = small(['.jj.', 'jJjj', 'jjjj', '.jj.']); // Otter jongliert
-  const BOOK = small(['bbbbbbbbb', 'bnnnbnnnb', 'bnnnbnnnb', 'bnnnbnnnb', 'bbbbbbbbb']); // zum Lesen
   // Snacks zum Füttern
   const APPLE = small(['..V..', '.RRR.', 'RRRRR', 'RRRrR', '.RRr.']);
   const COOKIE = small(['.uuu.', 'uUkUu', 'uUUku', 'ukUUu', '.uuu.']);
@@ -780,7 +779,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, BOOK,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

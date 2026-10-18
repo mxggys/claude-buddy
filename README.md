@@ -69,10 +69,6 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Abzeichen bei 1.000 bis 1 Million Tastendrücken mit Medaille und Konfetti, Liste im Tippzähler-Menü.
 - Ist ein Download fertig, hüpft sie kurz vor Freude.
 - Neue Datei auf dem Desktop: sie erschrickt kurz und schaut mit der Lupe nach.
-- Reagiert auf dich: nach längerer Eingabe + Enter fliegt ein Papierflieger los, beim vielen Löschen gibt es ein
-  „Hoppla“, sie schaut, wo du klickst und zu welchem Programm du wechselst, rollt beim Scrollen mit den Augen
-  (sehr langes Scrollen macht schwindelig). Von den Tasten werden nur Enter und Löschen unterschieden.
-- Neue Leerlauf-Animationen: Buch lesen, Jo-Jo, Papierflieger, Schmetterling fangen, Hampelmann.
 - Farbvarianten unter Aussehen: Original, Blau, Grün, Lila, Rosa, Gold, Mitternacht (auch für die zweite Figur).
 - Spielzeit im Menü: wie oft gefüttert, gestreichelt, abgeklatscht, geworfen und mit dem Ball gespielt wurde,
   mit eigenen Abzeichen (Sterne) und Feier.

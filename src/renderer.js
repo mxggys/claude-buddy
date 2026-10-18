@@ -295,19 +295,13 @@ const ACTIONS = {
   sneeze: { frames: ['sleepy', 'yawn', 'startle', 'idle'], step: 330, ms: 1400 }, // Hatschi!
   spin: { frames: ['happy'], ms: 900 },                    // einmal im Kreis drehen
   juggle: { frames: ['cheer1', 'cheer2'], step: 300, ms: 3600 }, // Otter: Stein jonglieren
-  read: { frames: ['idle', 'idle', 'idle', 'blink'], step: 700, ms: 5200 }, // liest ein Buch
-  yoyo: { frames: ['happy', 'idle'], step: 450, ms: 3600 },     // spielt Jo-Jo
-  plane: { frames: ['wave1', 'wave2', 'happy'], step: 260, ms: 1600 }, // wirft einen Papierflieger
-  butterfly: { frames: ['idle'], ms: 6500 },                   // schaut einem Schmetterling nach
-  exercise: { frames: ['cheer1', 'idle', 'cheer2', 'idle'], step: 280, ms: 3400 }, // Hampelmann
-  oops: { frames: ['sad', 'startle', 'sad'], step: 450, ms: 1500 }, // Hoppla (viel gelöscht)
   // Reaktionen haben Vorrang vor allem anderen
   startle: { frames: ['startle'], ms: 900, priority: true },
   dizzy: { frames: ['dizzy1', 'dizzy2'], step: 200, ms: 2400, priority: true },
   cheer: { frames: ['cheer1', 'cheer2'], step: 250, ms: 2200, priority: true },
   alarm: { frames: ['cheer1', 'cheer2'], step: 200, ms: 30000, priority: true }, // Wecker / Timer
 };
-const DUCK_ACTIONS = ['yawn', 'stretch', 'preen', 'look', 'idea', 'hop', 'peck', 'shake', 'waddle', 'mushroom', 'bounce', 'sneeze', 'spin', 'read', 'yoyo', 'plane', 'butterfly'];
+const DUCK_ACTIONS = ['yawn', 'stretch', 'preen', 'look', 'idea', 'hop', 'peck', 'shake', 'waddle', 'mushroom', 'bounce', 'sneeze', 'spin'];
 
 function actionFrame(t) {
   const a = ACTIONS[duck.action];
@@ -362,7 +356,6 @@ function lookOffset(t, flip) {
   if (hardSave()) return { dx: 0, dy: 0 };                    // Hart: Augen folgen nicht
   if (duck.action === 'look' && acting(t)) return { dx: Math.floor(t / 500) % 2 ? 1 : -1, dy: 0 };
   if (duck.action === 'mushroom' && acting(t)) return { dx: 1, dy: 1 }; // guckt auf den Pilz
-  if (duck.action === 'read' && acting(t)) return { dx: CHAR.front ? 0 : 1, dy: 1 }; // liest
   let target = duck.lookTarget && duck.lookTarget.until > t ? duck.lookTarget : cursor;
   if (target === cursor && friendNear(t) && t - lastCursorMove > 4000) target = { x: friend.x + friend.w / 2, y: friend.y + friend.h / 2 };
   if (target.x < 0) return { dx: 0, dy: 0 };
@@ -441,10 +434,6 @@ function paintFigure(t) {
     const phase = (t % 600) / 600; // Stein fliegt hoch und fällt zurück
     paint(CHAR.props.STONE, ANCHORS.stone[0], ANCHORS.stone[1] - Math.round(Math.sin(phase * Math.PI) * 5), flip);
   }
-  if (duck.action === 'read' && acting(t)) {
-    const [kx, ky] = ANCHORS.keyboard;
-    paint(CHAR.props.BOOK, kx + 2, ky - 1, flip);
-  }
   if (medalUntil > t) paint(CHAR.props.MEDAL, ANCHORS.idea[0], ANCHORS.idea[1] + Math.round(Math.sin(t / 200)), flip);
   if ((extras.ostern !== false && isEaster()) || previewPhase(t) === 'easter') paint(CHAR.props.EGG, -7, HEIGHT - 6, flip);
 }
@@ -496,7 +485,6 @@ function draw(t) {
   drawTemperature();
   drawPauseSign(t);
   drawBall();
-  drawYoyo(t);
   if (duck.action === 'dizzy' && acting(t)) drawDizzyStars(t);
   drawParticles();
 }
@@ -595,15 +583,12 @@ function updateParticles(dt) {
     // Regen/Schnee verschwindet am Boden
     if ((p.type === 'rain' || p.type === 'snow') && p.y > groundY() + DH) p.life = 0;
     if (p.type === 'dust') { p.vy *= 0.9; p.vx *= 0.94; }
-    if (p.type === 'plane') { p.vy = Math.sin(p.life * 14) * 45 - 25; }
-    if (p.type === 'butterfly') updateButterfly(p, dt);
-    if (p.type === 'sweat') p.vy += 260 * dt;
     if (p.type === 'food') {
       p.vy += 300 * dt;
       p.life = 1;
       if (p.y >= mouthPoint().y - 4) { p.life = 0; eat(); }
     }
-    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, plane: 0.22, butterfly: 0, sweat: 1.2 }[p.type] || 2.2);
+    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
@@ -628,24 +613,6 @@ function drawParticles() {
     } else if (p.type === 'confetti') {
       ctx.fillStyle = p.color;
       ctx.fillRect(Math.round(p.x), Math.round(p.y), px + 1, Math.max(1, Math.round(px * (Math.sin(p.life * 30) > 0 ? 2 : 1))));
-    } else if (p.type === 'plane') {
-      ctx.fillStyle = '#ffffff';
-      const q = Math.max(1, px);
-      const rows = p.dir > 0 ? ['k...', 'kkk.', 'kkkk', '.k..'] : ['...k', '.kkk', 'kkkk', '..k.'];
-      rows.forEach((line, r) => [...line].forEach((ch, c) => { if (ch === 'k') ctx.fillRect(Math.round(p.x + c * q), Math.round(p.y + r * q), q, q); }));
-      ctx.fillStyle = '#c9d2e0';
-      ctx.fillRect(Math.round(p.x + (p.dir > 0 ? 0 : 3 * q)), Math.round(p.y + 2 * q), q, q);
-    } else if (p.type === 'butterfly') {
-      const open = Math.floor(now() / 110) % 2;
-      ctx.fillStyle = '#ff9a3c';
-      const q = Math.max(1, px);
-      if (open) { ctx.fillRect(Math.round(p.x - 2 * q), Math.round(p.y - q), q * 2, q * 2); ctx.fillRect(Math.round(p.x + q), Math.round(p.y - q), q * 2, q * 2); }
-      else { ctx.fillRect(Math.round(p.x - q), Math.round(p.y - q), q, q * 2); ctx.fillRect(Math.round(p.x + q), Math.round(p.y - q), q, q * 2); }
-      ctx.fillStyle = '#3a2420';
-      ctx.fillRect(Math.round(p.x), Math.round(p.y - q), q, q * 2);
-    } else if (p.type === 'sweat') {
-      ctx.fillStyle = '#8fd0ff';
-      ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.max(1, px), Math.max(2, px * 2));
     } else if (p.type === 'steam') {
       ctx.fillStyle = `rgba(235, 228, 220, ${0.55 * p.life})`;
       const s = Math.max(1, Math.round(px * (1.6 - p.life)));
@@ -918,9 +885,6 @@ function startAction(name, t) {
   if (name === 'binky') { duck.onGround = false; duck.vy = -560; squash(0.85, 1.18, 180); sparkle(3); }
   if (name === 'melt') squash(1.45, 0.5, ACTIONS.melt.ms);
   if (name === 'spin') duck.rollStart = t;
-  if (name === 'plane') setTimeout(() => throwPlane(), 500);
-  if (name === 'butterfly') spawnButterfly();
-  if (name === 'exercise') { duck.bounces = 3; duck.onGround = false; duck.vy = -200; }
   if (name === 'sneeze') {
     setTimeout(() => {
       if (duck.action !== 'sneeze') return;
@@ -1431,91 +1395,6 @@ function moodPing(key, delta, cooldown = 0) {
   bridge.mood(delta);
 }
 
-// ---------- Jo-Jo, Papierflieger, Schmetterling ----------
-function drawYoyo(t) {
-  if (duck.action !== 'yoyo' || !acting(t)) return;
-  const hx = duck.x + DW * (CHAR.front ? 0.85 : 0.75);
-  const hy = duck.y + DH * 0.55;
-  const len = (0.5 + 0.5 * Math.sin(t / 180)) * DH * 0.9 + 4;
-  const r = Math.max(2, Math.round(3 * Math.max(0.6, SIZE)));
-  ctx.strokeStyle = '#f2f2f2';
-  ctx.lineWidth = Math.max(1, SIZE * 0.6);
-  ctx.beginPath();
-  ctx.moveTo(hx, hy);
-  ctx.lineTo(hx, hy + len);
-  ctx.stroke();
-  ctx.fillStyle = '#4aa3f0';
-  ctx.beginPath();
-  ctx.arc(hx, hy + len, r, 0, Math.PI * 2);
-  ctx.fill();
-}
-function throwPlane() {
-  if (hardSave()) return;
-  const dir = duck.x + DW / 2 < W / 2 ? 1 : -1;
-  particles.push({ type: 'plane', x: duck.x + DW / 2, y: duck.y + DH * 0.2, vx: dir * 150 * Math.max(0.7, SIZE), vy: -70, life: 1, dir });
-  kick();
-}
-function spawnButterfly() {
-  if (hardSave()) return;
-  const side = Math.random() < 0.5 ? -1 : 1;
-  particles.push({ type: 'butterfly', x: duck.x + DW / 2 + side * DW * 2, y: duck.y - DH * 0.6, vx: 0, vy: 0, life: 1, t0: now(), side });
-  kick();
-}
-// Schmetterling: flattert um die Figur, sie schaut hin und versucht am Ende, ihn zu fangen
-function updateButterfly(p, dt) {
-  const age = (now() - p.t0) / 1000;
-  const cx = duck.x + DW / 2;
-  const cy = duck.y - DH * 0.4;
-  p.x = cx + Math.cos(age * 1.3) * DW * 1.3 * p.side;
-  p.y = cy + Math.sin(age * 2.1) * DH * 0.5;
-  p.life = age > 6.5 ? Math.max(0, 1 - (age - 6.5)) : 1;
-  if (age > 6.5) { p.y -= (age - 6.5) * 120; p.x += (age - 6.5) * 80 * p.side; } // fliegt davon
-  if (age < 6.5) duck.lookTarget = { x: p.x, y: p.y, until: now() + 200 };
-  if (!p.jumped && age > 5.2 && duck.onGround) { p.jumped = true; duck.onGround = false; duck.vy = -380; squash(0.85, 1.18, 160); }
-}
-
-// ---------- Reaktionen auf Tastatur und Maus ----------
-let typedSinceEnter = 0;
-const deletes = [];
-let oopsCool = 0;
-function onKeyEvent(kind, typing = true) {
-  const t = now();
-  if (kind === 'enter') {
-    // nach einer längeren Eingabe abgeschickt: Papierflieger
-    if (typedSinceEnter >= 15 && !dnd() && duck.state !== 'sleep' && !duck.dragging) { throwPlane(); duck.happyUntil = t + 700; }
-    typedSinceEnter = 0;
-  } else if (kind === 'delete') {
-    deletes.push(t);
-    while (deletes.length && deletes[0] < t - 3000) deletes.shift();
-    if (deletes.length >= 10 && t > oopsCool && !dnd() && duck.state !== 'sleep') {
-      oopsCool = t + 30000;
-      deletes.length = 0;
-      startAction('oops', t);
-      for (let i = 0; i < 2; i++) particles.push({ type: 'sweat', x: duck.x + DW * rand(0.25, 0.75), y: duck.y + DH * 0.1, vx: rand(-20, 20), vy: -50, life: 1 });
-    }
-  } else typedSinceEnter++;
-  if (typing !== false) onKey();
-}
-const clickTimesAll = [];
-let scrollStart = 0;
-let lastScroll = 0;
-let scrollDizzyCool = 0;
-function onInput(ev) {
-  const t = now();
-  if (dnd() || duck.state === 'sleep' || duck.dragging || hardSave()) return;
-  if (ev.type === 'click' || ev.type === 'focus') {
-    // schaut kurz dorthin, wo geklickt wurde bzw. zum neuen Programm
-    duck.lookTarget = { x: ev.x, y: ev.y, until: t + (ev.type === 'focus' ? 1300 : 800) };
-    kick();
-  } else if (ev.type === 'wheel') {
-    // Augen rollen mit; sehr langes Scrollen am Stück macht schwindelig
-    duck.lookTarget = { x: duck.x + DW / 2, y: duck.y + (ev.dir < 0 ? -300 : DH + 300), until: t + 500 };
-    if (t - lastScroll > 1500) scrollStart = t;
-    lastScroll = t;
-    if (t - scrollStart > 25000 && t > scrollDizzyCool) { scrollDizzyCool = t + 180000; react('dizzy', t); }
-    kick();
-  }
-}
 // neue Datei auf dem Desktop: neugierig mit der Lupe gucken
 function desktopFile() {
   const t = now();
@@ -2187,8 +2066,7 @@ function setSize(size) {
 }
 
 if (bridge) {
-  bridge.onKey(onKeyEvent);
-  if (bridge.onInput) bridge.onInput(onInput);
+  bridge.onKey(() => onKey());
   bridge.onPower((battery) => { onBattery = battery; });
   bridge.onWeather((w) => { weather = w; kick(); });
   bridge.onClaude((active) => { claudeActive = active; kick(); });
@@ -2239,7 +2117,7 @@ if (bridge) {
     ring, celebrateRecord, onWindowMove, feed, toggleBall, ball, celebrateBadge, downloadDone, onFriend,
     showPause() { work.start = 1; work.nextAt = 0; duck.lastKeyAt = performance.now(); updatePause(performance.now()); },
     setMood(v) { moodValue = v; }, pounceNow() { pounceCooldown = 0; },
-    onKeyEvent, onInput, desktopFile, throwPlane, spawnButterfly,
+    desktopFile,
     setColor(v) { CONFIG.farbe = v; applyCharacter(CHAR.id); },
     setWalking(on) { walking = on; }, maybeWalk, launchTo,
     jumpOnto(rect) { jumpTarget = rect; launchTo(Math.min(Math.max(duck.x, rect.left + 8), rect.left + rect.width - DW - 8), rect.top - DH); }, jumpHome,

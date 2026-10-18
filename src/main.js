@@ -424,8 +424,6 @@ async function refreshWeather() {
   weatherTimer = setTimeout(refreshWeather, WEATHER_EVERY);
 }
 
-let lastWheel = 0;
-
 // ---------- Beobachten ----------
 function startWatchers() {
   // Zähler: Menü alle 3 s auffrischen, alle 30 s speichern (nicht bei jedem Tastendruck)
@@ -434,22 +432,9 @@ function startWatchers() {
 
   stopWatcher = startWatching({
     getInterval: () => energy().watchMs,
-    onKey: (kind) => {
+    onKey: () => {
       countKey();
-      if (settings.tastatur || kind !== 'key') sendAll('key', kind, Boolean(settings.tastatur));
-    },
-    onMouse: (ev) => {
-      if (!win || hiddenForFullscreen) return;
-      const a = workArea();
-      if (ev.type === 'click') {
-        // Klicks auf die Figur selbst zählen nicht
-        const p = screen.screenToDipPoint({ x: ev.x, y: ev.y });
-        if (pets().some((w) => { const b = w.getBounds(); return p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height; })) return;
-        sendAll('input', { type: 'click', x: p.x - a.x, y: p.y - a.y });
-      } else if (ev.type === 'wheel' && Date.now() - lastWheel > 150) {
-        lastWheel = Date.now();
-        sendAll('input', { type: 'wheel', dir: ev.dir });
-      }
+      if (settings.tastatur) sendAll('key');
     },
     onState: ({ fullscreen, title }) => {
       if (!win) return;
@@ -469,7 +454,6 @@ function startWatchers() {
   let lastPos = '';
   let lastRaise = 0;
   let lastWinPoll = 0;
-  let lastFocus = '';
   let lastRect = '';
   const win32 = loadWin32();
   const pollCursor = () => {
@@ -501,12 +485,6 @@ function startWatchers() {
             const r = screen.screenToDipRect(null, { x: fg.x, y: fg.y, width: fg.width, height: fg.height });
             sendAll('window', { x: r.x - a.x, y: r.y - a.y, width: r.width, height: r.height });
           }
-          if (lastFocus && lastFocus !== fg.hwnd) {
-            // zu einem anderen Programm gewechselt: kurz hinschauen
-            const r = screen.screenToDipRect(null, { x: fg.x, y: fg.y, width: fg.width, height: fg.height });
-            sendAll('input', { type: 'focus', x: r.x - a.x + r.width / 2, y: r.y - a.y + Math.min(r.height / 2, 200) });
-          }
-          lastFocus = fg.hwnd;
           lastRect = key;
         } else lastRect = '';
       }
