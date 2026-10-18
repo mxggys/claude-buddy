@@ -68,6 +68,14 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Pausen-Erinnerung (abschaltbar): nach 60 Minuten Tippen am Stück streckt sie sich und hält ein „Pause?“-Schild hoch.
 - Abzeichen bei 1.000 bis 1 Million Tastendrücken mit Medaille und Konfetti, Liste im Tippzähler-Menü.
 - Ist ein Download fertig, hüpft sie kurz vor Freude.
+- Neue Datei auf dem Desktop: sie erschrickt kurz und schaut mit der Lupe nach.
+- Reagiert auf dich: nach längerer Eingabe + Enter fliegt ein Papierflieger los, beim vielen Löschen gibt es ein
+  „Hoppla“, sie schaut, wo du klickst und zu welchem Programm du wechselst, rollt beim Scrollen mit den Augen
+  (sehr langes Scrollen macht schwindelig). Von den Tasten werden nur Enter und Löschen unterschieden.
+- Neue Leerlauf-Animationen: Buch lesen, Jo-Jo, Papierflieger, Schmetterling fangen, Hampelmann.
+- Farbvarianten unter Aussehen: Original, Blau, Grün, Lila, Rosa, Gold, Mitternacht (auch für die zweite Figur).
+- Spielzeit im Menü: wie oft gefüttert, gestreichelt, abgeklatscht, geworfen und mit dem Ball gespielt wurde,
+  mit eigenen Abzeichen (Sterne) und Feier.
 - Sitzt sie auf einem Fenster: Schütteln lässt sie herunterpurzeln, beim Minimieren springt sie ab und läuft nach Hause,
   schnelles Verschieben genießt sie.
 - Stabiler und sparsamer: abgestürzte oder hängende Figur wird neu geladen, Posen werden zwischengespeichert,
@@ -82,8 +90,8 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 ## Menü
 Links- oder Rechtsklick auf das Symbol unten rechts in der Taskleiste, oder Rechtsklick auf die Figur:
 - oben: Name und Laune, Füttern, Ball, Erinnerung / Wecker, Nicht stören
-- Tippzähler (heute, Woche, gesamt, Rekord, Abzeichen)
-- Aussehen: Figur, zweite Figur, Größe (10 bis 300 %, eigene Werte, Strg + Mausrad), Feiertage und Wetter
+- Tippzähler (heute, Woche, gesamt, Rekord, Abzeichen) und Spielzeit
+- Aussehen: Figur, zweite Figur, Farbe, Größe (10 bis 300 %, eigene Werte, Strg + Mausrad), Feiertage und Wetter
 - Verhalten: Laufen, Schwerkraft, auf Fenster setzen / springen, Mittippen, Mikrofon, Pausen-Erinnerung, Laune
 - System: Energiesparmodus, Vollbild, Autostart, Figur zurückholen, Fehler-Log
 - Updates, Beenden

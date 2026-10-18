@@ -63,6 +63,10 @@ const DEFAULT_SETTINGS = {
   laune: 70, // 0 … 100
   launeZeit: 0, // wann die Laune zuletzt gesunken ist bzw. gespeichert wurde
   abzeichen: {}, // erreichte Tasten-Meilensteine: { 10000: '2026-10-18' }
+  spielzeit: { gefuettert: 0, gestreichelt: 0, ball: 0, abgeklatscht: 0, geworfen: 0 },
+  spielAbzeichen: {}, // { 'ball:100': '2026-10-18' }
+  farbe: 'original', // Farbvariante der Figur
+  farbe2: 'original', // Farbvariante der zweiten Figur
   mikrofon: false,
   tastatur: true,
   energiesparen: 0, // 0 aus, 1 leicht, 2 mittel, 3 hart
@@ -116,6 +120,7 @@ function loadSettings() {
     ...saved,
     extras: { ...DEFAULT_SETTINGS.extras, ...saved.extras },
     zaehler: { ...DEFAULT_SETTINGS.zaehler, ...saved.zaehler },
+    spielzeit: { ...DEFAULT_SETTINGS.spielzeit, ...saved.spielzeit },
   };
   if ((settings.version || 1) < 2) settings.mikrofon = false; // war früher standardmäßig an
   for (const key of REMOVED_KEYS) delete settings[key];
@@ -419,6 +424,8 @@ async function refreshWeather() {
   weatherTimer = setTimeout(refreshWeather, WEATHER_EVERY);
 }
 
+let lastWheel = 0;
+
 // ---------- Beobachten ----------
 function startWatchers() {
   // Zähler: Menü alle 3 s auffrischen, alle 30 s speichern (nicht bei jedem Tastendruck)
@@ -427,9 +434,22 @@ function startWatchers() {
 
   stopWatcher = startWatching({
     getInterval: () => energy().watchMs,
-    onKey: () => {
+    onKey: (kind) => {
       countKey();
-      if (settings.tastatur) sendAll('key');
+      if (settings.tastatur || kind !== 'key') sendAll('key', kind, Boolean(settings.tastatur));
+    },
+    onMouse: (ev) => {
+      if (!win || hiddenForFullscreen) return;
+      const a = workArea();
+      if (ev.type === 'click') {
+        // Klicks auf die Figur selbst zählen nicht
+        const p = screen.screenToDipPoint({ x: ev.x, y: ev.y });
+        if (pets().some((w) => { const b = w.getBounds(); return p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height; })) return;
+        sendAll('input', { type: 'click', x: p.x - a.x, y: p.y - a.y });
+      } else if (ev.type === 'wheel' && Date.now() - lastWheel > 150) {
+        lastWheel = Date.now();
+        sendAll('input', { type: 'wheel', dir: ev.dir });
+      }
     },
     onState: ({ fullscreen, title }) => {
       if (!win) return;
@@ -449,6 +469,7 @@ function startWatchers() {
   let lastPos = '';
   let lastRaise = 0;
   let lastWinPoll = 0;
+  let lastFocus = '';
   let lastRect = '';
   const win32 = loadWin32();
   const pollCursor = () => {
@@ -480,6 +501,12 @@ function startWatchers() {
             const r = screen.screenToDipRect(null, { x: fg.x, y: fg.y, width: fg.width, height: fg.height });
             sendAll('window', { x: r.x - a.x, y: r.y - a.y, width: r.width, height: r.height });
           }
+          if (lastFocus && lastFocus !== fg.hwnd) {
+            // zu einem anderen Programm gewechselt: kurz hinschauen
+            const r = screen.screenToDipRect(null, { x: fg.x, y: fg.y, width: fg.width, height: fg.height });
+            sendAll('input', { type: 'focus', x: r.x - a.x + r.width / 2, y: r.y - a.y + Math.min(r.height / 2, 200) });
+          }
+          lastFocus = fg.hwnd;
           lastRect = key;
         } else lastRect = '';
       }
@@ -548,6 +575,79 @@ const petSettings = () => ({
 
 function sendSettings() {
   sendAll('settings', petSettings());
+}
+
+// ---------- Spielzeit: was mit der Figur gemacht wurde, mit eigenen Abzeichen ----------
+const PLAY_STATS = {
+  gefuettert: { label: 'Gefüttert', steps: [10, 50, 100, 500] },
+  gestreichelt: { label: 'Gestreichelt', steps: [10, 50, 200, 1000] },
+  ball: { label: 'Ballkontakte', steps: [25, 100, 500, 2000] },
+  abgeklatscht: { label: 'Abgeklatscht', steps: [10, 50, 200] },
+  geworfen: { label: 'Geworfen', steps: [10, 50, 200] },
+};
+let statSaveTimer = null;
+function countStat(key) {
+  const stat = PLAY_STATS[key];
+  if (!stat) return;
+  const n = (settings.spielzeit[key] || 0) + 1;
+  settings.spielzeit[key] = n;
+  if (stat.steps.includes(n) && !settings.spielAbzeichen[`${key}:${n}`]) {
+    settings.spielAbzeichen[`${key}:${n}`] = dayKey();
+    sendAll('command', { type: 'badge' });
+    log('spiel-abzeichen', key, n);
+    saveSettings();
+  }
+  clearTimeout(statSaveTimer);
+  statSaveTimer = setTimeout(() => { saveSettings(); buildMenu(); }, 3000);
+}
+function playMenu() {
+  const items = Object.entries(PLAY_STATS).map(([key, stat]) => {
+    const n = settings.spielzeit[key] || 0;
+    const stars = stat.steps.filter((s) => settings.spielAbzeichen[`${key}:${s}`]).length;
+    const next = stat.steps.find((s) => !settings.spielAbzeichen[`${key}:${s}`]);
+    return {
+      label: `${stat.label}: ${fmt(n)}   ${'★'.repeat(stars)}${'☆'.repeat(stat.steps.length - stars)}${next ? `   (nächstes bei ${fmt(next)})` : ''}`,
+      enabled: false,
+    };
+  });
+  return items;
+}
+
+// ---------- Farbvarianten ----------
+const COLORS = [
+  ['original', 'Original'], ['blau', 'Blau'], ['gruen', 'Grün'], ['lila', 'Lila'],
+  ['rosa', 'Rosa'], ['gold', 'Gold'], ['mitternacht', 'Mitternacht'],
+];
+function setColor(key, second) {
+  settings[second ? 'farbe2' : 'farbe'] = key;
+  saveSettings();
+  const w = second ? win2 : win;
+  if (w && !w.isDestroyed()) w.reload();
+  buildMenu();
+}
+const colorMenu = (second) => COLORS.map(([key, label]) => ({
+  label, type: 'radio', checked: settings[second ? 'farbe2' : 'farbe'] === key, click: () => setColor(key, second),
+}));
+
+// ---------- Neue Datei auf dem Desktop: die Figur schaut neugierig ----------
+function watchDesktop() {
+  let dir;
+  try { dir = app.getPath('desktop'); } catch { return; }
+  let timer = null;
+  try {
+    fs.watch(dir, (type, name) => {
+      if (type !== 'rename' || !name || name.startsWith('~$') || /\.(tmp|crdownload|part)$/i.test(name) || name === 'desktop.ini') return;
+      const file = path.join(dir, name);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        try {
+          const st = fs.statSync(file);
+          if (Date.now() - Math.max(st.birthtimeMs || 0, st.mtimeMs) > 15000) return; // nur wirklich neue Dateien
+          sendAll('command', { type: 'desktop' });
+        } catch { /* gelöscht statt neu */ }
+      }, 800);
+    });
+  } catch (err) { log('desktop', err.message); }
 }
 
 // ---------- Laune ----------
@@ -856,6 +956,7 @@ function buildMenu() {
     },
     { type: 'separator' },
     ...counterMenu(),
+    { label: 'Spielzeit', submenu: playMenu() },
     { type: 'separator' },
     {
       label: 'Aussehen',
@@ -874,6 +975,8 @@ function buildMenu() {
             ...ORDER.map((id) => ({ label: CHARACTERS[id].name, type: 'radio', checked: settings.zweiteFigur === id, click: () => setSecondPet(id) })),
           ],
         },
+        { label: `Farbe: ${COLORS.find(([k]) => k === settings.farbe)?.[1] || 'Original'}`, submenu: colorMenu(false) },
+        ...(settings.zweiteFigur ? [{ label: `Farbe der zweiten Figur: ${COLORS.find(([k]) => k === settings.farbe2)?.[1] || 'Original'}`, submenu: colorMenu(true) }] : []),
         {
           label: `Größe: ${pct(settings.groesse)}`,
           submenu: [
@@ -984,6 +1087,7 @@ if (!app.requestSingleInstanceLock()) {
     applySecondPet();
     watchDisplays();
     watchDownloads();
+    watchDesktop();
     buildTray();
     startWatchers();
     win.webContents.once('did-finish-load', applyEnergyMode);
@@ -1022,6 +1126,7 @@ if (!app.requestSingleInstanceLock()) {
         figur: second ? settings.zweiteFigur : settings.figur,
         homeX: second ? settings.home2X : settings.homeX,
         homeBottom: second ? null : settings.homeBottom,
+        farbe: second ? settings.farbe2 : settings.farbe,
         schwerkraft: settings.schwerkraft,
         size: settings.groesse, energiesparen: settings.energiesparen, extras: petSettings().extras,
         second,
@@ -1033,6 +1138,7 @@ if (!app.requestSingleInstanceLock()) {
     const other = isSecond(e.sender) ? win : win2;
     if (other && !other.isDestroyed()) other.webContents.send('friend', state);
   });
+  ipcMain.on('stat', (_e, key) => countStat(String(key)));
   ipcMain.on('ball-state', (_e, on) => { ballOn = Boolean(on); buildMenu(); });
   ipcMain.on('mood', (_e, delta) => { if (typeof delta === 'number' && Number.isFinite(delta)) changeMood(Math.max(-20, Math.min(20, delta))); });
   // Ballspiel: Fenster wird zum breiten Streifen, danach wieder klein

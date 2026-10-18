@@ -196,10 +196,19 @@ function createWin32() {
   }
 }
 
-function watchKeys(onKey) {
+// Von den Tasten wird nur unterschieden: Enter, Löschen (Rücktaste/Entf) oder irgendeine andere.
+// Welche Buchstaben getippt werden, erfährt die App nie.
+const ENTER = new Set([28, 3612]);
+const DELETE = new Set([14, 3667]);
+function watchKeys(onKey, onMouse) {
   try {
     const { uIOhook } = require('uiohook-napi');
-    uIOhook.on('keydown', () => onKey());
+    uIOhook.on('keydown', (e) => onKey(ENTER.has(e.keycode) ? 'enter' : DELETE.has(e.keycode) ? 'delete' : 'key'));
+    if (onMouse) {
+      // Klicks und Mausrad irgendwo auf dem Bildschirm (nur Position bzw. Richtung)
+      uIOhook.on('mousedown', (e) => onMouse({ type: 'click', x: e.x, y: e.y }));
+      uIOhook.on('wheel', (e) => onMouse({ type: 'wheel', dir: Math.sign(e.rotation || 0) }));
+    }
     uIOhook.start();
     return () => uIOhook.stop();
   } catch (err) {
@@ -210,7 +219,7 @@ function watchKeys(onKey) {
 
 // onState({ fullscreen, title }) regelmäßig, onKey() bei jedem Tastendruck.
 // getInterval() erlaubt seltenere Abfragen im Energiesparmodus.
-function startWatching({ onState, onKey, getInterval = () => 1000 }) {
+function startWatching({ onState, onKey, onMouse, getInterval = () => 1000 }) {
   const win = loadWin32();
   let timer = null;
   const tick = () => {
@@ -222,7 +231,7 @@ function startWatching({ onState, onKey, getInterval = () => 1000 }) {
     timer = setTimeout(tick, getInterval());
   };
   tick();
-  const stopKeys = watchKeys(onKey);
+  const stopKeys = watchKeys(onKey, onMouse);
   return () => { clearTimeout(timer); stopKeys(); };
 }
 
