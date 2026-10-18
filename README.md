@@ -1,6 +1,10 @@
 # Claude Buddy
 
-Kleiner Pixel-Begleiter für Windows 11, der unten an der Taskleiste sitzt: Mini-Claude oder Klassik-Ente.
+Kleiner Pixel-Begleiter für Windows 11, der unten an der Taskleiste sitzt.
+
+Figuren: Mini-Claude, Klassik-Ente, Boo (Geist, schwebt), Frosti (Pinguin, watschelt beim Tippen),
+Glibber (Schleim, wabbelt bei jedem Tastendruck, wird beim Landen platt), Axo (Axolotl, Kiemen wackeln beim Tippen),
+Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda).
 
 ## Was sie kann
 - Sitzt unten rechts an der Taskleiste. Gedrückt halten und ziehen setzt sie um, der Platz wird gemerkt.
@@ -8,7 +12,7 @@ Kleiner Pixel-Begleiter für Windows 11, der unten an der Taskleiste sitzt: Mini
 - Schaut zum Mauszeiger, tippt mit, wenn du tippst, bewegt den Mund zum Mikrofon (optional).
 - Klick: Hüpfer. Doppelklick: großer Sprung. Streicheln (Maus hin und her): Herzen.
   Festhalten: zappelt. Aus großer Höhe fallen lassen: kurz schwindelig.
-  Mini-Claude: Klick auf einen Arm winkt mit diesem Arm, ruht der Zeiger auf ihm, reckt er die Arme hoch.
+  Figuren mit Armen: Klick auf einen Arm winkt mit diesem Arm, ruht der Zeiger auf ihr, reckt sie die Arme hoch.
 - Feste Rangfolge, damit sich nichts vermischt: Festhalten > Reaktion > Sprung > Schlaf > Mittippen
   > Mikrofon > Streicheln > Leerlauf.
 - Leerlauf: gähnen, strecken, putzen, picken, schütteln, watscheln, umschauen, Pilz, Ideen-Glühbirne;

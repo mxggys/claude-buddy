@@ -67,6 +67,13 @@ const duck = {
   pressedKey: null, pressedUntil: 0,          // gerade gedrückte Taste auf der Mini-Tastatur
 };
 
+// Schwebende Figuren (Geist) wippen sanft auf und ab
+function floatLift(t) {
+  if (!CHAR.float || duck.dragging) return 0;
+  const bob = hardSave() ? 0 : Math.sin(t / 650);
+  return Math.round((2 + bob * 1.5) * SCALE);
+}
+
 // Figur kurz stauchen oder strecken; federt von selbst zurück
 function squash(sx, sy, ms) {
   duck.squash = { sx, sy, start: now(), ms };
@@ -309,10 +316,10 @@ function draw(t) {
   const w = sprite.width * SCALE * sx;
   const h = sprite.height * SCALE * sy;
   const footX = duck.x + DW / 2;
-  const footY = duck.y + DH;
+  const footY = duck.y + DH - floatLift(t);
   ctx.drawImage(sprite, Math.round(footX - w / 2), Math.round(footY - (HEIGHT + PAD) * SCALE * sy), Math.round(w), Math.round(h));
   if (duck.state === 'sleep') { drawZzz(t); drawSnore(t); }
-  if (claudeActive && CHAR.front && duck.state !== 'sleep' && !isTyping(t)) drawThinking(t);
+  if (claudeActive && CHAR.thinks && duck.state !== 'sleep' && !isTyping(t)) drawThinking(t);
   drawTemperature();
   if (duck.action === 'dizzy' && acting(t)) drawDizzyStars(t);
   drawParticles();
@@ -625,6 +632,7 @@ function onKey() {
   duck.wingDown = !duck.wingDown;
   duck.pressedKey = KEY_CELLS[Math.floor(Math.random() * KEY_CELLS.length)];
   duck.pressedUntil = t + 110;
+  if (CHAR.squishy && !hardSave()) squash(1.06, 0.94, 120); // wabbelt bei jedem Tastendruck
   kick();
   if (!wasTyping && !(duck.action && ACTIONS[duck.action].priority)) duck.action = null;
   wake();
@@ -678,7 +686,7 @@ function pickState(t) {
   const list = CHAR.idleActions || DUCK_ACTIONS;
   const r = Math.random();
   // Mini-Claude denkt mit, wenn Claude offen ist
-  if (claudeActive && CHAR.front && r < 0.25) startAction(Math.random() < 0.5 ? 'idea' : 'look', t);
+  if (claudeActive && CHAR.thinks && r < 0.25) startAction(Math.random() < 0.5 ? 'idea' : 'look', t);
   // lange nicht beachtet: wird traurig
   else if (m === 'awake' && t - lastAttention > 45 * 60 * 1000 && r < 0.35) startAction('sad', t);
   else if (m === 'tired' && r < 0.45) startAction('yawn', t);
@@ -727,7 +735,8 @@ function update(dt, t) {
       if (fell > Math.max(110, DH * 1.5) && !dnd()) { duck.vy = 0; duck.onGround = true; react('dizzy', t); return; }
       // Landung: je schneller, desto stärker plattgedrückt
       const hit = Math.min(1, duck.vy / 1400);
-      if (duck.vy > 150) squash(1 + 0.22 * hit, 1 - 0.2 * hit, 120 + 120 * hit);
+      const soft = CHAR.squishy ? 1.8 : 1; // Schleim wird beim Landen richtig platt
+      if (duck.vy > 150) squash(1 + 0.22 * hit * soft, 1 - 0.2 * hit * soft, (120 + 120 * hit) * soft);
       if (duck.vy > 300 && !hardSave()) {
         for (let i = 0; i < 6; i++) {
           const side = i % 2 ? 1 : -1;
@@ -939,13 +948,13 @@ window.addEventListener('mouseup', (e) => {
       react('dizzy', t);
       return;
     }
-    // Mini-Claude: Klick auf einen Arm → winkt mit genau diesem Arm
-    if (CHAR.front) {
+    // Figuren mit Armen: Klick auf einen Arm → winkt mit genau diesem Arm
+    if (CHAR.front && CHAR.arms) {
       const local = (duck.downAt.x - duck.x) / SCALE;
-      if (local < 5 || local > 25) {
+      if (local < WIDTH * 0.18 || local > WIDTH * 0.82) {
         duck.vy = 0;
         duck.onGround = true;
-        startAction(local < 5 ? 'waveL' : 'wave', t);
+        startAction(local < WIDTH / 2 ? 'waveL' : 'wave', t);
         return;
       }
     }
@@ -968,7 +977,7 @@ window.addEventListener('dblclick', (e) => {
   wake();
   hoverSince = 0;
   duck.onGround = false;
-  duck.vy = -820;
+  duck.vy = -820 * (CHAR.jump || 1); // Hase springt höher
   squash(0.82, 1.2, 200);
 });
 
