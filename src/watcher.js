@@ -28,6 +28,13 @@ function createWin32() {
     const IsWindow = user32.func('int __stdcall IsWindow(void* hWnd)');
     const IsWindowVisible = user32.func('int __stdcall IsWindowVisible(void* hWnd)');
     const IsIconic = user32.func('int __stdcall IsIconic(void* hWnd)');
+    const GetWindowLongPtrW = user32.func('intptr __stdcall GetWindowLongPtrW(void* hWnd, int index)');
+    const GW_OWNER = 4;
+    const GetWindow = user32.func('void* __stdcall GetWindow(void* hWnd, uint32 cmd)');
+    // Erweiterte Fensterstile: Werkzeug-/Overlay-Fenster, durch die man hindurchklickt
+    const WS_EX_TRANSPARENT = 0x20;
+    const WS_EX_TOOLWINDOW = 0x80;
+    const WS_EX_NOACTIVATE = 0x8000000;
     const GetWindowThreadProcessId = user32.func('uint32 __stdcall GetWindowThreadProcessId(void* hWnd, _Out_ uint32* pid)');
     const EnumWindowsProc = koffi.proto('int __stdcall EnumWindowsProc(void* hWnd, intptr lParam)');
     const EnumWindows = user32.func('int __stdcall EnumWindows(EnumWindowsProc* cb, intptr lParam)');
@@ -72,21 +79,32 @@ function createWin32() {
       },
       // Fenster, auf dessen Oberkante (x, y) liegt (physische Pixel). Geht die Fenster von vorne
       // nach hinten durch; liegt der Punkt vorher mitten in einem anderen Fenster, ist die Kante verdeckt.
-      windowEdgeAt(x, y, grab = 40) {
+      // above/below: wie weit über bzw. unter der Oberkante losgelassen werden darf (Titelleiste, Tabs).
+      // Zählt nur „echte“ App-Fenster: sichtbar, mit Titel, kein Overlay/Werkzeugfenster.
+      // Gibt zusätzlich die ersten geprüften Fenster zurück (für das Fehler-Log).
+      windowEdgeAt(x, y, above = 40, below = 40) {
         let found = null;
+        const seen = [];
         EnumWindows((hwnd) => {
           if (!IsWindowVisible(hwnd) || IsIconic(hwnd) || cloaked(hwnd)) return 1;
           const pid = [0];
           GetWindowThreadProcessId(hwnd, pid);
-          if (pid[0] === process.pid || SKIP_CLASSES.has(text(GetClassNameW, hwnd))) return 1;
+          const cls = text(GetClassNameW, hwnd);
+          if (pid[0] === process.pid || SKIP_CLASSES.has(cls)) return 1;
+          const ex = Number(GetWindowLongPtrW(hwnd, -20));
+          if (ex & (WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)) return 1;
+          const title = text(GetWindowTextW, hwnd);
+          if (!title || GetWindow(hwnd, GW_OWNER)) return 1; // Overlays und Popups haben meist keinen Titel
           const r = visibleRect(hwnd);
           if (!r || r.right - r.left < 120 || r.bottom - r.top < 60) return 1;
+          if (seen.length < 6) seen.push(`${cls} "${title.slice(0, 30)}" ${r.left},${r.top} ${r.right - r.left}x${r.bottom - r.top}`);
           if (x < r.left || x > r.right) return 1;
-          if (y >= r.top - grab && y <= r.top + grab) { found = { hwnd, rect: r }; return 0; }
+          if (y >= r.top - above && y <= r.top + below) { found = { hwnd, rect: r }; return 0; }
           if (y > r.top && y < r.bottom) return 0; // verdeckt von diesem Fenster
           return 1;
         }, 0);
-        return found;
+        if (found) found.seen = seen;
+        return found || { seen };
       },
       // aktuelle Lage eines Fensters; null, wenn es zu, versteckt oder minimiert ist
       rectOf(hwnd) {

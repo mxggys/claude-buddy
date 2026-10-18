@@ -1347,6 +1347,18 @@ window.addEventListener('mouseup', (e) => {
     fallStartY = duck.y; // merken, wie hoch sie losgelassen wurde
     duck.vy = 0;
     duck.x = Math.min(Math.max(duck.x, 0), W - DW);
+    // auf einer Fensterkante losgelassen: dort sitzen bleiben (hat Vorrang vor dem Werfen)
+    if (sitOnWindows && bridge) {
+      const edge = bridge.findPerch(duck.x + DW / 2, duck.y + DH);
+      if (edge) {
+        perch = edge;
+        duck.y = groundY();
+        duck.onGround = true;
+        fallStartY = null;
+        squash(1.15, 0.88, 140);
+        return; // Stammplatz an der Taskleiste bleibt, wie er war
+      }
+    }
     // Schwung mitnehmen: schnell losgelassen = geworfen
     const first = dragTrail[0];
     const lastP = dragTrail[dragTrail.length - 1];
@@ -1361,17 +1373,6 @@ window.addEventListener('mouseup', (e) => {
         duck.bounces = 0;
         lastAttention = now();
         return;
-      }
-    }
-    if (sitOnWindows && bridge) {
-      const edge = bridge.findPerch(duck.x + DW / 2, duck.y + DH);
-      if (edge) {
-        perch = edge;
-        duck.y = groundY();
-        duck.onGround = true;
-        fallStartY = null;
-        squash(1.15, 0.88, 140);
-        return; // Stammplatz an der Taskleiste bleibt, wie er war
       }
     }
     if (!gravity) restBottom = Math.round(Math.min(duck.y, bottomY()) + DH);

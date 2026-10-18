@@ -820,8 +820,14 @@ if (!app.requestSingleInstanceLock()) {
     if (!win32 || !settings.aufFenstern) return;
     const a = workArea();
     const p = screen.dipToScreenPoint({ x: Math.round(x + a.x), y: Math.round(y + a.y) });
-    const hit = win32.windowEdgeAt(p.x, p.y, Math.round(40 * screen.getPrimaryDisplay().scaleFactor));
-    if (!hit) return;
+    const k = screen.getDisplayNearestPoint({ x: x + a.x, y: y + a.y }).scaleFactor;
+    // großzügig: knapp über der Kante bis runter über Titelleiste und Tabs
+    const hit = win32.windowEdgeAt(p.x, p.y, Math.round(50 * k), Math.round(110 * k));
+    if (!hit.hwnd) {
+      log('fenster', `keine Oberkante bei ${p.x},${p.y}`, hit.seen.join(' | '));
+      return;
+    }
+    log('fenster', 'sitzt auf', hit.seen[hit.seen.length - 1] || '');
     perch = { hwnd: hit.hwnd, key: '' };
     e.returnValue = perchRect(hit.rect);
     startPerchWatch();
@@ -837,8 +843,8 @@ if (!app.requestSingleInstanceLock()) {
     const a = workArea();
     const pa = screen.dipToScreenPoint({ x: a.x, y: a.y });
     // Mitte der Oberkante muss frei sein (nicht von einem anderen Fenster verdeckt)
-    const hit = win32.windowEdgeAt(Math.round(fg.x + fg.width / 2), fg.y + 4, 8);
-    if (!hit || String(require('koffi').address(hit.hwnd)) !== fg.hwnd) return;
+    const hit = win32.windowEdgeAt(Math.round(fg.x + fg.width / 2), fg.y + 4, 8, 8);
+    if (!hit.hwnd || String(require('koffi').address(hit.hwnd)) !== fg.hwnd) return;
     if (hit.rect.top < pa.y + 20) return; // Kante zu weit oben: kein Platz zum Sitzen
     perch = { hwnd: hit.hwnd, key: '' };
     e.returnValue = perchRect(hit.rect);
