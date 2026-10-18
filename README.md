@@ -52,8 +52,11 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Springt auf das aktive Fenster (im Menü einschalten): ab und zu hüpft sie auf das Fenster, in dem du gerade arbeitest,
   bleibt ein paar Minuten oben und springt dann wieder nach Hause.
 - Läuft herum (im Menü einschalten): ab und zu ein Stück an der Taskleiste (oder auf dem Fenster) entlang und wieder zurück.
-- Füttern (im Menü): ein Snack fällt in den Mund, sie kaut und freut sich. Frosti bekommt Fisch, Hopsi eine Karotte,
-  Pando Bambus, die anderen Apfel oder Keks.
+- Füttern (im Menü): der Snack ploppt mit Funkeln über ihr auf und segelt im Bogen herunter, sie schaut hoch und
+  schnappt ihn mit einem Hüpfer, isst ihn in drei Bissen (mit Krümeln) und freut sich. Frosti bekommt Fisch,
+  Hopsi eine Karotte, Pando Bambus, die anderen Apfel oder Keks.
+- Spielzeit im Menü: wie lange ihr schon zusammen verbracht habt (Stunden und Minuten, heute und insgesamt,
+  seit dem ersten Start), mit Zeit-Abzeichen von 1 bis 10.000 Stunden.
 - Neuer Tipp-Rekord: Jubel mit Konfetti (Axo feiert doppelt und tanzt).
 - Abklatschen: Zeiger auf ihr ruhen lassen, bis sie die Arme hochreckt, dann klicken.
 - Mausrad über der Figur: sie dreht sich einmal im Kreis. Zeiger zweimal um sie kreisen lassen: ihr wird schwindelig.

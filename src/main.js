@@ -65,6 +65,9 @@ const DEFAULT_SETTINGS = {
   abzeichen: {}, // erreichte Tasten-Meilensteine: { 10000: '2026-10-18' }
   spielzeit: { gefuettert: 0, gestreichelt: 0, ball: 0, abgeklatscht: 0, geworfen: 0 },
   spielAbzeichen: {}, // { 'ball:100': '2026-10-18' }
+  laufzeitMin: 0, // wie lange Claude Buddy insgesamt lief (Minuten)
+  laufzeitHeute: { tag: '', min: 0 },
+  ersterStart: '', // Tag des ersten Starts
   farbe: 'original', // Farbvariante der Figur
   farbe2: 'original', // Farbvariante der zweiten Figur
   sammlung: [], // Zubehör aus den täglichen Geschenken
@@ -128,6 +131,7 @@ function loadSettings() {
     abzeichen: { ...saved.abzeichen },
     spielAbzeichen: { ...saved.spielAbzeichen },
     sammlung: Array.isArray(saved.sammlung) ? [...saved.sammlung] : [],
+    laufzeitHeute: { ...DEFAULT_SETTINGS.laufzeitHeute, ...saved.laufzeitHeute },
   };
   if ((settings.version || 1) < 2) settings.mikrofon = false; // war früher standardmäßig an
   for (const key of REMOVED_KEYS) delete settings[key];
@@ -449,6 +453,8 @@ function startWatchers() {
   // Zähler: Menü alle 3 s auffrischen, alle 30 s speichern (nicht bei jedem Tastendruck)
   setInterval(() => { if (counterDirty) buildMenu(); }, 3000);
   setInterval(() => { if (counterDirty) { counterDirty = false; saveSettings(); } }, 30000);
+  setInterval(tickRuntime, 60 * 1000);
+  if (!settings.ersterStart) { settings.ersterStart = dayKey(); saveSettings(); }
 
   stopWatcher = startWatching({
     getInterval: () => energy().watchMs,
@@ -595,6 +601,42 @@ function countStat(key) {
   clearTimeout(statSaveTimer);
   statSaveTimer = setTimeout(() => { saveSettings(); buildMenu(); }, 3000);
 }
+// Laufzeit: jede Minute, die Claude Buddy läuft, zählt mit (auch über Updates hinweg)
+const TIME_BADGES = [1, 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]; // Stunden
+function formatDuration(min) {
+  const h = Math.floor(min / 60);
+  const m = Math.floor(min % 60);
+  if (h === 0) return `${m} Min.`;
+  if (h >= 100) return `${fmt(h)} Std.`;
+  return `${h} Std. ${m} Min.`;
+}
+function tickRuntime() {
+  if (!settings) return;
+  if (!settings.ersterStart) settings.ersterStart = dayKey();
+  const tag = dayKey();
+  if (settings.laufzeitHeute.tag !== tag) settings.laufzeitHeute = { tag, min: 0 };
+  settings.laufzeitHeute.min++;
+  settings.laufzeitMin++;
+  // volle Stunden-Meilensteine: Medaille und Konfetti
+  const hours = settings.laufzeitMin / 60;
+  if (TIME_BADGES.includes(hours) && !settings.spielAbzeichen[`zeit:${hours}`]) {
+    settings.spielAbzeichen[`zeit:${hours}`] = tag;
+    sendAll('command', { type: 'badge' });
+    log('laufzeit-abzeichen', hours, 'Stunden');
+  }
+  counterDirty = true; // wird mit dem Tippzähler gespeichert und im Menü aufgefrischt
+}
+function runtimeMenu() {
+  const next = TIME_BADGES.find((h) => !settings.spielAbzeichen[`zeit:${h}`]);
+  const since = settings.ersterStart ? shortDay(settings.ersterStart, { day: 'numeric', month: 'numeric', year: 'numeric' }) : 'heute';
+  return [
+    { label: `Zusammen verbracht: ${formatDuration(settings.laufzeitMin)}`, enabled: false },
+    { label: `Heute: ${formatDuration(settings.laufzeitHeute.tag === dayKey() ? settings.laufzeitHeute.min : 0)}   ·   seit ${since}`, enabled: false },
+    ...(next ? [{ label: `Nächstes Zeit-Abzeichen bei ${fmt(next)} Std.`, enabled: false }] : [{ label: 'Alle Zeit-Abzeichen geschafft!', enabled: false }]),
+    { type: 'separator' },
+  ];
+}
+
 function playMenu() {
   const items = Object.entries(PLAY_STATS).map(([key, stat]) => {
     const n = settings.spielzeit[key] || 0;
@@ -605,7 +647,7 @@ function playMenu() {
       enabled: false,
     };
   });
-  return items;
+  return [...runtimeMenu(), ...items];
 }
 
 // ---------- Tägliches Geschenk: jeden Tag ein Päckchen mit einem Zubehör ----------
@@ -1003,7 +1045,7 @@ function buildMenu() {
     },
     { type: 'separator' },
     ...counterMenu(),
-    { label: 'Spielzeit', submenu: playMenu() },
+    { label: `Spielzeit: ${formatDuration(settings.laufzeitMin)}`, submenu: playMenu() },
     { type: 'separator' },
     {
       label: 'Aussehen',
