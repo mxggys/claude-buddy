@@ -54,6 +54,8 @@ const DEFAULT_SETTINGS = {
   schwerkraft: true, // an: fällt immer nach unten; aus: bleibt, wo man sie hinzieht
   imVollbild: false, // auch über Spielen / Videos im Vollbild anzeigen
   aufFenstern: false, // Figur kann auf die Oberkante von Fenstern gesetzt werden
+  laufen: false, // läuft ab und zu ein Stück an der Taskleiste entlang
+  fensterSpringen: false, // springt ab und zu auf das Fenster, in dem du gerade arbeitest
   mikrofon: false,
   tastatur: true,
   energiesparen: 0, // 0 aus, 1 leicht, 2 mittel, 3 hart
@@ -405,7 +407,7 @@ function startPerchWatch() {
     if (!perch || !win || win.isDestroyed()) return;
     const win32 = loadWin32();
     const r = win32 && win32.rectOf(perch.hwnd);
-    if (!r || !settings.aufFenstern) {
+    if (!r || !(settings.aufFenstern || settings.fensterSpringen)) {
       // Fenster zu oder minimiert: Figur fällt runter
       perch = null;
       win.webContents.send('perch', null);
@@ -429,6 +431,8 @@ const petSettings = () => ({
   energiesparen: settings.energiesparen,
   nichtStoerenBis: settings.nichtStoerenBis,
   aufFenstern: settings.aufFenstern,
+  laufen: settings.laufen,
+  fensterSpringen: settings.fensterSpringen,
   extras: { ...settings.extras, ort: undefined },
 });
 
@@ -688,6 +692,7 @@ function buildMenu() {
       ],
     },
     { label: 'Extras', submenu: extrasMenu() },
+    { label: 'Füttern', click: () => win && win.webContents.send('command', { type: 'feed' }) },
     { label: 'Zurückholen (Doppelklick aufs Symbol)', click: resetPet },
     {
       label: timers.length ? `Erinnerung (nächste um ${clock(timers[0].at)})` : 'Erinnerung / Wecker',
@@ -705,6 +710,8 @@ function buildMenu() {
     toggle(settings.energiesparen === 3 ? 'Mund bewegt sich mit Mikrofon (im Modus Hart aus)' : 'Mund bewegt sich mit Mikrofon', 'mikrofon'),
     toggle('Im Vollbild anzeigen (Spiele, Videos)', 'imVollbild'), // greift bei der nächsten Abfrage
     toggle('Auf Fenster setzen (auf die Oberkante ziehen)', 'aufFenstern'),
+    toggle('Springt auf das aktive Fenster', 'fensterSpringen'),
+    toggle('Läuft herum', 'laufen'),
     {
       label: `Energiesparmodus (${energy().name})`,
       submenu: ENERGY.map((level, i) => ({
@@ -820,6 +827,23 @@ if (!app.requestSingleInstanceLock()) {
     startPerchWatch();
   });
   ipcMain.on('perch-release', () => { perch = null; });
+  // „Springt auf das aktive Fenster“: Oberkante des Vordergrund-Fensters, wenn sie frei sichtbar ist
+  ipcMain.on('perch-foreground', (e) => {
+    e.returnValue = null;
+    const win32 = loadWin32();
+    if (!win32 || !settings.fensterSpringen) return;
+    const fg = win32.foreground();
+    if (!fg || fg.maximized || /Claude Buddy/.test(fg.title) || IGNORED_WINDOW_CLASSES.has(fg.cls)) return;
+    const a = workArea();
+    const pa = screen.dipToScreenPoint({ x: a.x, y: a.y });
+    // Mitte der Oberkante muss frei sein (nicht von einem anderen Fenster verdeckt)
+    const hit = win32.windowEdgeAt(Math.round(fg.x + fg.width / 2), fg.y + 4, 8);
+    if (!hit || String(require('koffi').address(hit.hwnd)) !== fg.hwnd) return;
+    if (hit.rect.top < pa.y + 20) return; // Kante zu weit oben: kein Platz zum Sitzen
+    perch = { hwnd: hit.hwnd, key: '' };
+    e.returnValue = perchRect(hit.rect);
+    startPerchWatch();
+  });
 
   ipcMain.on('set-home', (_e, x, bottom) => {
     if (typeof x !== 'number' || !Number.isFinite(x)) return;

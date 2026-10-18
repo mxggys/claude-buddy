@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('duckApp', {
   // „Auf Fenster setzen“: Fensterkante unter den Füßen suchen / wieder loslassen
   findPerch: (x, y) => ipcRenderer.sendSync('perch-find', x, y),
   releasePerch: () => ipcRenderer.send('perch-release'),
+  perchForeground: () => ipcRenderer.sendSync('perch-foreground'),
   onPerch: (cb) => ipcRenderer.on('perch', (_e, rect) => cb(rect)),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   onKey: (cb) => ipcRenderer.on('key', () => cb()),

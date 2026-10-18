@@ -682,6 +682,11 @@
   const BELL = small(['...k...', '..iii..', '.iIiii.', '.iIiii.', 'iiiiiii', '...k...']);
   const BAMBOO = small(['..ZM', '.MZ.', '.M..', '.Z..', '.M..', '.M..']);
   const EGG = small(['.CC.', 'CCCC', 'pppp', 'CiCi', '.CC.']);
+  // Snacks zum Füttern
+  const APPLE = small(['..V..', '.RRR.', 'RRRRR', 'RRRrR', '.RRr.']);
+  const COOKIE = small(['.uuu.', 'uUkUu', 'uUUku', 'ukUUu', '.uuu.']);
+  const FISH = small(['.ccc.z', 'ckcccz', '.ccc.z']);
+  const CARROT = small(['..VV', '.yV.', 'yyy.', 'yy..', 'y...']);
 
   const IDEA = small(['.iii.', 'iIiii', 'iiiii', '.iii.', '.jjj.', '..j..']);
   const LENS = small(['.jjjj.', 'jJJJJj', 'jJJJJj', 'jJJJJj', '.jjjj.', '....jj', '.....j']);
@@ -704,7 +709,7 @@
       ...c,
       palette: { ...SHARED, ...c.palette },
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

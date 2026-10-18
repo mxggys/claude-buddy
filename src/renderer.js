@@ -37,6 +37,10 @@ let extras = CONFIG.extras || {};
 let previewExtrasUntil = 0;       // „Extras kurz zeigen“ im Menü
 let sitOnWindows = Boolean(CONFIG.aufFenstern); // „Auf Fenster setzen“ ist an
 let perch = null;                 // Fenster, auf dem die Figur sitzt: { left, top, width }
+let walking = Boolean(CONFIG.laufen);         // „Läuft herum“
+let windowJumps = Boolean(CONFIG.fensterSpringen); // „Springt auf das aktive Fenster“
+let jumpTarget = null;            // Fenster, auf das sie gerade springt
+let homeX = null;                 // Stammplatz an der Taskleiste (x)
 
 // Aktuelle Figur und davon abhängige Werte
 let CHAR, PALETTE, FRAMES, EYE, ANCHORS, WIDTH, HEIGHT, SCALE, DW, DH;
@@ -132,6 +136,11 @@ duck.y = groundY();
 // Stammplatz: unten rechts, oder wo du die Figur zuletzt hingesetzt hast
 const defaultX = () => W - DW - 24;
 duck.x = typeof CONFIG.homeX === 'number' ? Math.min(Math.max(CONFIG.homeX, 0), W - DW) : defaultX();
+homeX = duck.x;
+function saveHome(bottom) {
+  homeX = Math.round(duck.x);
+  if (bridge) bridge.setHome(homeX, bottom);
+}
 
 // echter Boden (Taskleiste) und der Platz, auf dem die Figur gerade steht
 function bottomY() { return H - DH - GROUND_OFFSET; }
@@ -243,6 +252,8 @@ function currentFrame(t) {
   const talk = micMouth();
   if (talk === 1) return FRAMES.quack;
   if (talk === 2) return FRAMES.talk;
+  // 6b. läuft gerade
+  if (duck.walkTo !== null && duck.walkTo !== undefined) return Math.floor(t / 200) % 2 ? FRAMES.step1 : FRAMES.step2;
   // 7. gestreichelt / Zeiger ruht auf ihr
   if (duck.happyUntil > t) return FRAMES.happy;
   if (hoverSince && t - hoverSince > 800) return CHAR.front ? FRAMES.reach : FRAMES.happy;
@@ -477,6 +488,11 @@ function updateParticles(dt) {
     // Regen/Schnee verschwindet am Boden
     if ((p.type === 'rain' || p.type === 'snow') && p.y > groundY() + DH) p.life = 0;
     if (p.type === 'dust') { p.vy *= 0.9; p.vx *= 0.94; }
+    if (p.type === 'food') {
+      p.vy += 300 * dt;
+      p.life = 1;
+      if (p.y >= mouthPoint().y - 4) { p.life = 0; eat(); }
+    }
     p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
@@ -502,6 +518,9 @@ function drawParticles() {
     } else if (p.type === 'confetti') {
       ctx.fillStyle = p.color;
       ctx.fillRect(Math.round(p.x), Math.round(p.y), px + 1, Math.max(1, Math.round(px * (Math.sin(p.life * 30) > 0 ? 2 : 1))));
+    } else if (p.type === 'food') {
+      const rows = CHAR.props[p.food];
+      drawSmall(rows, p.x - (rows[0].length * px) / 2, p.y - rows.length * px, px);
     } else if (p.type === 'bat') {
       const wings = Math.floor(p.life * 40) % 2 ? ['k...k', 'kkkkk', '.kkk.'] : ['.....', 'kkkkk', 'k.k.k'];
       drawSmall(wings, p.x, p.y + Math.sin(p.life * 25) * 3, px);
@@ -795,6 +814,8 @@ function pickState(t) {
   else if (hour() >= 12 && hour() < 14 && t - duck.lastKeyAt > 3 * 60 * 1000 && r < 0.12) startAction('nap', t);
   // abends öfter gähnen
   else if (hour() >= 18 && hour() < 21 && r < 0.18) startAction('yawn', t);
+  else if (!hardSave() && maybeJumpToWindow(t, r)) { /* springt aufs Fenster */ }
+  else if (!hardSave() && maybeWalk(t, r)) { /* läuft los */ }
   else if (r < 0.5 && !hardSave()) startAction(list[Math.floor(Math.random() * list.length)], t);
 }
 
@@ -830,11 +851,23 @@ function update(dt, t) {
   if (duck.dragging) return;
 
   checkPerchEdge();
+  updateWalk(dt, t);
   if (duck.sliding) { updateSlide(dt, t); return; }
 
   if (!duck.onGround) {
     duck.vy += GRAVITY * dt;
     duck.y += duck.vy * dt * Math.max(0.4, SIZE);
+    // Sprung aufs Fenster: auf der Oberkante landen, sobald es abwärts geht
+    if (jumpTarget && duck.vy > 0 && duck.y >= jumpTarget.top - DH) {
+      perch = jumpTarget;
+      jumpTarget = null;
+      duck.y = groundY();
+      duck.vy = 0;
+      duck.vx = 0;
+      duck.onGround = true;
+      squash(1.18, 0.86, 150);
+      return;
+    }
     // geworfen: seitlich weiterfliegen, an den Bildschirmrändern abprallen
     if (duck.vx) {
       duck.x += duck.vx * dt;
@@ -851,7 +884,7 @@ function update(dt, t) {
       fallStartY = null;
       duck.y = groundY();
       // Pinguin: landet auf dem Bauch und rutscht weiter
-      if (CHAR.slides && (fell > 30 || Math.abs(duck.vx) > 60) && !dnd()) {
+      if (CHAR.slides && (fell > 30 || (duck.thrown && Math.abs(duck.vx) > 60)) && !dnd()) {
         if (Math.abs(duck.vx) < 120) duck.vx = (duck.x + DW / 2 < W / 2 ? 1 : -1) * rand(160, 240);
         duck.vy = 0; duck.onGround = true; duck.sliding = true;
         squash(1.25, 0.75, 160);
@@ -906,7 +939,81 @@ function update(dt, t) {
   // lange Pause oder „Nicht stören“: einschlafen
   if (duck.state === 'idle' && mood() === 'sleep') duck.until = 0;
   if (t > duck.until) pickState(t);
-  if (duck.state === 'idle' && !dnd()) faceCursor(t);
+  if (duck.state === 'idle' && !dnd() && (duck.walkTo === null || duck.walkTo === undefined)) faceCursor(t);
+}
+
+// ---------- Herumlaufen ----------
+const walkSpeed = () => 42 * Math.max(0.5, SIZE);
+// Bereich, in dem gelaufen wird: auf einem Fenster dessen Oberkante, sonst der ganze Bildschirm
+function walkBounds() {
+  if (perch) return [Math.max(0, perch.left), Math.min(W - DW, perch.left + perch.width - DW)];
+  return [0, W - DW];
+}
+function maybeWalk(t, r) {
+  if (!walking || duck.state !== 'idle' || !duck.onGround || mood() !== 'awake') return false;
+  const [lo, hi] = walkBounds();
+  if (hi - lo < 10) return false;
+  let to;
+  // weg vom Stammplatz: meistens zurücklaufen
+  if (!perch && homeX !== null && Math.abs(duck.x - homeX) > 12 && r < 0.7) to = homeX;
+  else if (r < 0.32) to = duck.x + (Math.random() < 0.5 ? -1 : 1) * rand(60, 220) * Math.max(0.6, SIZE);
+  else return false;
+  duck.walkTo = Math.min(Math.max(to, lo), hi);
+  duck.action = null;
+  return true;
+}
+function updateWalk(dt, t) {
+  if (duck.walkTo === null || duck.walkTo === undefined) return;
+  if (!walking || duck.state === 'sleep' || duck.dragging || !duck.onGround) { duck.walkTo = null; return; }
+  if (isTyping(t) || micMouth() > 0 || (acting(t) && ACTIONS[duck.action].priority)) return; // kurz stehen bleiben
+  const d = duck.walkTo - duck.x;
+  turnTo(d > 0 ? 1 : -1);
+  const step = walkSpeed() * dt;
+  if (Math.abs(d) <= step) {
+    duck.x = duck.walkTo;
+    duck.walkTo = null;
+    duck.until = t + rand(3000, 8000); // erst mal umschauen, dann evtl. zurück
+  } else duck.x += Math.sign(d) * step;
+}
+
+// ---------- Auf das aktive Fenster springen ----------
+let nextWindowJump = 0;
+function maybeJumpToWindow(t, r) {
+  if (!windowJumps || !bridge || duck.state !== 'idle' || !duck.onGround || mood() !== 'awake') return false;
+  // sitzt schon auf einem Fenster: nach einer Weile wieder runter nach Hause
+  if (perch) {
+    if (t > nextWindowJump && r < 0.25) { jumpHome(t); return true; }
+    return false;
+  }
+  if (t < nextWindowJump || r > 0.06) return false;
+  const rect = bridge.perchForeground();
+  if (!rect) return false;
+  nextWindowJump = t + rand(90, 240) * 1000; // so lange bleibt sie mindestens oben
+  const x = Math.min(Math.max(duck.x, rect.left + 8), rect.left + rect.width - DW - 8);
+  jumpTarget = rect;
+  launchTo(x, rect.top - DH);
+  return true;
+}
+function jumpHome(t) {
+  perch = null;
+  if (bridge) bridge.releasePerch();
+  nextWindowJump = t + rand(120, 300) * 1000;
+  launchTo(homeX !== null ? homeX : duck.x, bottomY());
+}
+// Sprung auf einer Wurfparabel genau zu (x, y); oben 40 px Luft
+function launchTo(x, y) {
+  const k = Math.max(0.4, SIZE); // y-Bewegung wird mit der Größe skaliert (siehe update)
+  const g = GRAVITY * k;
+  const peak = Math.min(duck.y, y) - 40 * Math.max(0.6, SIZE);
+  const up = Math.sqrt(2 * g * Math.max(1, duck.y - peak));
+  const down = Math.sqrt(2 * Math.max(1, y - peak) / g);
+  const time = up / g + down;
+  duck.vy = -up / k;
+  duck.vx = (x - duck.x) / time;
+  duck.onGround = false;
+  duck.walkTo = null;
+  fallStartY = null;
+  squash(0.85, 1.18, 180);
 }
 
 // Rutschen auf dem Bauch: wenig Reibung, Staub, an Rändern abprallen
@@ -933,13 +1040,13 @@ function settle() {
   if (perch) { duck.thrown = false; return; } // auf einem Fenster: Stammplatz bleibt
   duck.thrown = false;
   if (!gravity) restBottom = Math.round(Math.min(duck.y, bottomY()) + DH);
-  if (bridge) bridge.setHome(Math.round(duck.x), gravity ? null : restBottom);
+  saveHome(gravity ? null : restBottom);
 }
 
 // ---------- Bildrate: nur so oft zeichnen wie nötig (spart Akku) ----------
 let lastCursorMove = 0;
 function targetFps(t) {
-  const busy = duck.dragging || duck.sliding || !duck.onGround || particles.some((p) => p.type !== 'rain' && p.type !== 'snow') || isTyping(t) || acting(t)
+  const busy = duck.dragging || duck.sliding || (duck.walkTo !== null && duck.walkTo !== undefined) || !duck.onGround || particles.some((p) => p.type !== 'rain' && p.type !== 'snow') || isTyping(t) || acting(t)
     || micMouth() > 0 || duck.happyUntil > t || duck.beakUntil > t || t - duck.squash.start < duck.squash.ms
     || (hoverSince && t - hoverSince < 1200);
   // Bilder pro Sekunde je Stufe: [Bewegung, Zeiger bewegt, Ruhe, Schlaf]
@@ -1019,6 +1126,39 @@ function ring() {
   kick();
 }
 
+// ---------- Füttern ----------
+// Ein Snack fällt von oben in den Mund, dann wird gekaut, gekrümelt und sich gefreut.
+const FAVORITE_FOOD = { frosti: 'FISH', hopsi: 'CARROT', pando: 'BAMBOO' };
+function mouthPoint() {
+  if (CHAR.front) return { x: duck.x + DW / 2, y: duck.y + DH * 0.55 };
+  return { x: duck.x + DW * (isFlipped() ? 0.18 : 0.82), y: duck.y + DH * 0.38 };
+}
+function feed() {
+  const t = now();
+  wake();
+  if (duck.state === 'sleep') { duck.state = 'idle'; duck.until = t + 4000; }
+  duck.walkTo = null;
+  const food = FAVORITE_FOOD[CHAR.id] || (Math.random() < 0.5 ? 'APPLE' : 'COOKIE');
+  const m = mouthPoint();
+  particles.push({ type: 'food', food, x: m.x, y: m.y - 70 * Math.max(0.6, SIZE), vx: 0, vy: 40, life: 1, target: m.y });
+  duck.happyUntil = t + 900; // freut sich schon
+  kick();
+}
+function eat() {
+  const t = now();
+  ACTIONS.eat = ACTIONS.eat || { frames: ['chew1', 'chew2'], step: 180, ms: 2400 };
+  startAction('eat', t);
+  duck.until = t + 4000;
+  const m = mouthPoint();
+  for (let i = 0; i < 6; i++) particles.push({ type: 'dust', x: m.x, y: m.y, vx: rand(-40, 40), vy: rand(-40, 10), life: 1 });
+  setTimeout(() => {
+    duck.happyUntil = now() + 1500;
+    for (let i = 0; i < 3; i++) spawn('heart', duck.x + rand(0, DW), duck.y + rand(0, DH * 0.3));
+    lastAttention = now();
+    kick();
+  }, ACTIONS.eat.ms);
+}
+
 // neuer Tipp-Rekord: Jubel mit Konfetti (Axolotl feiert doppelt)
 function celebrateRecord() {
   if (dnd()) return;
@@ -1062,7 +1202,9 @@ function applyAppSettings(s) {
   }
   extras = s.extras || {};
   sitOnWindows = Boolean(s.aufFenstern);
-  if (!sitOnWindows && perch) { perch = null; duck.onGround = false; fallStartY = duck.y; }
+  walking = Boolean(s.laufen);
+  windowJumps = Boolean(s.fensterSpringen);
+  if (!sitOnWindows && !windowJumps && perch) { perch = null; duck.onGround = false; fallStartY = duck.y; }
   // Hart: Mikrofon-Auswertung aus (kostet die meiste Rechenzeit)
   if (hardSave()) setMic(false);
   const wasDnd = dnd();
@@ -1154,6 +1296,8 @@ window.addEventListener('mousedown', (e) => {
   duck.vx = 0;
   dragTrail.length = 0;
   if (perch) { perch = null; if (bridge) bridge.releasePerch(); }
+  duck.walkTo = null;
+  jumpTarget = null;
   wake();
   kick();
 });
@@ -1231,12 +1375,13 @@ window.addEventListener('mouseup', (e) => {
       }
     }
     if (!gravity) restBottom = Math.round(Math.min(duck.y, bottomY()) + DH);
-    if (bridge) bridge.setHome(Math.round(duck.x), gravity ? null : restBottom);
+    saveHome(gravity ? null : restBottom);
   }
 });
 
 // Das Fenster unter der Figur hat sich bewegt (oder ist weg)
 function onPerch(rect) {
+  if (jumpTarget) { jumpTarget = rect; return; } // Fenster bewegt sich während des Sprungs
   if (!perch) return;
   if (!rect) {
     // Fenster geschlossen oder minimiert: runterfallen
@@ -1315,13 +1460,14 @@ if (bridge) {
   bridge.onPerch(onPerch);
   bridge.onCommand((cmd) => {
     if (cmd && cmd.type === 'alarm') ring();
+    if (cmd && cmd.type === 'feed') feed();
     if (cmd === 'record') celebrateRecord();
     if (cmd === 'sleep') { duck.state = 'sleep'; duck.until = now() + 60000; lastActivity = -Infinity; }
     if (cmd === 'preview-extras') { previewExtrasUntil = now() + PREVIEW_MS; nextConfetti = 0; kick(); }
     if (cmd === 'reset') {
       restBottom = null;
       Object.assign(duck, { x: defaultX(), y: bottomY() - 150, vy: 0, onGround: false, dragging: false, state: 'idle' });
-      bridge.setHome(Math.round(duck.x), null);
+      saveHome(null);
       wake();
     }
   });
@@ -1341,7 +1487,9 @@ if (bridge) {
       duck.x = Math.min(duck.x, W - DW);
     },
     setHour(h) { window.duckConfig.hour = h; },
-    ring, celebrateRecord, onWindowMove,
+    ring, celebrateRecord, onWindowMove, feed,
+    setWalking(on) { walking = on; }, maybeWalk, launchTo,
+    jumpOnto(rect) { jumpTarget = rect; launchTo(Math.min(Math.max(duck.x, rect.left + 8), rect.left + rect.width - DW - 8), rect.top - DH); }, jumpHome,
     sitOn(rect) { perch = rect; duck.y = groundY(); duck.onGround = true; }, onPerch,
     get perch() { return perch; },
     setIdle(minutes) { lastActivity = now() - minutes * 60 * 1000; duck.until = 0; if (!minutes) wake(); kick(); },
