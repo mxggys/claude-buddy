@@ -253,6 +253,7 @@ const ACTIONS = {
   nap: { frames: ['sleep', 'sleep2'], step: 1300, ms: 15000 }, // Mittagsschläfchen
   sneeze: { frames: ['sleepy', 'yawn', 'startle', 'idle'], step: 330, ms: 1400 }, // Hatschi!
   spin: { frames: ['happy'], ms: 900 },                    // einmal im Kreis drehen
+  juggle: { frames: ['cheer1', 'cheer2'], step: 300, ms: 3600 }, // Otter: Stein jonglieren
   // Reaktionen haben Vorrang vor allem anderen
   startle: { frames: ['startle'], ms: 900, priority: true },
   dizzy: { frames: ['dizzy1', 'dizzy2'], step: 200, ms: 2400, priority: true },
@@ -278,7 +279,10 @@ function currentFrame(t) {
     return Math.floor(t / 140) % 2 ? FRAMES.drag1 : FRAMES.drag2;
   }
   if (duck.sliding) return FRAMES.slide;
-  if (hanging()) return FRAMES.reach; // hält sich seitlich oder unten am Fenster fest
+  if (hanging()) {
+    if (duck.action === 'nap' && acting(t)) return Math.floor(t / 1300) % 2 ? FRAMES.sleep2 : FRAMES.sleep; // Koala schläft dort
+    return FRAMES.reach; // hält sich seitlich oder unten am Fenster fest
+  }
   // 2. Reaktionen (erschrecken, schwindelig, jubeln)
   if (acting(t) && ACTIONS[duck.action].priority) return actionFrame(t);
   // 3. in der Luft (Hüpfer, Sprung, Fall)
@@ -385,6 +389,10 @@ function paintFigure(t) {
     paint(CHAR.props.BELL, bx + (Math.floor(t / 90) % 2 ? 1 : -1), by + 2, flip);
   }
   if (duck.action === 'bamboo' && acting(t) && ANCHORS.bamboo) paint(CHAR.props.BAMBOO, ...ANCHORS.bamboo, flip);
+  if (duck.action === 'juggle' && acting(t) && ANCHORS.stone) {
+    const phase = (t % 600) / 600; // Stein fliegt hoch und fällt zurück
+    paint(CHAR.props.STONE, ANCHORS.stone[0], ANCHORS.stone[1] - Math.round(Math.sin(phase * Math.PI) * 5), flip);
+  }
   if (medalUntil > t) paint(CHAR.props.MEDAL, ANCHORS.idea[0], ANCHORS.idea[1] + Math.round(Math.sin(t / 200)), flip);
   if ((extras.ostern !== false && isEaster()) || previewPhase(t) === 'easter') paint(CHAR.props.EGG, -7, HEIGHT - 6, flip);
 }
@@ -539,7 +547,7 @@ function updateParticles(dt) {
       p.life = 1;
       if (p.y >= mouthPoint().y - 4) { p.life = 0; eat(); }
     }
-    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33 }[p.type] || 2.2);
+    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
@@ -564,6 +572,10 @@ function drawParticles() {
     } else if (p.type === 'confetti') {
       ctx.fillStyle = p.color;
       ctx.fillRect(Math.round(p.x), Math.round(p.y), px + 1, Math.max(1, Math.round(px * (Math.sin(p.life * 30) > 0 ? 2 : 1))));
+    } else if (p.type === 'steam') {
+      ctx.fillStyle = `rgba(235, 228, 220, ${0.55 * p.life})`;
+      const s = Math.max(1, Math.round(px * (1.6 - p.life)));
+      ctx.fillRect(Math.round(p.x + Math.sin(p.life * 9) * 2), Math.round(p.y), s, s);
     } else if (p.type === 'food') {
       const rows = CHAR.props[p.food];
       drawSmall(rows, p.x - (rows[0].length * px) / 2, p.y - rows.length * px, px);
@@ -662,8 +674,20 @@ function updateHalloween(t) {
   particles.push({ type: 'bat', x: duck.x + (fromLeft ? -DW : DW * 2), y: duck.y - rand(10, 40) * Math.max(0.6, SIZE),
     vx: (fromLeft ? 1 : -1) * rand(70, 110), vy: rand(-12, 6), life: 1 });
 }
-function updateExtras(t) {
+// Kaffeetasse: Dampf steigt auf, morgens und beim schnellen Tippen kräftiger
+let steamAcc = 0;
+function updateSteam(dt, t) {
+  if (!CHAR.steams || hardSave() || duck.state === 'sleep') return;
+  const morning = hour() >= 5 && hour() < 11;
+  steamAcc += dt * (0.8 + (morning ? 1.6 : 0) + Math.min(3, keyTimes.length * 0.4));
+  while (steamAcc >= 1) {
+    steamAcc--;
+    particles.push({ type: 'steam', x: duck.x + DW * rand(0.3, 0.6), y: duck.y + DH * 0.35, vx: rand(-6, 6), vy: rand(-28, -18), life: 1 });
+  }
+}
+function updateExtras(t, dt = 0.05) {
   updateHalloween(t);
+  updateSteam(dt, t);
   const party = previewPhase(t) === 'party' || isBirthday() || (extras.silvester && isNewYear());
   if (!party || t < nextConfetti || dnd()) return;
   nextConfetti = t + (previewPhase(t) ? 1200 : rand(15000, 30000));
@@ -996,7 +1020,7 @@ function update(dt, t) {
   if (focusMs === 0) duck.danced = false;
 
   updateWeather(dt, t);
-  updateExtras(t);
+  updateExtras(t, dt);
 
   if (isTyping(t) || micMouth() > 0) return; // beim Tippen / Reden keine Extras
 
@@ -1380,7 +1404,7 @@ function settle() {
 // ---------- Bildrate: nur so oft zeichnen wie nötig (spart Akku) ----------
 let lastCursorMove = 0;
 function targetFps(t) {
-  const busy = duck.dragging || duck.sliding || ball.on || pauseUntil > t || (duck.walkTo !== null && duck.walkTo !== undefined) || !duck.onGround || particles.some((p) => p.type !== 'rain' && p.type !== 'snow') || isTyping(t) || acting(t)
+  const busy = duck.dragging || duck.sliding || ball.on || pauseUntil > t || (duck.walkTo !== null && duck.walkTo !== undefined) || !duck.onGround || particles.some((p) => p.type !== 'rain' && p.type !== 'snow' && p.type !== 'steam') || isTyping(t) || acting(t)
     || micMouth() > 0 || duck.happyUntil > t || duck.beakUntil > t || t - duck.squash.start < duck.squash.ms
     || (hoverSince && t - hoverSince < 1200);
   // Bilder pro Sekunde je Stufe: [Bewegung, Zeiger bewegt, Ruhe, Schlaf]
@@ -1500,7 +1524,7 @@ function celebrateRecord() {
   react('cheer', now());
   const n = CHAR.record ? 36 : 16;
   for (let i = 0; i < n; i++) spawn('confetti', duck.x + rand(-DW * 0.4, DW * 1.4), duck.y - rand(10, 50) * Math.max(0.5, SIZE));
-  if (CHAR.record) setTimeout(() => startAction('dance', now()), ACTIONS.cheer.ms);
+  if (CHAR.record) setTimeout(() => startAction(ACTIONS.juggle && ANCHORS.stone ? 'juggle' : 'dance', now()), ACTIONS.cheer.ms);
   kick();
 }
 
@@ -1614,6 +1638,7 @@ function moveCursor(x, y) {
       wake();
       for (let i = 0; i < 2; i++) spawn('heart', duck.x + rand(0, DW), duck.y + rand(0, DH * 0.3));
       moodPing('pet', 4, 20000);
+      if (CHAR.cuddly && !acting(now())) { startAction('nap', now()); duck.until = now() + ACTIONS.nap.ms; }
     }
   }
   // Zeiger ruht auf der Figur (nur wenn er still steht und nichts anderes los ist)

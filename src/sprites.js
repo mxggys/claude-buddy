@@ -570,6 +570,70 @@
       face(g, o) { rect(g, 11, 14 + o.hy, 12, 14 + o.hy, 'G'); set(g, [[11, 15 + o.hy], [12, 15 + o.hy]], 'G'); },
       anchors: { hat: [12, 6], glasses: [7, 9], bamboo: [17, 10] },
     },
+    kuschel: {
+      name: 'Kuschel (Koala)',
+      palette: { W: '#a3a7b3', w: '#8a8e99', v: '#70747e', h: '#c7cad3', B: '#f1f1f4', G: '#16161a', X: '#2f3036', x: '#6b6e78', E: '#16161a', e: '#16161a', P: '#f2a7b5', m: '#3a2a30', t: '#f07a8a' },
+      cuddly: true, // schläft beim Streicheln ein, am liebsten seitlich an einem Fenster
+      eyes: { xs: [8, 14], y: 11, w: 2, h: 2 },
+      pattern: ['HE', 'EE'],
+      cheeks: [7, 16],
+      mouth: [11, 17],
+      arms: [5, 17, 16, 2, 3],
+      feet: [[8, 3], [13, 3]],
+      shape(g, o) {
+        ellipse(g, 5, 8 + o.hy, 3.8, 3.8, body);
+        ellipse(g, 19, 8 + o.hy, 3.8, 3.8, body);
+        ellipse(g, 12, 18.5 + o.by, 5.5, 3.2, body);
+        ellipse(g, 12, 12.5 + o.hy, 7.5, 6.2, body);
+        ellipse(g, 5, 8 + o.hy, 2, 2, () => 'B');
+        ellipse(g, 19, 8 + o.hy, 2, 2, () => 'B');
+        ellipse(g, 12, 19 + o.by, 3, 2, () => 'B');
+      },
+      face(g, o) { ellipse(g, 12, 14.5 + o.hy, 1.7, 2.2, () => 'G'); },
+      anchors: { hat: [12, 6], glasses: [7, 10] },
+    },
+    flitz: {
+      name: 'Flitz (Otter)',
+      palette: { W: '#8a5a36', w: '#73492a', v: '#5c3920', h: '#a8774f', B: '#e8cfae', G: '#140c06', X: '#2b1a0e', x: '#5a3a22', E: '#140c06', e: '#140c06', P: '#f2a39a', m: '#3a1a10', t: '#f07a6a' },
+      record: true, // klatscht bei einem neuen Tipp-Rekord
+      extraActions: ['juggle', 'juggle'],
+      eyes: { xs: [8, 14], y: 10, w: 2, h: 2 },
+      pattern: ['HE', 'EE'],
+      cheeks: [7, 16],
+      mouth: [11, 14],
+      arms: [6, 16, 15, 2, 3],
+      feet: [[8, 2], [14, 2]],
+      shape(g, o) {
+        ellipse(g, 6, 7 + o.hy, 1.8, 1.8, body);
+        ellipse(g, 18, 7 + o.hy, 1.8, 1.8, body);
+        ellipse(g, 12, 17.5 + o.by, 6, 4, body);
+        ellipse(g, 12, 11 + o.hy, 7, 5.5, body);
+        ellipse(g, 12, 13 + o.hy, 4, 2.5, () => 'B');
+        ellipse(g, 12, 18 + o.by, 3.5, 2.5, () => 'B');
+      },
+      face(g, o) { rect(g, 11, 12 + o.hy, 12, 12 + o.hy, 'G'); set(g, [[11, 14 + o.hy], [12, 14 + o.hy]], 'G'); },
+      anchors: { hat: [12, 6], glasses: [7, 9], stone: [11, 3] },
+    },
+    mokka: {
+      name: 'Mokka (Kaffeetasse)',
+      palette: { W: '#f2ece4', w: '#d6cbbd', v: '#bfb2a2', h: '#ffffff', A: '#6b3e22', a: '#4f2c16', X: '#3a2418', x: '#7a5a48', E: '#1a110b', e: '#1a110b', P: '#f4a0a8', m: '#3a1a10', t: '#f07a6a' },
+      steams: true, // dampft, morgens und beim schnellen Tippen kräftiger
+      eyes: { xs: [9, 13], y: 13, w: 2, h: 2 },
+      pattern: ['HE', 'EE'],
+      cheeks: [7, 15],
+      mouth: [10, 16],
+      shape(g, o) {
+        const top = 9 + o.by;
+        rect(g, 5, top, 16, 19, (x) => (x >= 15 ? 'w' : x === 5 ? 'h' : 'W'));
+        rect(g, 6, 20, 15, 20, 'w');
+        rect(g, 17, 11 + o.by, 19, 11 + o.by, 'W');
+        rect(g, 19, 11 + o.by, 19, 15 + o.by, 'w');
+        rect(g, 17, 15 + o.by, 19, 15 + o.by, 'W');
+        rect(g, 6, top, 15, top + 1, (x, y) => (y === top ? 'A' : 'a'));
+      },
+      face(g, o) { rect(g, 10, 16 + o.hy, 12, 16 + o.hy, 'e'); },
+      anchors: { hat: [11, 9], glasses: [8, 12] },
+    },
   };
 
   const critters = {};
@@ -589,6 +653,8 @@
       slides: def.slides || false,
       rolls: def.rolls || false,
       record: def.record || false,
+      cuddly: def.cuddly || false,
+      steams: def.steams || false,
       idleActions: [...CRITTER_ACTIONS, ...(def.extraActions || [])],
       typingFrames: ['tapL', 'tapR'],
       glasses: glassesFor(def.eyes),
@@ -684,6 +750,7 @@
   const EGG = small(['.CC.', 'CCCC', 'pppp', 'CiCi', '.CC.']);
   // Medaille für Abzeichen (Tasten-Meilensteine)
   const MEDAL = small(['.b.b.', '..z..', '.iii.', 'iIiii', 'iiiii', '.iii.']);
+  const STONE = small(['.jj.', 'jJjj', 'jjjj', '.jj.']); // Otter jongliert
   // Snacks zum Füttern
   const APPLE = small(['..V..', '.RRR.', 'RRRRR', 'RRRrR', '.RRr.']);
   const COOKIE = small(['.uuu.', 'uUkUu', 'uUUku', 'ukUUu', '.uuu.']);
@@ -711,7 +778,7 @@
       ...c,
       palette: { ...SHARED, ...c.palette },
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

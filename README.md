@@ -4,7 +4,9 @@ Kleiner Pixel-Begleiter für Windows 11, der unten an der Taskleiste sitzt.
 
 Figuren: Mini-Claude, Klassik-Ente, Boo (Geist, schwebt), Frosti (Pinguin, watschelt beim Tippen),
 Glibber (Schleim, wabbelt bei jedem Tastendruck, wird beim Landen platt), Axo (Axolotl, Kiemen wackeln beim Tippen),
-Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda).
+Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda),
+Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster), Flitz (Otter, jongliert einen Stein,
+feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger).
 
 ## Was sie kann
 - Sitzt unten rechts an der Taskleiste. Gedrückt halten und ziehen setzt sie um, der Platz wird gemerkt.
