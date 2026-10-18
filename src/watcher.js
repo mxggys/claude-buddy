@@ -159,9 +159,22 @@ function createWin32() {
       },
       // aktuelle Lage eines Fensters; null, wenn es zu, versteckt oder minimiert ist
       rectOf(hwnd) {
-        if (!IsWindow(hwnd) || !IsWindowVisible(hwnd) || IsIconic(hwnd) || cloaked(hwnd)) return null;
-        return visibleRect(hwnd);
+        if (!IsWindow(hwnd)) return { gone: 'geschlossen' };
+        if (!IsWindowVisible(hwnd)) return { gone: 'unsichtbar' };
+        if (IsIconic(hwnd)) return { gone: 'minimiert' };
+        if (cloaked(hwnd)) return { gone: 'versteckt' };
+        return visibleRect(hwnd) || { gone: 'keine Lage' };
       },
+      // dasselbe Fenster über seine Adresse wiederfinden (falls der gemerkte Zeiger nicht mehr taugt)
+      findByAddress(address) {
+        let found = null;
+        EnumWindows((hwnd) => {
+          if (String(koffi.address(hwnd)) === address) { found = hwnd; return 0; }
+          return 1;
+        }, 0);
+        return found;
+      },
+      address: (hwnd) => String(koffi.address(hwnd)),
       // Vordergrund-Fenster mit Lage in physischen Pixeln
       foreground() {
         const hwnd = GetForegroundWindow();

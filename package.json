@@ -1,6 +1,6 @@
 {
   "name": "claude-buddy",
-  "version": "1.19.1",
+  "version": "1.19.2",
   "description": "Kleiner Pixel-Begleiter an der Taskleiste: Mini-Claude oder Ente.",
   "main": "src/main.js",
   "scripts": {

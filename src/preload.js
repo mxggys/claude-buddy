@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('duckApp', {
   releasePerch: () => ipcRenderer.send('perch-release'),
   perchForeground: () => ipcRenderer.sendSync('perch-foreground'),
   onPerch: (cb) => ipcRenderer.on('perch', (_e, rect) => cb(rect)),
+  log: (text) => ipcRenderer.send('renderer-log', text),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   onKey: (cb) => ipcRenderer.on('key', () => cb()),
   onPower: (cb) => ipcRenderer.on('power', (_e, battery) => cb(battery)),

@@ -1450,6 +1450,9 @@ window.addEventListener('mouseup', (e) => {
   }
 });
 
+// Fehlersuche „Auf Fenster setzen“: ins Fehler-Log der App schreiben
+const flog = (text) => { if (bridge && bridge.log) bridge.log(text); };
+
 // Bezugspunkt je Kante: rechts hängt sie am rechten Rand, unten am unteren Rand
 const perchAnchorX = (p) => (p.side === 'right' ? p.left + p.width : p.left);
 const perchAnchorY = (p) => (p.side === 'bottom' ? p.top + p.height : p.top);
@@ -1473,6 +1476,7 @@ function attachPerch(rect, side) {
   }
   perch = { ...rect, side, dy: 0 };
   perch.dy = y - perchAnchorY(perch);
+  flog(`sitzt ${side} bei ${Math.round(duck.x)},${Math.round(y)} Fenster ${Math.round(rect.left)},${Math.round(rect.top)} ${Math.round(rect.width)}x${Math.round(rect.height)}`);
   duck.y = y;
   Object.assign(duck, { onGround: true, vx: 0, vy: 0, walkTo: null });
   fallStartY = null;
@@ -1485,6 +1489,7 @@ function onPerch(rect) {
   if (!perch) return;
   if (!rect) {
     // Fenster geschlossen oder minimiert: runterfallen
+    flog('Fenster weg: fällt runter');
     perch = null;
     duck.onGround = false;
     duck.vy = -120;
@@ -1503,6 +1508,7 @@ function onPerch(rect) {
 function checkPerchEdge() {
   if (!perch || duck.dragging || hanging()) return;
   if (offEdge()) {
+    flog(`über die Kante: Mitte ${Math.round(duck.x + DW / 2)}, Fenster ${Math.round(perch.left)}–${Math.round(perch.left + perch.width)}`);
     perch = null;
     if (bridge) bridge.releasePerch();
     duck.onGround = false;

@@ -406,9 +406,16 @@ function startPerchWatch() {
   const tick = () => {
     if (!perch || !win || win.isDestroyed()) return;
     const win32 = loadWin32();
-    const r = win32 && win32.rectOf(perch.hwnd);
-    if (!r || !(settings.aufFenstern || settings.fensterSpringen)) {
+    let r = win32 ? win32.rectOf(perch.hwnd) : { gone: 'keine Windows-Funktionen' };
+    if (r.gone === 'geschlossen' && perch.address) {
+      // Zeiger erneut über die Adresse holen, bevor die Figur runterfällt
+      const again = win32.findByAddress(perch.address);
+      if (again) { perch.hwnd = again; r = win32.rectOf(again); }
+    }
+    const off = !(settings.aufFenstern || settings.fensterSpringen);
+    if (r.gone || off) {
       // Fenster zu oder minimiert: Figur fällt runter
+      log('fenster', 'runtergefallen:', off ? 'ausgeschaltet' : r.gone);
       perch = null;
       win.webContents.send('perch', null);
       return;
@@ -844,10 +851,11 @@ if (!app.requestSingleInstanceLock()) {
       return;
     }
     log('fenster', `${hit.side}:`, hit.seen[hit.seen.length - 1] || '');
-    perch = { hwnd: hit.hwnd, key: '' };
+    perch = { hwnd: hit.hwnd, address: loadWin32().address(hit.hwnd), key: '' };
     e.returnValue = { side: hit.side, rect: perchRect(hit.rect) };
     startPerchWatch();
   });
+  ipcMain.on('renderer-log', (_e, text) => log('figur', String(text).slice(0, 300)));
   ipcMain.on('perch-release', () => { perch = null; });
   // „Springt auf das aktive Fenster“: Oberkante des Vordergrund-Fensters, wenn sie frei sichtbar ist
   ipcMain.on('perch-foreground', (e) => {
