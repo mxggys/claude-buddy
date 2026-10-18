@@ -58,8 +58,9 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Abklatschen: Zeiger auf ihr ruhen lassen, bis sie die Arme hochreckt, dann klicken.
 - Mausrad über der Figur: sie dreht sich einmal im Kreis. Zeiger zweimal um sie kreisen lassen: ihr wird schwindelig.
 - Neue Leerlauf-Aktionen für alle: Niesen (mit Staubwolke) und Pirouette.
-- Ball zum Spielen (im Menü): die Figur jagt den Ball, schießt ihn weg oder bringt ihn nach Hause; Klick auf den Ball
-  stößt ihn an. Nach einer Minute ohne Spiel räumt sie ihn weg.
+- Ball zum Spielen (im Menü): die Figur jagt den Ball, schießt ihn weg, köpft ihn hoch oder bringt ihn nach Hause.
+  Ball festhalten und werfen, oder anklicken, um ihn hochzuspielen (fünfmal in der Luft halten: Jubel).
+  Nach einer Minute ohne Spiel räumt sie ihn weg.
 - Anschleichen: Ruht der Zeiger in ihrer Nähe am Boden, schleicht sie sich heran und springt drauf.
 - Zweite Figur (im Menü wählbar oder aus): beide schauen sich an, winken sich zu und schauen hin, wenn die andere hüpft.
 - Laune (abschaltbar): Füttern, Streicheln, Abklatschen und Spielen machen fröhlich, ohne Beachtung sinkt sie langsam.
@@ -80,8 +81,13 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 
 ## Menü
 Links- oder Rechtsklick auf das Symbol unten rechts in der Taskleiste, oder Rechtsklick auf die Figur:
-Tippzähler, Figur, Größe (10 bis 300 %, auch eigene Werte und Strg + Mausrad auf der Figur), Zurückholen,
-Extras, Nicht stören, Mittippen, Mikrofon, Vollbild, Energiesparmodus, Autostart, Updates, Fehler-Log, Beenden.
+- oben: Name und Laune, Füttern, Ball, Erinnerung / Wecker, Nicht stören
+- Tippzähler (heute, Woche, gesamt, Rekord, Abzeichen)
+- Aussehen: Figur, zweite Figur, Größe (10 bis 300 %, eigene Werte, Strg + Mausrad), Feiertage und Wetter
+- Verhalten: Laufen, Schwerkraft, auf Fenster setzen / springen, Mittippen, Mikrofon, Pausen-Erinnerung, Laune
+- System: Energiesparmodus, Vollbild, Autostart, Figur zurückholen, Fehler-Log
+- Updates, Beenden
+
 Läuft der Update-Schlüssel bald ab (oder ist abgelaufen), steht ganz oben im Menü ein Hinweis.
 
 ## Installieren

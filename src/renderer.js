@@ -1125,34 +1125,83 @@ function updatePounce(dt, t) {
 }
 
 // ---------- Ball zum Spielen ----------
-const ball = { on: false, x: 0, y: 0, vx: 0, vy: 0, carried: false, lastTouch: 0, kickCool: 0 };
-const ballR = () => Math.max(4, Math.round(6 * Math.max(0.6, SIZE)));
+const ball = { on: false, x: 0, y: 0, vx: 0, vy: 0, carried: false, held: false, lastTouch: 0, kickCool: 0, juggles: 0 };
+const ballR = () => Math.max(7, Math.round(11 * Math.max(0.6, SIZE)));
+// sichtbarer Bereich: der Ball bleibt im Fenster-Streifen
+const ballCeil = () => (FOLLOW ? view.y : 0) + ballR();
 const ballFloor = () => bottomY() + DH - ballR();
 function toggleBall() {
   if (ball.on) { stopBall(); return; }
   if (perch) { perch = null; if (bridge) bridge.releasePerch(); duck.onGround = false; }
   ball.on = true;
+  ball.held = false;
+  ball.juggles = 0;
   if (bridge && bridge.setWide) bridge.setWide(true);
+  if (bridge && bridge.ballState) bridge.ballState(true);
   const side = duck.x + DW / 2 < W / 2 ? 1 : -1;
-  Object.assign(ball, { x: duck.x + DW / 2 + side * 140 * Math.max(0.6, SIZE), y: duck.y - 140, vx: -side * 60, vy: 0, carried: false, lastTouch: now(), kickCool: 0 });
+  Object.assign(ball, { x: duck.x + DW / 2 + side * 160 * Math.max(0.6, SIZE), y: duck.y - 60, vx: -side * 60, vy: 0, carried: false, lastTouch: now(), kickCool: 0 });
   wake();
   kick();
 }
 function stopBall() {
   ball.on = false;
   ball.carried = false;
+  ball.held = false;
   if (bridge && bridge.setWide) bridge.setWide(false);
+  if (bridge && bridge.ballState) bridge.ballState(false);
   stopWalk();
   duck.returnHomeAt = now() + 1500;
 }
 function overBall(x, y) {
-  return ball.on && !ball.carried && Math.hypot(x - ball.x, y - ball.y) < ballR() * 2 + 6;
+  return ball.on && !ball.carried && Math.hypot(x - ball.x, y - ball.y) < ballR() + 8;
 }
-function kickBallFrom(x, y) {
-  const dx = ball.x - x || 1;
-  ball.vx = Math.sign(dx) * rand(320, 620) * Math.max(0.7, SIZE);
-  ball.vy = -rand(420, 700);
+// Klick auf den Ball: hochspielen (in der Luft weiter hochhalten zählt mit)
+function bounceBallFrom(x) {
+  const inAir = ball.y < ballFloor() - 3;
+  ball.juggles = inAir ? ball.juggles + 1 : 1;
+  ball.vx = (ball.x - x) * 6 + rand(-60, 60);
+  ball.vy = -rand(620, 760);
   ball.lastTouch = now();
+  moodPing('ball-user', 3, 10000);
+  if (ball.juggles > 1) spawn('star', ball.x, ball.y);
+  // fünfmal in der Luft gehalten: die Figur jubelt
+  if (ball.juggles % 5 === 0) {
+    react('cheer', now());
+    for (let i = 0; i < 10; i++) spawn('confetti', ball.x + rand(-30, 30), ball.y - rand(0, 30));
+  }
+  kick();
+}
+// Ball festhalten, mitziehen und werfen
+const ballTrail = [];
+function grabBall(x, y) {
+  ball.held = true;
+  ball.carried = false;
+  ball.grab = { x, y, moved: false };
+  ballTrail.length = 0;
+  ballTrail.push({ x, y, t: now() });
+  stopWalk();
+  kick();
+}
+function moveHeldBall(x, y) {
+  ball.x = Math.min(Math.max(x, ballR()), W - ballR());
+  ball.y = Math.min(Math.max(y, ballCeil()), ballFloor());
+  ballTrail.push({ x, y, t: now() });
+  while (ballTrail.length > 6) ballTrail.shift();
+  if (Math.abs(x - ball.grab.x) + Math.abs(y - ball.grab.y) > 6) ball.grab.moved = true;
+  ball.lastTouch = now();
+}
+function releaseBall(x) {
+  ball.held = false;
+  hoverSince = 0;
+  if (!ball.grab.moved) { bounceBallFrom(x); return; }
+  const first = ballTrail[0];
+  const last = ballTrail[ballTrail.length - 1];
+  const span = (last.t - first.t) / 1000;
+  if (span > 0.01 && now() - last.t < 90) {
+    ball.vx = Math.max(-1600, Math.min(1600, (last.x - first.x) / span));
+    ball.vy = Math.max(-1500, Math.min(1500, (last.y - first.y) / span));
+  } else { ball.vx = 0; ball.vy = 0; }
+  ball.juggles = 0;
   moodPing('ball-user', 3, 10000);
   kick();
 }
@@ -1172,18 +1221,40 @@ function updateBall(dt, t) {
     }
     return;
   }
-  ball.vy += 1800 * dt;
+  const floor = ballFloor();
+  if (ball.held) {
+    // festgehalten: die Figur schaut zu und reckt sich, wenn der Ball nah über ihr ist
+    duck.lookTarget = { x: ball.x, y: ball.y, until: t + 300 };
+    if (Math.abs(ball.x - (duck.x + DW / 2)) < DW && ball.y < duck.y && duck.y - ball.y < DH * 2) hoverSince = hoverSince || t - 900;
+    return;
+  }
+  ball.vy += 1500 * dt;
   ball.x += ball.vx * dt;
   ball.y += ball.vy * dt;
-  const floor = ballFloor();
   if (ball.y > floor) {
     ball.y = floor;
     ball.vy = ball.vy > 140 ? -ball.vy * 0.55 : 0;
     ball.vx *= Math.exp(-1.6 * dt);
+    ball.juggles = 0;
   }
   if (ball.x < r) { ball.x = r; ball.vx = Math.abs(ball.vx) * 0.7; }
   if (ball.x > W - r) { ball.x = W - r; ball.vx = -Math.abs(ball.vx) * 0.7; }
-  if (ball.y < r) { ball.y = r; ball.vy = Math.abs(ball.vy) * 0.5; }
+  if (ball.y < ballCeil()) { ball.y = ballCeil(); ball.vy = Math.abs(ball.vy) * 0.5; }
+  // Kopfball: fällt der Ball auf ihren Kopf, köpft sie ihn wieder hoch
+  const headY = duck.y + DH * 0.15;
+  if (!ball.carried && ball.vy > 0 && duck.onGround && t > ball.kickCool && Math.abs(ball.x - (duck.x + DW / 2)) < DW * 0.5
+    && ball.y + r > headY - 4 && ball.y < headY + DH * 0.3) {
+    ball.kickCool = t + 350;
+    ball.y = headY - r - 4;
+    ball.vy = -rand(480, 640);
+    ball.vx += rand(-120, 120);
+    squash(0.85, 1.15, 140);
+    duck.happyUntil = t + 600;
+    spawn('star', ball.x, ball.y);
+    ball.lastTouch = t;
+    moodPing('ball', 2, 15000);
+    return;
+  }
   if (t - ball.lastTouch > 60000) { stopBall(); return; } // keiner spielt mehr
   // die Figur jagt den Ball
   if (duck.dragging || duck.state === 'sleep' || dnd() || !duck.onGround || (acting(t) && ACTIONS[duck.action].priority)) return;
@@ -1663,6 +1734,7 @@ window.addEventListener('mousemove', (e) => {
   const x = mouseX(e);
   const y = mouseY(e);
   if (!bridge) moveCursor(x, y);
+  if (ball.held) { moveHeldBall(x, y); return; }
   if (duck.dragging) {
     duck.x = x - duck.dragDX;
     duck.y = Math.min(y - duck.dragDY, bottomY());
@@ -1696,7 +1768,7 @@ window.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   const x = mouseX(e);
   const y = mouseY(e);
-  if (overBall(x, y) && !overDuck(x, y)) { kickBallFrom(x, y); return; } // Ball anstoßen
+  if (overBall(x, y)) { grabBall(x, y); return; } // Ball festhalten (oder Klick: hochspielen), hat Vorrang vor der Figur
   if (!overDuck(x, y)) return;
   duck.dragging = true;
   duck.onGround = false;
@@ -1719,6 +1791,7 @@ window.addEventListener('mousedown', (e) => {
 
 // Klick: kleiner Hüpfer; Ziehen: neuer Stammplatz
 window.addEventListener('mouseup', (e) => {
+  if (e.button === 0 && ball.held) { releaseBall(mouseX(e)); return; }
   if (e.button !== 0 || !duck.dragging) return;
   duck.dragging = false;
   edgeUnder = null;

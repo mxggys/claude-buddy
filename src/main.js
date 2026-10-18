@@ -92,6 +92,7 @@ const pets = () => [win, win2].filter((w) => w && !w.isDestroyed());
 function sendAll(channel, ...args) { for (const w of pets()) w.webContents.send(channel, ...args); }
 const isSecond = (wc) => Boolean(win2 && !win2.isDestroyed() && wc === win2.webContents);
 const wideWindows = new Set(); // Fenster, die gerade breit sind (Ballspiel)
+let ballOn = false;             // Ball liegt gerade draußen
 let promptWin = null;
 let tray = null;
 let settings = null;
@@ -293,7 +294,7 @@ function fitPetWindow() {
 function windowSize(w) {
   const size = petSize();
   if (!wideWindows.has(w)) return size;
-  return { width: workArea().width, height: size.height + Math.round(170 * Math.max(1, settings.groesse || 1)) };
+  return { width: workArea().width, height: size.height + Math.round(340 * Math.max(1, settings.groesse || 1)) };
 }
 
 let hiddenForFullscreen = false;
@@ -375,6 +376,11 @@ function lastWeek() {
 }
 
 function counterMenu() {
+  const z = settings.zaehler;
+  const heute = z.tag === dayKey() ? z.heute : 0;
+  return [{ label: `Tippzähler: heute ${fmt(heute)}`, submenu: counterItems() }];
+}
+function counterItems() {
   const z = settings.zaehler;
   const heute = z.tag === dayKey() ? z.heute : 0;
   const week = lastWeek();
@@ -830,72 +836,94 @@ function buildMenu() {
   const dnd = settings.nichtStoerenBis > Date.now();
   const warning = tokenWarning();
 
+  const name = CHARACTERS[settings.figur] ? CHARACTERS[settings.figur].name : 'Claude Buddy';
+  const until = (ms) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+  // Aufgeräumt: oben das, was man oft braucht, darunter Aussehen / Verhalten / System in Untermenüs
   tray.setContextMenu(Menu.buildFromTemplate([
     ...(warning ? [{ label: `⚠ ${warning}`, click: askToken }, { type: 'separator' }] : []),
-    ...counterMenu(),
+    { label: settings.launeAn ? `${name} · ${moodWord(settings.laune)} (${Math.round(settings.laune)} %)` : name, enabled: false },
     { type: 'separator' },
-    {
-      label: 'Figur',
-      submenu: ORDER.map((id) => ({
-        label: CHARACTERS[id].name, type: 'radio', checked: settings.figur === id, click: () => setFigur(id),
-      })),
-    },
-    {
-      label: `Größe (${pct(settings.groesse)})`,
-      submenu: [
-        ...SIZE_PRESETS.map((v) => ({
-          label: pct(v), type: 'radio', checked: Math.abs(v - settings.groesse) < 0.001, click: () => setSize(v),
-        })),
-        { type: 'separator' },
-        { label: isPreset ? 'Eigene Größe …' : `Eigene Größe … (${pct(settings.groesse)})`, click: askSize },
-        { label: 'Tipp: Strg + Mausrad auf der Figur', enabled: false },
-      ],
-    },
-    { label: 'Extras', submenu: extrasMenu() },
     { label: 'Füttern', click: () => sendAll('command', { type: 'feed' }) },
-    { label: 'Ball zum Spielen', click: () => win && win.webContents.send('command', { type: 'ball' }) },
-    {
-      label: settings.zweiteFigur ? `Zweite Figur: ${CHARACTERS[settings.zweiteFigur].name}` : 'Zweite Figur',
-      submenu: [
-        { label: 'Aus', type: 'radio', checked: !settings.zweiteFigur, click: () => setSecondPet(null) },
-        { type: 'separator' },
-        ...ORDER.map((id) => ({ label: CHARACTERS[id].name, type: 'radio', checked: settings.zweiteFigur === id, click: () => setSecondPet(id) })),
-      ],
-    },
-    ...(settings.launeAn ? [{ label: `Laune: ${moodWord(settings.laune)} (${Math.round(settings.laune)} %)`, enabled: false }] : []),
-    { label: 'Zurückholen (Doppelklick aufs Symbol)', click: resetPet },
+    { label: ballOn ? 'Ball wegräumen' : 'Ball zum Spielen', click: () => win && win.webContents.send('command', { type: 'ball' }) },
     {
       label: timers.length ? `Erinnerung (nächste um ${clock(timers[0].at)})` : 'Erinnerung / Wecker',
       submenu: timerMenu(),
     },
     {
-      label: dnd
-        ? `Nicht stören bis ${new Date(settings.nichtStoerenBis).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – aufheben`
-        : 'Nicht stören (1 Stunde)',
+      label: dnd ? `Nicht stören bis ${until(settings.nichtStoerenBis)} – aufheben` : 'Nicht stören (1 Stunde)',
       click: () => setDnd(dnd ? 0 : 60),
     },
     { type: 'separator' },
-    toggle('Schwerkraft (fällt nach unten)', 'schwerkraft'),
-    toggle('Tippt mit, wenn ich tippe', 'tastatur'),
-    toggle(settings.energiesparen === 3 ? 'Mund bewegt sich mit Mikrofon (im Modus Hart aus)' : 'Mund bewegt sich mit Mikrofon', 'mikrofon'),
-    toggle('Im Vollbild anzeigen (Spiele, Videos)', 'imVollbild'), // greift bei der nächsten Abfrage
-    toggle('Auf Fenster setzen (auf die Oberkante ziehen)', 'aufFenstern'),
-    toggle('Springt auf das aktive Fenster', 'fensterSpringen'),
-    toggle('Läuft herum', 'laufen'),
-    toggle('Pausen-Erinnerung (nach 60 Min. Tippen)', 'pausen'),
-    toggle('Laune (Füttern, Streicheln, Spielen)', 'launeAn'),
-    {
-      label: `Energiesparmodus (${energy().name})`,
-      submenu: ENERGY.map((level, i) => ({
-        label: `${level.name} – ${level.info}`, type: 'radio', checked: settings.energiesparen === i,
-        click: () => { settings.energiesparen = i; saveSettings(); sendSettings(); applyEnergyMode(); buildMenu(); },
-      })),
-    },
-    {
-      label: 'Mit Windows starten', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin,
-      click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
-    },
+    ...counterMenu(),
     { type: 'separator' },
+    {
+      label: 'Aussehen',
+      submenu: [
+        {
+          label: `Figur: ${name}`,
+          submenu: ORDER.map((id) => ({
+            label: CHARACTERS[id].name, type: 'radio', checked: settings.figur === id, click: () => setFigur(id),
+          })),
+        },
+        {
+          label: settings.zweiteFigur ? `Zweite Figur: ${CHARACTERS[settings.zweiteFigur].name}` : 'Zweite Figur: aus',
+          submenu: [
+            { label: 'Aus', type: 'radio', checked: !settings.zweiteFigur, click: () => setSecondPet(null) },
+            { type: 'separator' },
+            ...ORDER.map((id) => ({ label: CHARACTERS[id].name, type: 'radio', checked: settings.zweiteFigur === id, click: () => setSecondPet(id) })),
+          ],
+        },
+        {
+          label: `Größe: ${pct(settings.groesse)}`,
+          submenu: [
+            ...SIZE_PRESETS.map((v) => ({
+              label: pct(v), type: 'radio', checked: Math.abs(v - settings.groesse) < 0.001, click: () => setSize(v),
+            })),
+            { type: 'separator' },
+            { label: isPreset ? 'Eigene Größe …' : `Eigene Größe … (${pct(settings.groesse)})`, click: askSize },
+            { label: 'Tipp: Strg + Mausrad auf der Figur', enabled: false },
+          ],
+        },
+        { label: 'Feiertage und Wetter', submenu: extrasMenu() },
+      ],
+    },
+    {
+      label: 'Verhalten',
+      submenu: [
+        toggle('Läuft herum', 'laufen'),
+        toggle('Schwerkraft (fällt nach unten)', 'schwerkraft'),
+        { type: 'separator' },
+        toggle('Auf Fenster setzen (an den Rand ziehen)', 'aufFenstern'),
+        toggle('Springt auf das aktive Fenster', 'fensterSpringen'),
+        { type: 'separator' },
+        toggle('Tippt mit, wenn ich tippe', 'tastatur'),
+        toggle(settings.energiesparen === 3 ? 'Mund bewegt sich mit Mikrofon (im Modus Hart aus)' : 'Mund bewegt sich mit Mikrofon', 'mikrofon'),
+        { type: 'separator' },
+        toggle('Pausen-Erinnerung (nach 60 Min. Tippen)', 'pausen'),
+        toggle('Laune (Füttern, Streicheln, Spielen)', 'launeAn'),
+      ],
+    },
+    {
+      label: 'System',
+      submenu: [
+        {
+          label: `Energiesparmodus: ${energy().name}`,
+          submenu: ENERGY.map((level, i) => ({
+            label: `${level.name} – ${level.info}`, type: 'radio', checked: settings.energiesparen === i,
+            click: () => { settings.energiesparen = i; saveSettings(); sendSettings(); applyEnergyMode(); buildMenu(); },
+          })),
+        },
+        toggle('Im Vollbild anzeigen (Spiele, Videos)', 'imVollbild'), // greift bei der nächsten Abfrage
+        {
+          label: 'Mit Windows starten', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin,
+          click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
+        },
+        { type: 'separator' },
+        { label: 'Figur zurückholen (Doppelklick aufs Symbol)', click: resetPet },
+        { label: 'Fehler-Log öffnen', click: () => { log('log geöffnet'); shell.openPath(logPath()); } },
+      ],
+    },
     {
       label: updateStatus.ready ? 'Updates – neue Version bereit' : 'Updates',
       submenu: [
@@ -905,7 +933,7 @@ function buildMenu() {
         { label: getToken() ? 'Update-Schlüssel ändern …' : 'Update-Schlüssel eingeben …', click: askToken },
       ],
     },
-    { label: 'Fehler-Log öffnen', click: () => { log('log geöffnet'); shell.openPath(logPath()); } },
+    { type: 'separator' },
     { label: `Beenden (Version ${app.getVersion()})`, click: () => app.quit() },
   ]));
 }
@@ -1005,6 +1033,7 @@ if (!app.requestSingleInstanceLock()) {
     const other = isSecond(e.sender) ? win : win2;
     if (other && !other.isDestroyed()) other.webContents.send('friend', state);
   });
+  ipcMain.on('ball-state', (_e, on) => { ballOn = Boolean(on); buildMenu(); });
   ipcMain.on('mood', (_e, delta) => { if (typeof delta === 'number' && Number.isFinite(delta)) changeMood(Math.max(-20, Math.min(20, delta))); });
   // Ballspiel: Fenster wird zum breiten Streifen, danach wieder klein
   ipcMain.on('wide', (e, on) => {

@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('duckApp', {
   onFriend: (cb) => ipcRenderer.on('friend', (_e, state) => cb(state)),
   mood: (delta) => ipcRenderer.send('mood', delta),
   setWide: (on) => ipcRenderer.send('wide', on),
+  ballState: (on) => ipcRenderer.send('ball-state', on),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   onKey: (cb) => ipcRenderer.on('key', () => cb()),
   onPower: (cb) => ipcRenderer.on('power', (_e, battery) => cb(battery)),
