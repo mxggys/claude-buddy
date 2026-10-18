@@ -7,7 +7,6 @@ const path = require('path');
 const { startWatching } = require('./watcher');
 const { CHARACTERS, ORDER } = require('./sprites');
 const { setupUpdater } = require('./update');
-const { createTaskbar } = require('./taskbar');
 const weatherApi = require('./weather');
 
 // Durchsichtige Fenster werden mit manchen Grafiktreibern unsichtbar oder schwarz.
@@ -54,7 +53,6 @@ const DEFAULT_SETTINGS = {
   homeBottom: null, // ohne Schwerkraft: Fußhöhe, an der die Figur stehen bleibt
   schwerkraft: true, // an: fällt immer nach unten; aus: bleibt, wo man sie hinzieht
   imVollbild: false, // auch über Spielen / Videos im Vollbild anzeigen
-  taskleisteDurchsichtig: false,
   mikrofon: false,
   tastatur: true,
   energiesparen: 0, // 0 aus, 1 leicht, 2 mittel, 3 hart
@@ -73,14 +71,13 @@ const DEFAULT_SETTINGS = {
 };
 const SETTINGS_VERSION = 4;
 // Einstellungen früherer Versionen, die es nicht mehr gibt
-const REMOVED_KEYS = ['lautstaerke', 'shoppingWaechter', 'shopSeiten', 'kaufWoerter', 'starkeKaufWoerter', 'stoebernWoerter', 'verweilSekunden'];
+const REMOVED_KEYS = ['taskleisteDurchsichtig', 'lautstaerke', 'shoppingWaechter', 'shopSeiten', 'kaufWoerter', 'starkeKaufWoerter', 'stoebernWoerter', 'verweilSekunden'];
 
 let win = null;
 let promptWin = null;
 let tray = null;
 let settings = null;
 let stopWatcher = null;
-let taskbar = null;
 let updater = null;
 let weather = null; // { code, temp, isDay }
 let weatherProblem = '';
@@ -196,10 +193,10 @@ function createWindow() {
 
 // Energiesparmodus in Stufen: wie oft abgefragt wird und mit welcher Priorität die App läuft
 const ENERGY = [
-  { name: 'Aus', info: 'volle Animation', cursorMs: 33, watchMs: 1000, taskbarMs: 250, prio: 'PRIORITY_NORMAL' },
-  { name: 'Leicht', info: 'flüssig, etwas sparsamer', cursorMs: 60, watchMs: 1500, taskbarMs: 400, prio: 'PRIORITY_NORMAL' },
-  { name: 'Mittel', info: 'spart deutlich, niedrige Priorität', cursorMs: 120, watchMs: 2500, taskbarMs: 700, prio: 'PRIORITY_BELOW_NORMAL' },
-  { name: 'Hart', info: 'fast nichts: kaum Animation, Mikrofon aus', cursorMs: 300, watchMs: 4000, taskbarMs: 1500, prio: 'PRIORITY_LOW' },
+  { name: 'Aus', info: 'volle Animation', cursorMs: 33, watchMs: 1000, prio: 'PRIORITY_NORMAL' },
+  { name: 'Leicht', info: 'flüssig, etwas sparsamer', cursorMs: 60, watchMs: 1500, prio: 'PRIORITY_NORMAL' },
+  { name: 'Mittel', info: 'spart deutlich, niedrige Priorität', cursorMs: 120, watchMs: 2500, prio: 'PRIORITY_BELOW_NORMAL' },
+  { name: 'Hart', info: 'fast nichts: kaum Animation, Mikrofon aus', cursorMs: 300, watchMs: 4000, prio: 'PRIORITY_LOW' },
 ];
 const energy = () => ENERGY[settings.energiesparen] || ENERGY[0];
 
@@ -345,9 +342,20 @@ function startWatchers() {
 
   // Mauszeiger verfolgen, damit die Figur hinschauen kann (im Energiesparmodus seltener)
   let lastPos = '';
+  let lastRaise = 0;
   const pollCursor = () => {
     if (win && !hiddenForFullscreen) {
       const p = screen.getCursorScreenPoint();
+      // Zeiger über der Figur: Fenster wieder ganz nach vorne holen. Die Taskleiste (auch mit
+      // TranslucentTB) schiebt sich sonst nach einem Klick über die Figur, und die lässt sich
+      // erst wieder anfassen, wenn die Taskleiste den Fokus verliert.
+      const b = win.getBounds();
+      const over = p.x >= b.x && p.x < b.x + b.width && p.y >= b.y && p.y < b.y + b.height;
+      if (over && Date.now() - lastRaise > 400) {
+        lastRaise = Date.now();
+        win.setAlwaysOnTop(true, 'screen-saver');
+        win.moveTop();
+      }
       const a = workArea();
       const pos = { x: p.x - a.x, y: p.y - a.y };
       const key = pos.x + ',' + pos.y;
@@ -574,10 +582,6 @@ function buildMenu() {
     toggle(settings.energiesparen === 3 ? 'Mund bewegt sich mit Mikrofon (im Modus Hart aus)' : 'Mund bewegt sich mit Mikrofon', 'mikrofon'),
     toggle('Im Vollbild anzeigen (Spiele, Videos)', 'imVollbild'), // greift bei der nächsten Abfrage
     {
-      label: 'Taskleiste durchsichtig', type: 'checkbox', checked: Boolean(settings.taskleisteDurchsichtig),
-      click: (item) => { settings.taskleisteDurchsichtig = item.checked; saveSettings(); applyTaskbar(); buildMenu(); },
-    },
-    {
       label: `Energiesparmodus (${energy().name})`,
       submenu: ENERGY.map((level, i) => ({
         label: `${level.name} – ${level.info}`, type: 'radio', checked: settings.energiesparen === i,
@@ -631,12 +635,6 @@ function buildTray() {
   buildMenu();
 }
 
-// ---------- Durchsichtige Taskleiste ----------
-function applyTaskbar() {
-  if (!taskbar) return;
-  if (!taskbar.set(Boolean(settings.taskleisteDurchsichtig)) && process.platform === 'win32') log('taskleiste', 'nicht verfügbar');
-}
-
 // ---------- Start ----------
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -651,8 +649,6 @@ if (!app.requestSingleInstanceLock()) {
     createWindow();
     buildTray();
     startWatchers();
-    taskbar = createTaskbar({ log, getInterval: () => energy().taskbarMs });
-    applyTaskbar();
     win.webContents.once('did-finish-load', applyEnergyMode);
     refreshWeather();
     powerMonitor.on('on-battery', sendPower);
@@ -714,7 +710,6 @@ if (!app.requestSingleInstanceLock()) {
   process.on('uncaughtException', (err) => log('main fehler', err.stack || err.message));
   app.on('before-quit', () => {
     if (stopWatcher) stopWatcher();
-    if (taskbar) taskbar.set(false); // Taskleiste wieder normal
     if (settings) saveSettings(); // Tippzähler sichern
   });
   app.on('window-all-closed', () => app.quit());
