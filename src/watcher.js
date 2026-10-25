@@ -187,9 +187,14 @@ function createWin32() {
   }
 }
 
-function watchKeys(onKey) {
+function watchKeys(onKey, onRightButton) {
   try {
     const { uIOhook } = require('uiohook-napi');
+    // nur ob die rechte Maustaste gerade gedrückt ist (zum Streicheln), keine Position
+    if (onRightButton) {
+      uIOhook.on('mousedown', (e) => { if (e.button === 2) onRightButton(true); });
+      uIOhook.on('mouseup', (e) => { if (e.button === 2) onRightButton(false); });
+    }
     // gedrückt gehaltene Taste (Wiederholung) nur einmal zählen
     const down = new Set();
     uIOhook.on('keydown', (e) => {
@@ -208,7 +213,7 @@ function watchKeys(onKey) {
 
 // onState({ fullscreen, title }) regelmäßig, onKey() bei jedem Tastendruck.
 // getInterval() erlaubt seltenere Abfragen im Energiesparmodus.
-function startWatching({ onState, onKey, getInterval = () => 1000 }) {
+function startWatching({ onState, onKey, onRightButton, getInterval = () => 1000 }) {
   const win = loadWin32();
   let timer = null;
   const tick = () => {
@@ -220,7 +225,7 @@ function startWatching({ onState, onKey, getInterval = () => 1000 }) {
     timer = setTimeout(tick, getInterval());
   };
   tick();
-  const stopKeys = watchKeys(onKey);
+  const stopKeys = watchKeys(onKey, onRightButton);
   return () => { clearTimeout(timer); stopKeys(); };
 }
 

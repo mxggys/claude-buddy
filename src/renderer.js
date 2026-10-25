@@ -2094,8 +2094,36 @@ function trackCircle(x, y) {
   }
 }
 
+// Streicheln mit gedrückter rechter Maustaste: über die Figur fahren
+let rightHeld = false;
+let rightRub = 0; // wie weit seit dem Drücken über der Figur gerieben wurde
+let rubHearts = 0;
+function setRightHeld(down) {
+  rightHeld = down;
+  if (down) rightRub = 0;
+}
+function rubPet(dist) {
+  const t = now();
+  rightRub += dist;
+  duck.happyUntil = t + 400; // schaut glücklich, solange gestreichelt wird
+  hoverSince = 0;
+  if (!duck.dragging && duck.onGround && Math.random() < 0.15) squash(1.06, 0.95, 120); // kuschelt sich an
+  rubHearts += dist;
+  if (rubHearts > 300) {
+    rubHearts = 0;
+    spawn('heart', duck.x + rand(0.15, 0.85) * DW, duck.y + rand(0, DH * 0.3));
+    cheerUp();
+    wake();
+    moodPing('pet', 4, 20000);
+    stat('gestreichelt');
+    if (CHAR.cuddly && !acting(t) && Math.random() < 0.3) { startAction('nap', t); duck.until = t + ACTIONS.nap.ms; }
+  }
+  kick();
+}
+
 function moveCursor(x, y) {
   trackCircle(x, y);
+  if (rightHeld && !dnd() && overDuck(x, y) && cursor.x >= 0) rubPet(Math.abs(x - cursor.x) + Math.abs(y - cursor.y));
   // Streicheln: Maus über der Figur hin und her bewegen
   if (!duck.dragging && !dnd() && overDuck(x, y) && cursor.x >= 0) {
     pet.amount += Math.abs(x - cursor.x) + Math.abs(y - cursor.y);
@@ -2132,6 +2160,7 @@ window.addEventListener('mousemove', (e) => {
   const x = mouseX(e);
   const y = mouseY(e);
   if (!bridge) moveCursor(x, y);
+  if ((e.buttons & 2) && !rightHeld) setRightHeld(true);
   if (ball.held) { moveHeldBall(x, y); return; }
   if (duck.dragging) {
     duck.x = x - duck.dragDX;
@@ -2383,8 +2412,14 @@ window.addEventListener('dblclick', (e) => {
 // Rechtsklick auf die Figur: dasselbe Menü wie unten rechts in der Taskleiste
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
+  // nach dem Streicheln mit der rechten Taste kein Menü
+  const rubbed = rightRub > 25;
+  rightRub = 0;
+  if (!bridge) rightHeld = false;
+  if (rubbed) return;
   if (bridge && overDuck(mouseX(e), mouseY(e))) bridge.openMenu();
 });
+window.addEventListener('mouseup', (e) => { if (e.button === 2 && !bridge) rightHeld = false; });
 
 // Strg + Mausrad auf der Figur: Größe stufenlos ändern
 let lastSpin = 0;
@@ -2425,6 +2460,7 @@ if (bridge) {
   bridge.getSettings().then((s) => { setMic(s.mikrofon && energyLevel(s.energiesparen) < 3); applyAppSettings(s); });
   bridge.onWindow(onWindowMove);
   bridge.onPerch(onPerch);
+  if (bridge.onRightButton) bridge.onRightButton(setRightHeld);
   if (bridge.onFriend) bridge.onFriend(onFriend);
   bridge.onCommand((cmd) => {
     if (cmd && cmd.type === 'alarm') ring();

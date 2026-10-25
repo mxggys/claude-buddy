@@ -470,6 +470,7 @@ function startWatchers() {
       countKey();
       if (settings.tastatur) sendAll('key');
     },
+    onRightButton: (down) => sendAll('rbutton', down),
     onState: ({ fullscreen, title }) => {
       if (!win) return;
       updateFullscreen(fullscreen);

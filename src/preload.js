@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('duckApp', {
   ballState: (on) => ipcRenderer.send('ball-state', on),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   onKey: (cb) => ipcRenderer.on('key', () => cb()),
+  onRightButton: (cb) => ipcRenderer.on('rbutton', (_e, down) => cb(down)),
   stat: (key) => ipcRenderer.send('stat', key),
   openGift: () => ipcRenderer.send('gift-open'),
   onPower: (cb) => ipcRenderer.on('power', (_e, battery) => cb(battery)),

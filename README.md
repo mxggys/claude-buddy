@@ -13,6 +13,7 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
   Mit „Schwerkraft“ aus bleibt sie überall stehen, wo du sie hinziehst (oben, Mitte, unten).
 - Schaut zum Mauszeiger, tippt mit, wenn du tippst, bewegt den Mund zum Mikrofon (optional).
 - Klick: Hüpfer. Doppelklick: großer Sprung. Streicheln (Maus hin und her): Herzen.
+  Oder rechte Maustaste gedrückt halten und über die Figur reiben (danach öffnet sich kein Menü).
   Festhalten: zappelt. Aus großer Höhe fallen lassen: kurz schwindelig.
   Figuren mit Armen: Klick auf einen Arm winkt mit diesem Arm, ruht der Zeiger auf ihr, reckt sie die Arme hoch.
 - Feste Rangfolge, damit sich nichts vermischt: Festhalten > Reaktion > Sprung > Schlaf > Mittippen
