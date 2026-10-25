@@ -44,7 +44,7 @@ const BASE_H = 200;
 const MIN_SIZE = 0.1;
 const MAX_SIZE = 3;
 const SIZE_PRESETS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.75, 1, 1.5, 2];
-const WEATHER_EVERY = 30 * 60 * 1000;
+const WEATHER_EVERY = 15 * 60 * 1000; // alle 15 Minuten (Regen ist oft kurz)
 
 const DEFAULT_SETTINGS = {
   figur: 'claude',
@@ -68,6 +68,11 @@ const DEFAULT_SETTINGS = {
   laufzeitMin: 0, // wie lange Claude Buddy insgesamt lief (Minuten)
   laufzeitHeute: { tag: '', min: 0 },
   ersterStart: '', // Tag des ersten Starts
+  tage: {}, // Tageswerte für den Wochenrückblick: { '2026-10-25': { min, gefuettert, gestreichelt, ball } }
+  rueckblick: '', // Sonntag, für den der Wochenrückblick schon gezeigt wurde
+  name: '', // eigener Name der Figur
+  name2: '', // Name der zweiten Figur
+  geschenkAnzahl: 0, // wie viele Geschenke schon geöffnet wurden
   farbe: 'original', // Farbvariante der Figur
   farbe2: 'original', // Farbvariante der zweiten Figur
   sammlung: [], // Zubehör aus den täglichen Geschenken
@@ -132,6 +137,7 @@ function loadSettings() {
     spielAbzeichen: { ...saved.spielAbzeichen },
     sammlung: Array.isArray(saved.sammlung) ? [...saved.sammlung] : [],
     laufzeitHeute: { ...DEFAULT_SETTINGS.laufzeitHeute, ...saved.laufzeitHeute },
+    tage: { ...saved.tage },
   };
   if ((settings.version || 1) < 2) settings.mikrofon = false; // war früher standardmäßig an
   for (const key of REMOVED_KEYS) delete settings[key];
@@ -454,6 +460,8 @@ function startWatchers() {
   setInterval(() => { if (counterDirty) buildMenu(); }, 3000);
   setInterval(() => { if (counterDirty) { counterDirty = false; saveSettings(); } }, 30000);
   setInterval(tickRuntime, 60 * 1000);
+  setInterval(checkRecap, 10 * 60 * 1000);
+  setTimeout(checkRecap, 60 * 1000);
   if (!settings.ersterStart) { settings.ersterStart = dayKey(); saveSettings(); }
 
   stopWatcher = startWatching({
@@ -571,6 +579,9 @@ const petSettings = () => ({
   zweiteFigur: Boolean(settings.zweiteFigur),
   zubehoer: settings.zubehoer,
   geschenk: settings.geschenkTag !== dayKey(),
+  geschenkGold: settings.geschenkTag !== dayKey() && goldenToday(),
+  name: settings.name,
+  name2: settings.name2,
   extras: { ...settings.extras, ort: undefined },
 });
 
@@ -592,6 +603,8 @@ function countStat(key) {
   if (!stat) return;
   const n = (settings.spielzeit[key] || 0) + 1;
   settings.spielzeit[key] = n;
+  const today = dayStats();
+  if (key in today) today[key]++;
   if (stat.steps.includes(n) && !settings.spielAbzeichen[`${key}:${n}`]) {
     settings.spielAbzeichen[`${key}:${n}`] = dayKey();
     sendAll('command', { type: 'badge' });
@@ -601,6 +614,57 @@ function countStat(key) {
   clearTimeout(statSaveTimer);
   statSaveTimer = setTimeout(() => { saveSettings(); buildMenu(); }, 3000);
 }
+// Tageswerte für den Wochenrückblick (die letzten 14 Tage)
+function dayStats(tag = dayKey()) {
+  if (!settings.tage[tag]) settings.tage[tag] = { min: 0, gefuettert: 0, gestreichelt: 0, ball: 0 };
+  return settings.tage[tag];
+}
+function pruneDays() {
+  const keep = new Set(Array.from({ length: 14 }, (_, i) => dayKey(new Date(Date.now() - i * 86400000))));
+  for (const k of Object.keys(settings.tage)) if (!keep.has(k)) delete settings.tage[k];
+}
+function weekSummary() {
+  const days = Array.from({ length: 7 }, (_, i) => dayKey(new Date(Date.now() - i * 86400000)));
+  const sum = { tasten: 0, min: 0, gefuettert: 0, gestreichelt: 0, ball: 0 };
+  let best = null;
+  for (const k of days) {
+    const keys = settings.zaehler.tage[k] || 0;
+    sum.tasten += keys;
+    if (!best || keys > best.keys) best = { k, keys };
+    const d = settings.tage[k];
+    if (d) for (const f of ['min', 'gefuettert', 'gestreichelt', 'ball']) sum[f] += d[f] || 0;
+  }
+  return { ...sum, best: best && best.keys > 0 ? best : null };
+}
+function weekLines() {
+  const w = weekSummary();
+  return [
+    `${fmt(w.tasten)} Tasten · ${formatDuration(w.min)} zusammen`,
+    `${fmt(w.gefuettert)}× gefüttert · ${fmt(w.gestreichelt)}× gestreichelt · ${fmt(w.ball)} Ballkontakte`,
+    ...(w.best ? [`Bester Tag: ${shortDay(w.best.k, { weekday: 'long' })} mit ${fmt(w.best.keys)} Tasten`] : []),
+  ];
+}
+function showRecap() {
+  const name = settings.name || CHARACTERS[settings.figur].name;
+  if (tray && process.platform === 'win32') tray.displayBalloon({ title: `Wochenrückblick mit ${name}`, content: weekLines().join('\n'), iconType: 'info' });
+  sendAll('command', 'record'); // kleine Feier
+  log('wochenrückblick', weekLines().join(' | '));
+}
+// Sonntagabend (ab 18 Uhr) oder, falls verpasst, Montag bis Mittwoch: einmal pro Woche
+function checkRecap() {
+  if (!settings) return;
+  const d = new Date();
+  let sunday = null;
+  if (d.getDay() === 0 && d.getHours() >= 18) sunday = d;
+  else if (d.getDay() >= 1 && d.getDay() <= 3) sunday = new Date(d.getTime() - d.getDay() * 86400000);
+  if (!sunday) return;
+  const key = dayKey(sunday);
+  if (settings.rueckblick === key) return;
+  settings.rueckblick = key;
+  saveSettings();
+  showRecap();
+}
+
 // Laufzeit: jede Minute, die Claude Buddy läuft, zählt mit (auch über Updates hinweg)
 const TIME_BADGES = [1, 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]; // Stunden
 function formatDuration(min) {
@@ -617,6 +681,8 @@ function tickRuntime() {
   if (settings.laufzeitHeute.tag !== tag) settings.laufzeitHeute = { tag, min: 0 };
   settings.laufzeitHeute.min++;
   settings.laufzeitMin++;
+  dayStats(tag).min++;
+  if (settings.laufzeitHeute.min === 1) pruneDays();
   // volle Stunden-Meilensteine: Medaille und Konfetti
   const hours = settings.laufzeitMin / 60;
   if (TIME_BADGES.includes(hours) && !settings.spielAbzeichen[`zeit:${hours}`]) {
@@ -647,19 +713,38 @@ function playMenu() {
       enabled: false,
     };
   });
-  return [...runtimeMenu(), ...items];
+  return [
+    ...runtimeMenu(),
+    ...items,
+    { type: 'separator' },
+    { label: 'Wochenrückblick (letzte 7 Tage)', submenu: [...weekLines().map((label) => ({ label, enabled: false })), { type: 'separator' }, { label: 'Als Meldung zeigen', click: showRecap }] },
+  ];
 }
 
 // ---------- Tägliches Geschenk: jeden Tag ein Päckchen mit einem Zubehör ----------
 const ACCESSORIES = [
   ['CROWN', 'Krone'], ['WIZARD', 'Zauberhut'], ['BOW', 'Schleife'], ['FLOWER', 'Blume'], ['CAP', 'Basecap'],
   ['BEANIE', 'Wollmütze'], ['TOPHAT', 'Zylinder'], ['HALO', 'Heiligenschein'], ['HORNS', 'Teufelshörner'], ['SHADES', 'Coole Brille'],
+  ['PIRATE', 'Piratenhut'], ['CHEF', 'Kochmütze'], ['COWBOY', 'Cowboyhut'], ['VIKING', 'Wikingerhelm'],
+  ['PROPELLER', 'Propellermütze'], ['CATEARS', 'Katzenohren'], ['ANTENNA', 'Antennen'], ['STARBAND', 'Sternen-Haarreif'],
 ];
-const accessoryName = (key) => (ACCESSORIES.find(([k]) => k === key) || [key, key])[1];
+// selten: goldenes Geschenk mit besonderen Teilen
+const GOLDEN = [['GOLDCROWN', 'Goldkrone ✦'], ['TIARA', 'Diamant-Diadem ✦'], ['WINGS', 'Engelsflügel ✦'], ['RAINBOW', 'Regenbogen-Glitzer ✦']];
+const ALL_ACCESSORIES = [...ACCESSORIES, ...GOLDEN];
+// heute golden? jedes 10. Geschenk sicher, sonst etwa jeder neunte Tag
+function goldenToday() {
+  const day = Math.floor(new Date(`${dayKey()}T12:00`).getTime() / 86400000);
+  const missingGold = GOLDEN.some(([k]) => !settings.sammlung.includes(k));
+  return missingGold && (settings.geschenkAnzahl % 10 === 9 || day % 9 === 4);
+}
+const accessoryName = (key) => (ALL_ACCESSORIES.find(([k]) => k === key) || [key, key])[1];
 function openGift(sender) {
   if (settings.geschenkTag === dayKey()) return;
+  const golden = goldenToday();
   settings.geschenkTag = dayKey();
-  const missing = ACCESSORIES.filter(([k]) => !settings.sammlung.includes(k));
+  settings.geschenkAnzahl++;
+  let missing = (golden ? GOLDEN : ACCESSORIES).filter(([k]) => !settings.sammlung.includes(k));
+  if (!missing.length) missing = ALL_ACCESSORIES.filter(([k]) => !settings.sammlung.includes(k));
   let item = null;
   if (missing.length) {
     [item] = missing[Math.floor(Math.random() * missing.length)];
@@ -668,20 +753,20 @@ function openGift(sender) {
   }
   saveSettings();
   log('geschenk', item || 'alles gesammelt');
-  sender.send('command', { type: 'gift', item, name: item ? accessoryName(item) : null });
+  sender.send('command', { type: 'gift', item, name: item ? accessoryName(item) : null, golden });
   changeMood(10);
   sendSettings();
   buildMenu();
 }
 function accessoryMenu() {
-  const owned = ACCESSORIES.filter(([k]) => settings.sammlung.includes(k));
+  const owned = ALL_ACCESSORIES.filter(([k]) => settings.sammlung.includes(k));
   return [
     { label: 'Keins', type: 'radio', checked: !settings.zubehoer, click: () => setAccessory(null) },
     ...owned.map(([k, name]) => ({ label: name, type: 'radio', checked: settings.zubehoer === k, click: () => setAccessory(k) })),
     { type: 'separator' },
     {
-      label: owned.length < ACCESSORIES.length
-        ? `Noch ${ACCESSORIES.length - owned.length} im täglichen Geschenk zu finden`
+      label: owned.length < ALL_ACCESSORIES.length
+        ? `Noch ${ALL_ACCESSORIES.length - owned.length} im täglichen Geschenk zu finden (✦ = selten, goldenes Päckchen)`
         : 'Alles gesammelt!',
       enabled: false,
     },
@@ -892,6 +977,17 @@ async function askBirthday() {
   setExtra('geburtstagDatum', `${m[1].padStart(2, '0')}.${m[2].padStart(2, '0')}.`);
 }
 
+async function askName(second = false) {
+  const key = second ? 'name2' : 'name';
+  const value = await askText({ label: second ? 'Name der zweiten Figur' : 'Name deiner Figur', hint: 'Leer lassen für den normalen Namen.', value: settings[key] || '' });
+  if (value === null) return;
+  settings[key] = value.trim().slice(0, 24);
+  saveSettings();
+  sendSettings();
+  sendAll('command', { type: 'name' }); // Namensschild kurz zeigen
+  buildMenu();
+}
+
 async function askPlace() {
   const value = await askText({
     label: 'Dein Ort für das Wetter',
@@ -994,7 +1090,15 @@ function extrasMenu() {
   const e = settings.extras;
   const check = (label, key) => ({ label, type: 'checkbox', checked: Boolean(e[key]), click: (item) => setExtra(key, item.checked) });
   let weatherLine = e.ort ? e.ort.name : 'Kein Ort eingetragen';
-  if (weather && e.wetter && e.ort) weatherLine = `${e.ort.name.split(',')[0]}: ${Math.round(weather.temp)} °C, ${weatherApi.describe(weather.code)}`;
+  let weatherMore = null;
+  if (weather && e.wetter && e.ort) {
+    weatherLine = `${e.ort.name.split(',')[0]}: ${Math.round(weather.temp)} °C, ${weatherApi.describe(weather)}`;
+    const bits = [];
+    if (typeof weather.feels === 'number') bits.push(`gefühlt ${Math.round(weather.feels)} °C`);
+    if (typeof weather.prob === 'number') bits.push(`Regenrisiko ${weather.prob} %`);
+    if (typeof weather.wind === 'number') bits.push(`Wind ${Math.round(weather.wind)} km/h`);
+    weatherMore = bits.join(' · ');
+  }
   if (weatherProblem) weatherLine = weatherProblem;
   return [
     check('Weihnachtsmütze im Dezember', 'weihnachten'),
@@ -1007,8 +1111,10 @@ function extrasMenu() {
     { type: 'separator' },
     check('Wetter (Schirm, Sonnenbrille, Regen, Schnee)', 'wetter'),
     { label: weatherLine, enabled: false },
+    ...(weatherMore ? [{ label: weatherMore, enabled: false }] : []),
+    ...(weather && e.wetter ? [{ label: 'Wetter jetzt aktualisieren', click: refreshWeather }] : []),
     { label: e.ort ? 'Ort ändern …' : 'Ort eintragen …', click: askPlace },
-    check('Wetter-Schild neben der Figur', 'temperatur'),
+    check('Wetter-Schild neben der Figur (mit Regenrisiko)', 'temperatur'),
     { type: 'separator' },
     { label: 'Extras kurz zeigen', click: () => sendAll('command', 'preview-extras') },
   ];
@@ -1025,7 +1131,9 @@ function buildMenu() {
   const dnd = settings.nichtStoerenBis > Date.now();
   const warning = tokenWarning();
 
-  const name = CHARACTERS[settings.figur] ? CHARACTERS[settings.figur].name : 'Claude Buddy';
+  const figureName = CHARACTERS[settings.figur] ? CHARACTERS[settings.figur].name : 'Claude Buddy';
+  const name = settings.name ? `${settings.name} (${figureName.replace(/ \(.*\)$/, '')})` : figureName;
+  tray.setToolTip(settings.name ? `${settings.name} · Claude Buddy` : 'Claude Buddy');
   const until = (ms) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
   // Aufgeräumt: oben das, was man oft braucht, darunter Aussehen / Verhalten / System in Untermenüs
@@ -1051,7 +1159,7 @@ function buildMenu() {
       label: 'Aussehen',
       submenu: [
         {
-          label: `Figur: ${name}`,
+          label: `Figur: ${figureName}`,
           submenu: ORDER.map((id) => ({
             label: CHARACTERS[id].name, type: 'radio', checked: settings.figur === id, click: () => setFigur(id),
           })),
@@ -1064,8 +1172,10 @@ function buildMenu() {
             ...ORDER.map((id) => ({ label: CHARACTERS[id].name, type: 'radio', checked: settings.zweiteFigur === id, click: () => setSecondPet(id) })),
           ],
         },
+        { label: settings.name ? `Name: ${settings.name} – ändern …` : 'Name geben …', click: () => askName(false) },
+        ...(settings.zweiteFigur ? [{ label: settings.name2 ? `Name der zweiten Figur: ${settings.name2} – ändern …` : 'Zweiter Figur einen Namen geben …', click: () => askName(true) }] : []),
         {
-          label: `Zubehör (${settings.sammlung.length} von ${ACCESSORIES.length})${settings.zubehoer ? `: ${accessoryName(settings.zubehoer)}` : ''}`,
+          label: `Zubehör (${settings.sammlung.length} von ${ALL_ACCESSORIES.length})${settings.zubehoer ? `: ${accessoryName(settings.zubehoer)}` : ''}`,
           submenu: accessoryMenu(),
         },
         { label: `Farbe: ${COLORS.find(([k]) => k === settings.farbe)?.[1] || 'Original'}`, submenu: colorMenu(false) },

@@ -31,8 +31,10 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Tippzähler oben im Menü: heute, Woche (pro Tag), gesamt und Rekord (nur die Anzahl, nicht welche Tasten).
 - Mini-Claude denkt mit (drei Punkte), wenn ein Claude-Fenster vorne ist.
 - Extras: Weihnachtsmütze im Dezember, Partyhut an Silvester/Neujahr und am Geburtstag (mit Konfetti),
-  Wetter für deinen Ort (Schirm, Sonnenbrille, Regen, Schnee, Temperatur; Daten von Open-Meteo),
-  Wetter-Schild mit Symbol neben der Figur.
+  Wetter für deinen Ort (Schirm, Sonnenbrille, Regen, Schnee, Temperatur; Daten von Open-Meteo).
+  Regen und Schnee zeigt sie nur, wenn wirklich etwas fällt (gemessener Niederschlag der letzten 15 Minuten),
+  alle 15 Minuten aktualisiert. Wetter-Schild mit Symbol, Temperatur und Regenrisiko in Prozent; im Menü dazu
+  gefühlte Temperatur und Wind.
 - Begrüßung beim Start, Doppelklick aufs Symbol holt die Figur zurück.
 - Reaktionen: erschrickt bei sehr schnellem Tippen, wird schwindelig bei Klick-Spam,
   jubelt nach 10 Minuten konzentriertem Tippen, wird traurig, wenn sie lange nicht beachtet wird.
@@ -76,8 +78,14 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
   sowieso). Schnee bleibt auf der Taskleiste und auf dem Fenster liegen, sie baut einen Schneemann und bekommt
   eine kleine Schneehaube.
 - Tägliches Geschenk: jeden Tag ein Päckchen neben ihr, Klick packt es aus. Darin eins von 10 Zubehörteilen
-  (Krone, Zauberhut, Schleife, Blume, Basecap, Wollmütze, Zylinder, Heiligenschein, Teufelshörner, Coole Brille),
-  wechselbar unter Aussehen → Zubehör.
+  (Krone, Zauberhut, Schleife, Blume, Basecap, Wollmütze, Zylinder, Heiligenschein, Teufelshörner, Coole Brille,
+  Piratenhut, Kochmütze, Cowboyhut, Wikingerhelm, Propellermütze, Katzenohren, Antennen, Sternen-Haarreif).
+  Selten (jedes 10. Geschenk sicher) ein goldenes Päckchen mit Goldkrone, Diamant-Diadem, Engelsflügeln oder
+  Regenbogen-Glitzer. Wechselbar unter Aussehen → Zubehör; selbst gewähltes Zubehör geht vor Feiertags-Hüten.
+- Eigener Name (Aussehen → Name geben): steht oben im Menü, am Taskleisten-Symbol und als Schild über der Figur,
+  wenn der Zeiger auf ihr ruht.
+- Wochenrückblick: Sonntagabend (oder bis Mittwoch nachgeholt) eine Meldung mit Tasten, gemeinsamer Zeit,
+  Füttern, Streicheln, Ballkontakten und dem besten Tag; jederzeit unter Spielzeit → Wochenrückblick.
 - Farbvarianten unter Aussehen: Original, Blau, Grün, Lila, Rosa, Gold, Mitternacht (auch für die zweite Figur).
 - Spielzeit im Menü: wie oft gefüttert, gestreichelt, abgeklatscht, geworfen und mit dem Ball gespielt wurde,
   mit eigenen Abzeichen (Sterne) und Feier.

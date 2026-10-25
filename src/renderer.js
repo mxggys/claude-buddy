@@ -48,6 +48,10 @@ let moodOn = true;                // Laune an
 let moodValue = 70;               // Laune 0 … 100 (kommt aus dem Hauptprogramm)
 let accessory = null;             // getragenes Zubehör aus dem täglichen Geschenk
 let giftReady = false;            // heutiges Geschenk liegt bereit
+let giftGold = false;             // heute ist es ein seltenes goldenes Päckchen
+let petName = '';                 // eigener Name der Figur
+let nameUntil = 0;                // Namensschild kurz zeigen
+let glowUntil = 0;                // Lichtschein hinter der Figur (Abzeichen, goldenes Geschenk)
 
 const frameCache = new Map(); // fertig gemalte Posen der aktuellen Figur
 
@@ -397,6 +401,13 @@ function paintFigure(t) {
   const flip = isFlipped();
   const frame = currentFrame(t);
   const movingEye = frame.some((row) => row.includes('E'));
+  if (accessory === 'WINGS') {
+    // flattern beim Fliegen/Springen schnell, sonst langsam
+    const flap = Math.floor(t / (duck.onGround ? 600 : 120)) % 2;
+    const wy = Math.round(HEIGHT * 0.22) - flap;
+    paint(CHAR.props.WING_L, -5, wy, false);
+    paint(CHAR.props.WING_R, WIDTH - 1, wy, false);
+  }
   sctx.drawImage(cachedFrame(frame, flip, movingEye ? { E: CHAR.eyeBg } : null), PAD, PAD);
   if (movingEye) {
     const { dx, dy } = lookOffset(t, flip);
@@ -467,6 +478,7 @@ function draw(t) {
   ctx.setTransform(1, 0, 0, 1, -view.x, -view.y);
   drawSnow();
   drawGift(t);
+  drawGlow(t);
   drawShadow();
   paintFigure(t);
   // groß: harte Pixel; sehr klein: weich verkleinern, damit nichts verschwindet
@@ -496,6 +508,7 @@ function draw(t) {
   drawMeal();
   drawTemperature();
   drawPauseSign(t);
+  drawNameTag(t);
   drawBall();
   if (duck.action === 'dizzy' && acting(t)) drawDizzyStars(t);
   drawParticles();
@@ -580,7 +593,7 @@ function spawn(type, x, y) {
   if (hardSave() && !['heart', 'bang', 'star'].includes(type)) return;
   const vy = { heart: rand(-70, -45), star: rand(-110, -60), bang: -40, confetti: rand(-90, -30), note: -45 }[type] ?? rand(-130, -70);
   const color = ['#ff5fa2', '#4aa3f0', '#f2cf63', '#6fdc8c', '#ff8a3d'][Math.floor(Math.random() * 5)];
-  particles.push({ type, x, y, vx: type === 'bang' ? 0 : rand(-35, 35), vy, life: 1, color, alt: Math.random() < 0.4 });
+  particles.push({ type, x, y, vx: type === 'bang' ? 0 : rand(-35, 35), vy, life: 1, color, alt: Math.random() < 0.4, seed: rand(0, 6.28), shape: Math.floor(rand(0, 3)) });
 }
 
 function updateParticles(dt) {
@@ -591,13 +604,19 @@ function updateParticles(dt) {
     p.y += p.vy * dt;
     if (p.type === 'tap') p.vy += 400 * dt;
     if (p.type === 'star') p.vy += 120 * dt;
-    if (p.type === 'confetti') { p.vy = Math.min(p.vy + 160 * dt, 70); p.vx *= 0.98; }
+    if (p.type === 'confetti') {
+      // flattert beim Fallen hin und her
+      p.vy = Math.min(p.vy + 160 * dt, 70);
+      p.vx = p.vx * 0.98 + Math.sin(p.life * 18 + (p.seed || 0)) * 40 * dt;
+    }
+    if (p.type === 'heart') p.vx = Math.sin(p.life * 9 + (p.seed || 0)) * 14; // sanft schaukeln
+    if (p.type === 'rainbow') { p.vy += 20 * dt; }
     // Regen/Schnee verschwindet am Boden
     if ((p.type === 'rain' || p.type === 'snow') && p.y > groundY() + DH) p.life = 0;
     if (p.type === 'dust') { p.vy *= 0.9; p.vx *= 0.94; }
     if (p.type === 'food') updateFood(p, dt);
     if (p.type === 'crumb') { p.vy += 380 * dt; p.vx *= 0.97; }
-    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4 }[p.type] || 2.2);
+    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
@@ -607,21 +626,34 @@ function drawParticles() {
   for (const p of particles) {
     ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.5));
     if (p.type === 'heart') {
-      // kurz aufploppen: erst größer, dann normal
-      const pop = p.life > 0.85 ? 1 + (p.life - 0.85) * 4 : 1;
+      // aus klein aufploppen, dann sanft ausblenden
+      const pop = p.life > 0.9 ? 0.5 + (1 - p.life) * 5 : p.life > 0.8 ? 1 + (p.life - 0.8) * 2 : 1;
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 2));
       drawSmall(HEART, p.x, p.y, Math.max(1, Math.round(px * pop)));
     }
-    else if (p.type === 'star') drawSmall(CHAR.props.STAR, p.x, p.y, px);
-    else if (p.type === 'bang') {
-      ctx.font = `bold ${Math.max(9, Math.round(18 * Math.min(1.5, SIZE)))}px "Segoe UI", sans-serif`;
+    else if (p.type === 'star') {
+      // funkeln: abwechselnd Plus und Kreuz, mit weißem Kern
+      const twinkle = Math.floor(p.life * 14 + (p.seed || 0)) % 2;
+      drawSmall(twinkle ? CHAR.props.STAR : ['i.i', '.I.', 'i.i'], p.x, p.y, px);
+    } else if (p.type === 'rainbow') {
+      ctx.fillStyle = `hsl(${(p.hue + p.life * 200) % 360}, 95%, 62%)`;
+      const q = Math.max(2, Math.round(px * 1.5 * p.life + 1));
+      ctx.fillRect(Math.round(p.x), Math.round(p.y), q, q);
+    } else if (p.type === 'bang') {
+      const popBang = p.life > 0.85 ? 1.4 - (1 - p.life) * 2.6 : 1; // springt kurz groß auf
+      ctx.font = `bold ${Math.max(9, Math.round(18 * Math.min(1.5, SIZE) * popBang))}px "Segoe UI", sans-serif`;
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#ffffff';
       ctx.fillStyle = '#d4471c';
       ctx.strokeText('!', p.x, p.y);
       ctx.fillText('!', p.x, p.y);
     } else if (p.type === 'confetti') {
+      // drei Formen: Streifen (dreht sich), Quadrat, Kringel
       ctx.fillStyle = p.color;
-      ctx.fillRect(Math.round(p.x), Math.round(p.y), px + 1, Math.max(1, Math.round(px * (Math.sin(p.life * 30) > 0 ? 2 : 1))));
+      const turn = Math.sin(p.life * 30 + (p.seed || 0));
+      if (p.shape === 0) ctx.fillRect(Math.round(p.x), Math.round(p.y), Math.max(1, Math.round((px + 1) * Math.abs(turn))), px * 2);
+      else if (p.shape === 1) ctx.fillRect(Math.round(p.x), Math.round(p.y), px + 1, px + 1);
+      else { ctx.fillRect(Math.round(p.x), Math.round(p.y), px, px); ctx.fillRect(Math.round(p.x + px * (turn > 0 ? 1 : -1)), Math.round(p.y + px), px, px); }
     } else if (p.type === 'steam') {
       ctx.fillStyle = `rgba(235, 228, 220, ${0.55 * p.life})`;
       const s = Math.max(1, Math.round(px * (1.6 - p.life)));
@@ -712,12 +744,13 @@ function activeHat(t) {
   if (phase === 'easter') return 'EARS';
   if (phase === 'halloween') return 'PUMPKIN';
   if (phase) return null;
+  // selbst gewähltes Zubehör aus dem Geschenk geht vor Feiertags-Hüten
+  if (accessory && CHAR.props[accessory] && !SPECIAL_ACCESSORIES.has(accessory)) return accessory;
   if (extras.silvester && isNewYear()) return 'PARTY';
   if (isBirthday()) return 'PARTY';
   if (extras.weihnachten && todayParts().month === 12) return 'SANTA';
   if (extras.ostern !== false && isEaster()) return 'EARS';
   if (extras.halloween !== false && isHalloween()) return 'PUMPKIN';
-  if (accessory && CHAR.props[accessory]) return accessory; // Zubehör aus dem Geschenk
   if (duck.state === 'sleep' && late()) return 'NIGHTCAP'; // nachts mit Schlafmütze
   return null;
 }
@@ -754,8 +787,19 @@ function updateExtras(t, dt = 0.05) {
 
 // ---------- Wetter (Open-Meteo, vom Hauptprozess geholt) ----------
 const wCode = () => (weather && extras.wetter ? weather.code : -1);
-const rainy = () => { const c = wCode(); return (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95 || previewPhase(now()) === 'rain'; };
-const snowy = () => { const c = wCode(); return (c >= 71 && c <= 77) || c === 85 || c === 86; };
+// neue Wetterdaten haben rainNow/snowNow (gemessener Niederschlag); alte nur den Code
+const measured = () => weather && typeof weather.rainNow === 'boolean';
+const rainy = () => {
+  if (previewPhase(now()) === 'rain') return true;
+  if (!weather || !extras.wetter) return false;
+  if (measured()) return weather.rainNow || weather.storm;
+  const c = wCode(); return (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95;
+};
+const snowy = () => {
+  if (!weather || !extras.wetter) return false;
+  if (measured()) return weather.snowNow;
+  const c = wCode(); return (c >= 71 && c <= 77) || c === 85 || c === 86;
+};
 const sunny = () => (weather && extras.wetter && weather.isDay && wCode() <= 1 && weather.temp >= 22) || previewPhase(now()) === 'sun';
 // Schnee im Winter: Dezember bis Februar ist jeder dritte Tag ein Schneetag (auch ohne Wetter-Ort)
 function winterSnow() {
@@ -780,7 +824,7 @@ function updateWeather(dt, t) {
       : { type: 'rain', x, y: duck.y - rand(30, 70) * Math.max(0.6, SIZE), vx: -20, vy: rand(260, 340), life: 1 });
   }
   // Gewitter: ab und zu erschrecken
-  if (wCode() >= 95 && duck.state !== 'sleep' && Math.random() < dt / 45) react('startle', t);
+  if ((measured() ? weather.storm : wCode() >= 95) && duck.state !== 'sleep' && Math.random() < dt / 45) react('startle', t);
   // Frost: ab und zu schütteln
   if (weather && extras.wetter && weather.temp <= 0 && duck.state === 'idle' && !acting(t) && Math.random() < dt / 20) startAction('shake', t);
 }
@@ -793,8 +837,15 @@ const DIGITS = {
   6: ['111', '100', '111', '101', '111'], 7: ['111', '001', '010', '010', '010'],
   8: ['111', '101', '111', '101', '111'], 9: ['111', '101', '111', '001', '111'],
   '-': ['000', '000', '111', '000', '000'], '°': ['11', '11', '00', '00', '00'],
+  '%': ['101', '001', '010', '100', '101'], ' ': ['0', '0', '0', '0', '0'],
 };
 function weatherIcon(code) {
+  if (measured()) {
+    if (weather.storm) return 'storm';
+    if (weather.snowNow) return 'snow';
+    if (weather.rainNow) return 'rain';
+    return (weather.cloud ?? 0) >= 40 ? 'cloud' : 'sun';
+  }
   if (code >= 95) return 'storm';
   if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
   if (code >= 51) return 'rain';
@@ -803,7 +854,9 @@ function weatherIcon(code) {
 }
 function drawTemperature() {
   if (!weather || !extras.wetter || !extras.temperatur) return;
-  const text = `${Math.round(weather.temp)}°`;
+  // mit Regenrisiko, sobald es nennenswert ist (z. B. „12° 40%“)
+  const prob = typeof weather.prob === 'number' && weather.prob >= 10 ? ` ${Math.round(weather.prob)}%` : '';
+  const text = `${Math.round(weather.temp)}°${prob}`;
   const px = Math.max(2, Math.round(2 * Math.min(1.5, SIZE + 0.25)));
   const icon = DuckSprites.WEATHER_ICONS[weatherIcon(weather.code)];
   const glyphs = [...text].map((ch) => DIGITS[ch]).filter(Boolean);
@@ -1008,6 +1061,7 @@ function update(dt, t) {
   }
 
   updateBall(dt, t); // Ball fliegt auch weiter, während man die Figur hält
+  updateAccessoryFx(dt, t); // Regenbogen-Spur auch im Flug und beim Tragen
   sendState(t);
   if (duck.dragging) return;
 
@@ -1438,6 +1492,53 @@ function desktopFile() {
 }
 function stat(key) { if (bridge && bridge.stat) bridge.stat(key); }
 
+// ---------- Lichtschein und Namensschild ----------
+function drawGlow(t) {
+  if (glowUntil <= t) return;
+  const k = Math.min(1, (glowUntil - t) / 800); // blendet am Ende aus
+  const cx = duck.x + DW / 2;
+  const cy = duck.y + DH * 0.45;
+  const r = Math.max(DW, DH) * 1.1;
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, `rgba(255, 232, 140, ${0.55 * k})`);
+  g.addColorStop(1, 'rgba(255, 232, 140, 0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  // langsam drehende Strahlen
+  ctx.fillStyle = `rgba(255, 240, 180, ${0.35 * k})`;
+  for (let i = 0; i < 8; i++) {
+    const a = t / 900 + (i * Math.PI) / 4;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r * 1.15, a - 0.09, a + 0.09);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+function drawNameTag(t) {
+  if (!petName || pauseUntil > t || duck.dragging) return;
+  const hovering = hoverSince && t - hoverSince > 700;
+  if (!hovering && nameUntil <= t) return;
+  const fs = Math.max(9, Math.round(11 * Math.min(1.5, SIZE + 0.3)));
+  ctx.font = `600 ${fs}px "Segoe UI", sans-serif`;
+  const w = Math.round(ctx.measureText(petName).width + fs);
+  const h = Math.round(fs * 1.6);
+  const x = Math.round(duck.x + DW / 2 - w / 2);
+  const y = Math.round(duck.y - h - 6 * Math.max(0.6, SIZE));
+  ctx.fillStyle = 'rgba(24, 20, 26, .78)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, h / 2); else ctx.rect(x, y, w, h);
+  ctx.fill();
+  ctx.fillStyle = '#fffaf0';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(petName, x + w / 2, y + h / 2 + 1);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
 // ---------- Schnee: liegt mit der Zeit auf der Taskleiste, dann baut sie einen Schneemann ----------
 const snow = { depth: 0, cap: 0, man: 0, manX: null };
 function updateSnow(dt, t) {
@@ -1492,8 +1593,25 @@ function drawSnow() {
 }
 
 // ---------- Tägliches Geschenk ----------
+const SPECIAL_ACCESSORIES = new Set(['WINGS', 'RAINBOW', 'SHADES']); // keine Hüte
+// Regenbogen-Glitzer: zieht beim Bewegen eine bunte Spur, in Ruhe funkelt es leise
+let rainbowAcc = 0;
+function updateAccessoryFx(dt, t) {
+  if (hardSave() || dnd()) return;
+  if (accessory === 'RAINBOW') {
+    const moving = !duck.onGround || duck.dragging || duck.sliding || (duck.walkTo !== null && duck.walkTo !== undefined);
+    rainbowAcc += dt * (moving ? 45 : 3);
+    while (rainbowAcc >= 1) {
+      rainbowAcc--;
+      particles.push({ type: 'rainbow', x: duck.x + DW * rand(0.2, 0.8), y: duck.y + DH * rand(0.5, 0.95), vx: rand(-15, 15), vy: rand(-25, 5), life: 1, hue: (t / 4) % 360 });
+    }
+  }
+  if ((accessory === 'GOLDCROWN' || accessory === 'TIARA') && Math.random() < dt * 0.7) {
+    spawn('star', duck.x + DW / 2 + rand(-DW * 0.25, DW * 0.25), duck.y + rand(-4, DH * 0.15));
+  }
+}
 let giftX = null;
-const giftRows = () => CHAR.props.GIFT;
+const giftRows = () => (giftGold ? CHAR.props.GIFTGOLD : CHAR.props.GIFT);
 function giftBox() {
   if (!giftReady || SECOND || ball.on || giftX === null) return null;
   const rows = giftRows();
@@ -1511,6 +1629,7 @@ function overGift(x, y) {
 }
 function drawGift(t) {
   const g = giftBox();
+  if (g && giftGold && Math.random() < 0.08) spawn('star', g.x + rand(0, g.w), g.y + rand(-4, g.h * 0.5)); // goldenes Päckchen funkelt
   if (g) {
     const hop = Math.floor(t / 1600) % 3 === 0 ? Math.round(Math.abs(Math.sin(t / 120)) * 2 * Math.max(0.6, SIZE)) : 0; // wackelt ab und zu
     giftRows().forEach((line, r) => [...line].forEach((ch, c) => {
@@ -1549,8 +1668,12 @@ function openGift() {
   else onGift({ item: Object.keys(CHAR.props).includes('CROWN') ? 'CROWN' : null });
   kick();
 }
-function onGift({ item }) {
-  if (reveal) reveal.item = item === 'SHADES' ? 'GLASSES' : item;
+function onGift({ item, golden }) {
+  if (reveal) reveal.item = item === 'SHADES' ? 'GLASSES' : item === 'WINGS' ? 'WING_L' : item === 'RAINBOW' ? 'STAR' : item;
+  if (golden) {
+    glowUntil = now() + 3500;
+    for (let i = 0; i < 30; i++) spawn('confetti', duck.x + rand(-DW * 0.5, DW * 1.5), duck.y - rand(0, 60) * Math.max(0.5, SIZE));
+  }
   setTimeout(() => {
     react('cheer', now());
     giftX = null;
@@ -1600,6 +1723,7 @@ function celebrateBadge() {
   const t = now();
   react('cheer', t);
   medalUntil = t + 6000;
+  glowUntil = t + 3000;
   for (let i = 0; i < 30; i++) spawn('confetti', duck.x + rand(-DW * 0.5, DW * 1.5), duck.y - rand(10, 60) * Math.max(0.5, SIZE));
   kick();
 }
@@ -1908,6 +2032,8 @@ function applyAppSettings(s) {
   moodOn = s.launeAn !== false;
   accessory = s.zubehoer || null;
   giftReady = Boolean(s.geschenk) && !SECOND;
+  giftGold = Boolean(s.geschenkGold);
+  petName = (SECOND ? s.name2 : s.name) || '';
   if (!giftReady) giftX = null;
   if (typeof s.laune === 'number') moodValue = s.laune;
   if (!sitOnWindows && !windowJumps && perch) { perch = null; duck.onGround = false; fallStartY = duck.y; }
@@ -2308,6 +2434,7 @@ if (bridge) {
     if (cmd && cmd.type === 'download') downloadDone();
     if (cmd && cmd.type === 'desktop') desktopFile();
     if (cmd && cmd.type === 'gift') onGift(cmd);
+    if (cmd && cmd.type === 'name') nameUntil = now() + 3000;
     if (cmd === 'record') celebrateRecord();
     if (cmd === 'sleep') { duck.state = 'sleep'; duck.until = now() + 60000; lastActivity = -Infinity; }
     if (cmd === 'preview-extras') { previewExtrasUntil = now() + PREVIEW_MS; nextConfetti = 0; kick(); }
@@ -2338,7 +2465,8 @@ if (bridge) {
     showPause() { work.start = 1; work.nextAt = 0; duck.lastKeyAt = performance.now(); updatePause(performance.now()); },
     setMood(v) { moodValue = v; }, pounceNow() { pounceCooldown = 0; },
     desktopFile, snow, openGift,
-    setGift(on) { giftReady = on; giftX = null; }, setAccessory(a) { accessory = a; },
+    setGift(on, gold = false) { giftReady = on; giftGold = gold; giftX = null; }, setAccessory(a) { accessory = a; },
+    setName(n) { petName = n; nameUntil = performance.now() + 3000; }, glow() { glowUntil = performance.now() + 3000; },
     setColor(v) { CONFIG.farbe = v; applyCharacter(CHAR.id); },
     setWalking(on) { walking = on; }, maybeWalk, launchTo,
     jumpOnto(rect) { jumpTarget = rect; launchTo(Math.min(Math.max(duck.x, rect.left + 8), rect.left + rect.width - DW - 8), rect.top - DH); }, jumpHome,

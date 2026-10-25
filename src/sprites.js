@@ -764,7 +764,22 @@
     TOPHAT: small(['.KKKKK.', '.KKKKK.', '.KsKKK.', '.ddddd.', 'KKKKKKK']),
     HALO: ['.iiiii.', 'i.....i', '.iiiii.'],
     HORNS: small(['d.....d', 'dd...dd', '.D...D.']),
+    PIRATE: small(['..KKKKK..', '.KKKaKKK.', 'KKKKKKKKK', '.KK...KK.']),
+    CHEF: small(['.aaa.aaa.', 'aaaaaaaaa', '.aaaaaaa.', '..nnnnn..', '..aaaaa..']),
+    COWBOY: small(['...uuu...', '..uuuuu..', '..UUUUU..', 'uuuuuuuuu', '.u.....u.']),
+    VIKING: small(['a.......a', 'a..jjj..a', '.jjjjjjj.', 'jJjjjjjJj', 'uuuuuuuuu']),
+    PROPELLER: small(['.bbb.ddd.', '....k....', '..bdbdb..', '.bdbdbdb.', 'bdbdbdbdb']),
+    CATEARS: small(['k.....k', 'kk...kk', 'kpk.kpk', 'kkkkkkk']),
+    ANTENNA: small(['i.....i', 'k.....k', '.k...k.', '..kkk..']),
+    STARBAND: small(['..i...i..', '.iIi.iIi.', '..i...i..', 'zzzzzzzzz']),
+    // seltene, goldene Teile
+    GOLDCROWN: small(['i.i.i.i', 'iIiIiIi', 'iiRiCii', 'IIIIIII']),
+    TIARA: small(['...C...', '..CaC..', '.i.C.i.', 'iiiiiii']),
   };
+  // Engelsflügel (hinter der Figur, links; rechts gespiegelt)
+  const WING_L = small(['....aa', '..aaan', '.aaann', 'aaannn', '.aannn', '..ann.']);
+  const WING_R = WING_L.map((r) => [...r].reverse().join(''));
+  const GIFTGOLD = small(['.d..d.', '..dd..', 'iiddii', 'iIddIi', 'IIddII', 'IIddII']);
   // Schnee: Schneemann neben der Figur, kleine Schneehaube auf dem Kopf
   const SNOWMAN = small([
     '...KK...',
@@ -808,7 +823,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, SNOWMAN, SNOWCAP, ...ACCESSORIES,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };
