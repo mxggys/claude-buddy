@@ -79,6 +79,9 @@ const DEFAULT_SETTINGS = {
   zubehoer: null, // getragenes Zubehör: Kopf
   zubehoerBrille: null, // Brille
   zubehoerEffekt: null, // Effekt (Flügel, Umhang, Aura …)
+  zubehoerMund: null, // Zigarette, Lolli, Kaugummi
+  zubehoerKleidung: null, // Jacken und Pullis, passen sich der Figur an
+  zubehoerBegleiter: null, // Kissen, Skateboard, Teddy
   geschenkTag: '', // an welchem Tag das letzte Geschenk geöffnet wurde
   mikrofon: false,
   tastatur: true,
@@ -583,6 +586,9 @@ const petSettings = () => ({
   zubehoer: settings.zubehoer,
   zubehoerBrille: settings.zubehoerBrille,
   zubehoerEffekt: settings.zubehoerEffekt,
+  zubehoerMund: settings.zubehoerMund,
+  zubehoerKleidung: settings.zubehoerKleidung,
+  zubehoerBegleiter: settings.zubehoerBegleiter,
   geschenk: settings.geschenkTag !== dayKey(),
   geschenkGold: settings.geschenkTag !== dayKey() && goldenToday(),
   name: settings.name,
@@ -728,14 +734,22 @@ function playMenu() {
 
 // ---------- Tägliches Geschenk: jeden Tag ein Päckchen mit einem Zubehör ----------
 // Drei Plätze, die sich kombinieren lassen: Kopf, Brille, Effekt. ✦ = selten (goldenes Päckchen).
-const SLOTS = { kopf: 'zubehoer', brille: 'zubehoerBrille', effekt: 'zubehoerEffekt' };
-const SLOT_NAMES = { kopf: 'Kopf', brille: 'Brille', effekt: 'Effekt' };
+const SLOTS = {
+  kopf: 'zubehoer', brille: 'zubehoerBrille', mund: 'zubehoerMund',
+  kleidung: 'zubehoerKleidung', begleiter: 'zubehoerBegleiter', effekt: 'zubehoerEffekt',
+};
+const SLOT_NAMES = { kopf: 'Kopf', brille: 'Brille', mund: 'Mund', kleidung: 'Kleidung', begleiter: 'Begleiter', effekt: 'Effekt' };
 const ITEMS = [
   ['CROWN', 'Krone', 'kopf'], ['WIZARD', 'Zauberhut', 'kopf'], ['TOPHAT', 'Zylinder', 'kopf'], ['HALO', 'Heiligenschein', 'kopf'],
   ['HORNS', 'Teufelshörner', 'kopf'], ['PIRATE', 'Piratenhut', 'kopf'], ['COWBOY', 'Cowboyhut', 'kopf'], ['VIKING', 'Wikingerhelm', 'kopf'],
   ['PROPELLER', 'Propellermütze', 'kopf'], ['CATEARS', 'Katzenohren', 'kopf'], ['STARBAND', 'Sternen-Haarreif', 'kopf'],
   ['NINJA', 'Ninja-Stirnband', 'kopf'], ['DRAGON', 'Drachenhörner', 'kopf'], ['UNICORN', 'Einhorn-Horn', 'kopf'],
   ['WITCH', 'Hexenhut', 'kopf'], ['MOHAWK', 'Punk-Iro', 'kopf'], ['SAMURAI', 'Samurai-Helm', 'kopf'],
+  ['SNAPBACK', 'Buddy-Snapback', 'kopf'], ['BUCKETHAT', 'Fischerhut', 'kopf'],
+  ['CIGARETTE', 'Zigarette', 'mund'], ['LOLLI', 'Lolli', 'mund'], ['GUM', 'Kaugummi (macht Blasen)', 'mund'],
+  ['WINTERJACKET', 'Winterjacke', 'kleidung'], ['HOODIE', 'Hoodie', 'kleidung'], ['LEATHER', 'Lederjacke', 'kleidung'],
+  ['SWEATER', 'Ringelpulli', 'kleidung'],
+  ['PILLOW', 'Kuschelkissen', 'begleiter'], ['SKATEBOARD', 'Skateboard', 'begleiter'], ['TEDDY', 'Teddy', 'begleiter'],
   ['SHADES', 'Coole Brille', 'brille'], ['PIXELSHADES', 'Pixel-Brille', 'brille'],
   ['CAPE', 'Heldenumhang', 'effekt'],
   ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['TIARA', 'Diamant-Diadem ✦', 'kopf', true],
@@ -776,7 +790,7 @@ function openGift(sender) {
   }
   saveSettings();
   log('geschenk', item || 'alles gesammelt');
-  sender.send('command', { type: 'gift', item, name: item ? accessoryName(item) : null, golden });
+  sender.send('command', { type: 'gift', item, name: item ? accessoryName(item) : null, golden, slot: item ? itemOf(item)[2] : null });
   changeMood(10);
   sendSettings();
   buildMenu();
@@ -786,10 +800,15 @@ function accessoryMenu() {
   const items = [];
   for (const [slot, key] of Object.entries(SLOTS)) {
     const mine = owned.filter((it) => it[2] === slot);
-    if (items.length) items.push({ type: 'separator' });
-    items.push({ label: SLOT_NAMES[slot], enabled: false });
-    items.push({ label: 'Nichts', type: 'radio', checked: !settings[key], click: () => setAccessory(key, null) });
-    for (const [k, name] of mine) items.push({ label: name, type: 'radio', checked: settings[key] === k, click: () => setAccessory(key, k) });
+    const all = ITEMS.filter((it) => it[2] === slot).length;
+    items.push({
+      label: `${SLOT_NAMES[slot]}: ${settings[key] ? accessoryName(settings[key]) : 'nichts'}   (${mine.length}/${all})`,
+      submenu: [
+        { label: 'Nichts', type: 'radio', checked: !settings[key], click: () => setAccessory(key, null) },
+        ...mine.map(([k, name]) => ({ label: name, type: 'radio', checked: settings[key] === k, click: () => setAccessory(key, k) })),
+        ...(mine.length < all ? [{ type: 'separator' }, { label: `Noch ${all - mine.length} zu finden`, enabled: false }] : []),
+      ],
+    });
   }
   items.push({ type: 'separator' });
   items.push({

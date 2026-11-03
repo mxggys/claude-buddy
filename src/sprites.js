@@ -234,6 +234,7 @@
     hat: [15, 3],        // Mütze / Partyhut: Mitte und Unterkante auf dem Kopf
     umbrella: [3, -10],  // Schirm über der Ente
     glasses: [15, 3],    // Sonnenbrille über dem Auge
+    mouth: [21, 9],      // Mund-Zubehör (Zigarette, Lolli) am Schnabel
   };
   const duckEye = { positions: [[16, 4]], pattern: ['HE', 'EE'] };
   const DUCK_BEAK = { O: '#ffb53d', o: '#e8841c', q: '#fff1a8', F: '#ffb53d', f: '#e8841c' };
@@ -333,7 +334,7 @@
     voice: 'blip',
     idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'],
     typingFrames: ['tapL', 'tapR'],
-    anchors: { keyboard: [8, 16], tap: [15, 17], idea: [13, -7], lens: [26, 4], mushroom: [-9, 16], snore: [17, 11],
+    anchors: { mouth: [16, 13], keyboard: [8, 16], tap: [15, 17], idea: [13, -7], lens: [26, 4], mushroom: [-9, 16], snore: [17, 11],
       hat: [15, 7], umbrella: [9, -11], glasses: [6, 7] },
     width: CW,
     height: CH,
@@ -660,7 +661,7 @@
       glasses: glassesFor(def.eyes),
       anchors: {
         keyboard: [5, 16], tap: [12, 17], idea: [10, -8], lens: [20, 4], mushroom: [-9, 15], snore: [17, 8],
-        umbrella: [5, -11], ...def.anchors,
+        umbrella: [5, -11], mouth: [def.mouth[0] + 2, def.mouth[1]], ...def.anchors,
       },
       width: VW,
       height: VH,
@@ -772,6 +773,8 @@
     WITCH: small(['....KK...', '...KKK...', '...KKs...', '..KKKKK..', '..SSSSS..', 'KKKKKKKKK']),
     MOHAWK: small(['.p.p.p.', 'pbpbpbp', 'bbbbbbb']),
     SAMURAI: small(['...i.i...', '..i...i..', '.jjjjjjj.', 'jJjjjjjJj', 'jjj...jjj']),
+    SNAPBACK: small(['..KKKKK....', '.KKKiKKK...', '.KKiKiKK...', 'KKKKKKKKKKK']), // eigenes „Buddy“-Logo
+    BUCKETHAT: small(['..VVVVV..', '.VVVVVVV.', '.ZZZZZZZ.', 'VVVVVVVVV']),
     // seltene, goldene Teile
     GOLDCROWN: small(['i.i.i.i', 'iIiIiIi', 'iiRiCii', 'IIIIIII']),
     TIARA: small(['...C...', '..CaC..', '.i.C.i.', 'iiiiiii']),
@@ -788,6 +791,13 @@
     '....dddddddd....', '...dddddddddd...', '..dddddddddddd..', '.dddddddddddddd.', 'ddddddddddddddDD',
     'dddddddddddddDDD', 'ddddddddddddDDDD', 'dDdDdDdDdDdDdDdD', 'D..D..D..D..D..D',
   ]);
+  // Mund-Zubehör (vom Mund nach rechts)
+  const CIGARETTE = small(['yyaaaaR']);
+  const LOLLI = small(['....ppp', 'aaaapRp', '....ppp']);
+  // Begleiter: Kissen hinter ihr, Skateboard unter ihr, Teddy neben ihr
+  const PILLOW = small(['.CCCCCCCCCCCCCC.', 'CCCCCCCCCCCCCCCC', 'CCaCCCCCCCCCCaCC', 'CCCCCCCCCCCCCCCC', 'CCCCCCCCCCCCCCCC', '.CCCCCCCCCCCCCC.']);
+  const SKATEBOARD = small(['bbbbbbbbbbbbbbbbbbbb', '..KK............KK..']);
+  const TEDDY = small(['u...u', 'uuuuu', 'uUkUu', 'uuuuu', '.uuu.', 'uu.uu']);
   const GIFTGOLD = small(['.d..d.', '..dd..', 'iiddii', 'iIddIi', 'IIddII', 'IIddII']);
   // Schnee: Schneemann neben der Figur, kleine Schneehaube auf dem Kopf
   const SNOWMAN = small([
@@ -832,7 +842,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, SNOWMAN, SNOWCAP, ...ACCESSORIES,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, LOLLI, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

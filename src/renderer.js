@@ -49,6 +49,9 @@ let moodValue = 70;               // Laune 0 … 100 (kommt aus dem Hauptprogram
 let accessory = null;             // getragenes Zubehör: Kopf
 let glassesItem = null;           // Brille
 let effectItem = null;            // Effekt (Flügel, Umhang, Aura …)
+let mouthItem = null;             // Mund: Zigarette, Lolli, Kaugummi
+let clothItem = null;             // Kleidung: passt sich der Körperform der Figur an
+let buddyItem = null;             // Begleiter: Kissen, Skateboard, Teddy
 let giftReady = false;            // heutiges Geschenk liegt bereit
 let giftGold = false;             // heute ist es ein seltenes goldenes Päckchen
 let petName = '';                 // eigener Name der Figur
@@ -114,10 +117,37 @@ function applySize(size) {
 applyCharacter(CONFIG.figur);
 
 // Jede Pose wird nur einmal Pixel für Pixel gemalt und dann als fertiges Bild wiederverwendet (spart Rechenzeit)
+// Kleidung: Farben je Teil (Grund, Schatten, Licht, Kragen, Reißverschluss/Kordeln)
+const CLOTHES = {
+  WINTERJACKET: { base: '#d63b35', shade: '#a8261f', light: '#f06a5d', collar: '#f4efe6', detail: '#3a2a2a' },
+  HOODIE: { base: '#7d8794', shade: '#5f6874', light: '#a0a9b5', collar: '#5f6874', detail: '#f4f4f4', strings: true },
+  LEATHER: { base: '#2b2b30', shade: '#1b1b1f', light: '#4a4a52', collar: '#3b3b42', detail: '#c9c9d1' },
+  SWEATER: { base: '#3d6fd6', shade: '#2c55ad', light: '#f2f2f2', collar: '#2c55ad', stripes: true },
+};
+const BODY_SKIP = new Set(['E', 'e', 'H', 'P', 'm', 't', 'k', 'X', 'x', 'Y', 'O', 'o', 'q', 'F', 'f', '.']);
+const lightness = (hex) => hexToHsl(hex)[2];
+// Farbe eines Körperpixels im Kleidungsbereich (oder null = Original lassen)
+function clothColor(cloth, ch, row, col, frame) {
+  const c = CLOTHES[cloth];
+  if (!c || BODY_SKIP.has(ch)) return null;
+  const orig = PALETTE[ch];
+  if (!orig) return null;
+  const top = Math.round(HEIGHT * 0.5);
+  const bottom = Math.round(HEIGHT * 0.86);
+  if (row < top || row >= bottom) return null;
+  const above = frame[row - 1] ? frame[row - 1][col] : '.';
+  if (row === top || BODY_SKIP.has(above) && above !== 'E' && above !== 'e') return c.collar; // Kragen
+  const center = Math.floor(WIDTH / 2);
+  if (CHAR.front && c.detail && !c.strings && col === center) return c.detail; // Reißverschluss
+  if (c.strings && CHAR.front && (col === center - 2 || col === center + 1) && row <= top + 3) return c.detail; // Kordeln
+  if (c.stripes) return (row - top) % 3 === 2 ? c.light : c.base;
+  const l = lightness(orig) - lightness(PALETTE.W || orig);
+  return l > 0.06 ? c.light : l < -0.06 ? c.shade : c.base;
+}
 function cachedFrame(frame, flip, map) {
   let entry = frameCache.get(frame);
-  if (!entry) { entry = [null, null]; frameCache.set(frame, entry); }
-  const i = flip ? 1 : 0;
+  if (!entry) { entry = {}; frameCache.set(frame, entry); }
+  const i = `${flip ? 1 : 0}|${clothItem || ''}`;
   if (!entry[i]) {
     const c = document.createElement('canvas');
     c.width = WIDTH;
@@ -127,7 +157,7 @@ function cachedFrame(frame, flip, map) {
       for (let col = 0; col < line.length; col++) {
         let ch = line[col];
         if (map && map[ch]) ch = map[ch];
-        const color = PALETTE[ch];
+        const color = (clothItem && clothColor(clothItem, ch, r, col, frame)) || PALETTE[ch];
         if (!color) continue;
         cx.fillStyle = color;
         cx.fillRect(flip ? WIDTH - 1 - col : col, r, 1, 1);
@@ -417,7 +447,20 @@ function paintFigure(t) {
     const rows = wave ? CHAR.props.CAPE2 : CHAR.props.CAPE1;
     paint(rows, Math.round(WIDTH / 2 - rows[0].length / 2), HEIGHT - rows.length + 1, flip); // ragt unten und seitlich hervor
   }
+  if (buddyItem === 'PILLOW') {
+    // Kuschelkissen hinter ihr
+    const rows = CHAR.props.PILLOW;
+    paint(rows, Math.round(WIDTH / 2 - rows[0].length / 2), HEIGHT - rows.length - 1, flip);
+  }
   sctx.drawImage(cachedFrame(frame, flip, movingEye ? { E: CHAR.eyeBg } : null), PAD, PAD);
+  if (buddyItem === 'SKATEBOARD') {
+    const rows = CHAR.props.SKATEBOARD;
+    paint(rows, Math.round(WIDTH / 2 - rows[0].length / 2), HEIGHT - 1, flip);
+  }
+  if (buddyItem === 'TEDDY') {
+    const rows = CHAR.props.TEDDY;
+    paint(rows, WIDTH + 1, HEIGHT - rows.length + 1, flip);
+  }
   if (movingEye) {
     const { dx, dy } = lookOffset(t, flip);
     for (const [col, row] of EYE.positions) paint(EYE.pattern, col + dx, row + (frame.eyeDy || 0) + dy, flip);
@@ -441,6 +484,10 @@ function paintFigure(t) {
 
   // Extras: Sonnenbrille, Mütze/Partyhut, Regenschirm
   const offY = frame.eyeDy || 0;
+  // Mund-Zubehör (nicht beim Essen und Reden)
+  if ((mouthItem === 'CIGARETTE' || mouthItem === 'LOLLI') && ANCHORS.mouth && duck.action !== 'eat' && duck.beakUntil <= t) {
+    paint(CHAR.props[mouthItem], ANCHORS.mouth[0], ANCHORS.mouth[1] + offY - 1, flip);
+  }
   // Brillen bleiben auch beim Blinzeln und Lachen auf (sonst flackern sie)
   if (glassesItem === 'PIXELSHADES') {
     // Pixel-Brille: schwarz mit weißen Pixel-Glanzlichtern
@@ -519,6 +566,7 @@ function draw(t) {
   if (duck.state === 'sleep' || (duck.action === 'nap' && acting(t))) { drawZzz(t); drawSnore(t); }
   if (claudeActive && CHAR.thinks && duck.state !== 'sleep' && !isTyping(t)) drawThinking(t);
   drawMeal();
+  drawGum(t);
   drawTemperature();
   drawPauseSign(t);
   drawNameTag(t);
@@ -630,7 +678,7 @@ function updateParticles(dt) {
     if (p.type === 'dust') { p.vy *= 0.9; p.vx *= 0.94; }
     if (p.type === 'food') updateFood(p, dt);
     if (p.type === 'crumb') { p.vy += 380 * dt; p.vx *= 0.97; }
-    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4 }[p.type] || 2.2);
+    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4, smoke: 0.5 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
@@ -649,6 +697,11 @@ function drawParticles() {
       // funkeln: abwechselnd Plus und Kreuz, mit weißem Kern
       const twinkle = Math.floor(p.life * 14 + (p.seed || 0)) % 2;
       drawSmall(twinkle ? CHAR.props.STAR : ['i.i', '.I.', 'i.i'], p.x, p.y, px);
+    } else if (p.type === 'smoke') {
+      // feine graue Rauchkringel, die sich nach oben auflösen
+      ctx.fillStyle = `rgba(210, 210, 215, ${0.5 * p.life})`;
+      const q = Math.max(1, Math.round(px * (2 - p.life)));
+      ctx.fillRect(Math.round(p.x + Math.sin(p.life * 8 + p.seed) * 3), Math.round(p.y), q, q);
     } else if (p.type === 'flame') {
       // gelb → orange → rot, wird kleiner
       const hue = 50 - (1 - p.life) * 45;
@@ -1526,6 +1579,29 @@ function desktopFile() {
 }
 function stat(key) { if (bridge && bridge.stat) bridge.stat(key); }
 
+// ---------- Kaugummi: Blase wird größer und platzt ----------
+function drawGum(t) {
+  if (mouthItem !== 'GUM' || duck.state === 'sleep' || duck.action === 'eat' || hardSave()) return;
+  const cycle = (t % 5200) / 5200; // alle ~5 s eine Blase
+  if (cycle < 0.45) return;
+  const m = mouthPoint();
+  const k = Math.max(0.6, SIZE);
+  if (cycle > 0.93) {
+    // geplatzt: kurz ein paar rosa Fetzen
+    if (!drawGum.popped) { drawGum.popped = true; for (let i = 0; i < 5; i++) particles.push({ type: 'crumb', x: m.x, y: m.y, vx: rand(-60, 60), vy: rand(-60, 0), life: 0.6, color: '#ff8fc0' }); }
+    return;
+  }
+  drawGum.popped = false;
+  const r = ((cycle - 0.45) / 0.48) * 9 * k + 1;
+  const cx = m.x + (CHAR.front ? 0 : (isFlipped() ? -r : r));
+  ctx.fillStyle = 'rgba(255, 143, 192, .85)';
+  ctx.beginPath();
+  ctx.arc(cx, m.y + r * 0.2, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255, 255, 255, .6)';
+  ctx.fillRect(Math.round(cx - r * 0.45), Math.round(m.y - r * 0.4), Math.max(1, Math.round(r * 0.3)), Math.max(1, Math.round(r * 0.3)));
+}
+
 // ---------- Lichtschein und Namensschild ----------
 function drawGlow(t) {
   if (effectItem === 'FIREAURA' && glowUntil <= t && !hardSave()) {
@@ -1666,6 +1742,12 @@ function updateAccessoryFx(dt, t) {
       particles.push({ type: 'rainbow', x: duck.x + DW * rand(0.2, 0.8), y: duck.y + DH * rand(0.5, 0.95), vx: rand(-15, 15), vy: rand(-25, 5), life: 1, hue: (t / 4) % 360 });
     }
   }
+  if (mouthItem === 'CIGARETTE' && ANCHORS.mouth && Math.random() < dt * 2.2 && duck.state !== 'sleep') {
+    const flip = isFlipped();
+    const col = ANCHORS.mouth[0] + 7;
+    const tipX = duck.x + (flip ? WIDTH - 1 - col : col) * SCALE;
+    particles.push({ type: 'smoke', x: tipX, y: duck.y + (ANCHORS.mouth[1] - 1) * SCALE, vx: rand(-6, 6), vy: rand(-26, -16), life: 1, seed: rand(0, 6) });
+  }
   if ((accessory === 'GOLDCROWN' || accessory === 'TIARA') && Math.random() < dt * 0.7) {
     spawn('star', duck.x + DW / 2 + rand(-DW * 0.25, DW * 0.25), duck.y + rand(-4, DH * 0.15));
   }
@@ -1728,8 +1810,11 @@ function openGift() {
   else onGift({ item: Object.keys(CHAR.props).includes('CROWN') ? 'CROWN' : null });
   kick();
 }
-function onGift({ item, golden }) {
-  const PREVIEW = { SHADES: 'GLASSES', PIXELSHADES: 'GLASSES', WINGS: 'WING_L', CAPE: 'CAPE1', RAINBOW: 'STAR', FIREAURA: 'STAR', LIGHTNING: 'STAR' };
+function onGift({ item, golden, slot }) {
+  const PREVIEW = {
+    SHADES: 'GLASSES', PIXELSHADES: 'GLASSES', WINGS: 'WING_L', CAPE: 'CAPE1', RAINBOW: 'STAR', FIREAURA: 'STAR', LIGHTNING: 'STAR',
+    GUM: 'STAR', WINTERJACKET: 'GIFT', HOODIE: 'GIFT', LEATHER: 'GIFT', SWEATER: 'GIFT',
+  };
   if (reveal) reveal.item = PREVIEW[item] || item;
   if (golden) {
     glowUntil = now() + 3500;
@@ -1738,8 +1823,11 @@ function onGift({ item, golden }) {
   setTimeout(() => {
     react('cheer', now());
     giftX = null;
-    if (item === 'SHADES' || item === 'PIXELSHADES') glassesItem = item;
-    else if (SPECIAL_ACCESSORIES.has(item)) effectItem = item;
+    if (slot === 'brille' || item === 'SHADES' || item === 'PIXELSHADES') glassesItem = item;
+    else if (slot === 'mund') mouthItem = item;
+    else if (slot === 'kleidung') clothItem = item;
+    else if (slot === 'begleiter') buddyItem = item;
+    else if (slot === 'effekt' || SPECIAL_ACCESSORIES.has(item)) effectItem = item;
     else if (item) accessory = item;
     kick();
   }, 1600);
@@ -1868,7 +1956,7 @@ function settle() {
 
 // ---------- Bildrate: nur so oft zeichnen wie nötig (spart Akku) ----------
 // Dauer-Effekte halten die Bildrate nicht hoch (sie sehen auch mit 15 Bildern/s gut aus)
-const AMBIENT_FX = new Set(['rain', 'snow', 'steam', 'flame', 'spark', 'rainbow']);
+const AMBIENT_FX = new Set(['rain', 'snow', 'steam', 'flame', 'spark', 'rainbow', 'smoke']);
 let lastCursorMove = 0;
 function targetFps(t) {
   const busy = duck.dragging || duck.sliding || ball.on || pauseUntil > t || (duck.walkTo !== null && duck.walkTo !== undefined) || !duck.onGround || particles.some((p) => !AMBIENT_FX.has(p.type)) || isTyping(t) || acting(t)
@@ -2098,6 +2186,9 @@ function applyAppSettings(s) {
   accessory = s.zubehoer || null;
   glassesItem = s.zubehoerBrille || null;
   effectItem = s.zubehoerEffekt || null;
+  mouthItem = s.zubehoerMund || null;
+  clothItem = s.zubehoerKleidung || null;
+  buddyItem = s.zubehoerBegleiter || null;
   giftReady = Boolean(s.geschenk) && !SECOND;
   giftGold = Boolean(s.geschenkGold);
   petName = (SECOND ? s.name2 : s.name) || '';
@@ -2569,6 +2660,7 @@ if (bridge) {
     setMood(v) { moodValue = v; }, pounceNow() { pounceCooldown = 0; },
     desktopFile, snow, openGift,
     setGift(on, gold = false) { giftReady = on; giftGold = gold; giftX = null; }, setAccessory(a) { accessory = a; }, setGlasses(a) { glassesItem = a; }, setEffect(a) { effectItem = a; },
+    setMouth(a) { mouthItem = a; }, setCloth(a) { clothItem = a; }, setBuddy(a) { buddyItem = a; },
     setName(n) { petName = n; nameUntil = performance.now() + 3000; }, glow() { glowUntil = performance.now() + 3000; },
     setColor(v) { CONFIG.farbe = v; applyCharacter(CHAR.id); },
     setWalking(on) { walking = on; }, maybeWalk, launchTo,

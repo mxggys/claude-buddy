@@ -78,13 +78,16 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Schnee im Winter (abschaltbar): Dezember bis Februar ist jeder dritte Tag ein Schneetag (bei echtem Schneewetter
   sowieso). Schnee bleibt auf der Taskleiste und auf dem Fenster liegen, sie baut einen Schneemann und bekommt
   eine kleine Schneehaube.
-- Tägliches Geschenk: jeden Tag ein Päckchen neben ihr, Klick packt es aus. Zubehör für drei Plätze, die sich
+- Tägliches Geschenk: jeden Tag ein Päckchen neben ihr, Klick packt es aus. Zubehör für sechs Plätze, die sich
   kombinieren lassen (Aussehen → Zubehör):
   - Kopf: Krone, Zauberhut, Zylinder, Heiligenschein, Teufelshörner, Piratenhut, Cowboyhut, Wikingerhelm,
     Propellermütze, Katzenohren, Sternen-Haarreif, Ninja-Stirnband, Drachenhörner, Einhorn-Horn, Hexenhut,
-    Punk-Iro, Samurai-Helm
+    Punk-Iro, Samurai-Helm, Buddy-Snapback, Fischerhut
   - Brille: Coole Brille, Pixel-Brille
-  - Effekt: Heldenumhang (weht beim Bewegen)
+  - Mund: Zigarette (mit Rauch), Lolli, Kaugummi (macht Blasen, die platzen)
+  - Kleidung: Winterjacke, Hoodie, Lederjacke, Ringelpulli – wird aus der Körperform der gewählten Figur berechnet
+  - Begleiter: Kuschelkissen (hinter ihr), Skateboard (unter ihr), Teddy (neben ihr)
+  - Effekt: Heldenumhang
   - selten im goldenen Päckchen (jedes 10. sicher): Goldkrone, Diamant-Diadem, Engelsflügel, Regenbogen-Glitzer,
     Flammen-Aura, Blitz-Aura
   Selbst gewähltes Zubehör geht vor Feiertags-Hüten.
