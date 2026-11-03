@@ -78,11 +78,16 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Schnee im Winter (abschaltbar): Dezember bis Februar ist jeder dritte Tag ein Schneetag (bei echtem Schneewetter
   sowieso). Schnee bleibt auf der Taskleiste und auf dem Fenster liegen, sie baut einen Schneemann und bekommt
   eine kleine Schneehaube.
-- Tägliches Geschenk: jeden Tag ein Päckchen neben ihr, Klick packt es aus. Darin eins von 10 Zubehörteilen
-  (Krone, Zauberhut, Schleife, Blume, Basecap, Wollmütze, Zylinder, Heiligenschein, Teufelshörner, Coole Brille,
-  Piratenhut, Kochmütze, Cowboyhut, Wikingerhelm, Propellermütze, Katzenohren, Antennen, Sternen-Haarreif).
-  Selten (jedes 10. Geschenk sicher) ein goldenes Päckchen mit Goldkrone, Diamant-Diadem, Engelsflügeln oder
-  Regenbogen-Glitzer. Wechselbar unter Aussehen → Zubehör; selbst gewähltes Zubehör geht vor Feiertags-Hüten.
+- Tägliches Geschenk: jeden Tag ein Päckchen neben ihr, Klick packt es aus. Zubehör für drei Plätze, die sich
+  kombinieren lassen (Aussehen → Zubehör):
+  - Kopf: Krone, Zauberhut, Zylinder, Heiligenschein, Teufelshörner, Piratenhut, Cowboyhut, Wikingerhelm,
+    Propellermütze, Katzenohren, Sternen-Haarreif, Ninja-Stirnband, Drachenhörner, Einhorn-Horn, Hexenhut,
+    Punk-Iro, Samurai-Helm
+  - Brille: Coole Brille, Pixel-Brille
+  - Effekt: Heldenumhang (weht beim Bewegen)
+  - selten im goldenen Päckchen (jedes 10. sicher): Goldkrone, Diamant-Diadem, Engelsflügel, Regenbogen-Glitzer,
+    Flammen-Aura, Blitz-Aura
+  Selbst gewähltes Zubehör geht vor Feiertags-Hüten.
 - Eigener Name (Aussehen → Name geben): steht oben im Menü, am Taskleisten-Symbol und als Schild über der Figur,
   wenn der Zeiger auf ihr ruht.
 - Wochenrückblick: Sonntagabend (oder bis Mittwoch nachgeholt) eine Meldung mit Tasten, gemeinsamer Zeit,

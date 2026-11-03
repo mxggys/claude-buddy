@@ -757,21 +757,21 @@
   const ACCESSORIES = {
     CROWN: small(['i..i..i', 'ii.i.ii', 'iIiRiIi', 'iiiiiii']),
     WIZARD: small(['....S....', '...SS....', '...SiS...', '..SSSST..', '..SiSSS..', '.SSSSSTT.', 'TTTTTTTTT']),
-    BOW: small(['pp.pp', 'ppapp', 'pp.pp']),
-    FLOWER: small(['.p.p.', 'ppipp', '.p.p.', '..V..']),
-    CAP: small(['..bbbbb...', '.bbbbbbb..', 'bbbbbbbbzz']),
-    BEANIE: small(['...a...', '..ddd..', '.ddddd.', 'ddddddd', 'DDDDDDD']),
     TOPHAT: small(['.KKKKK.', '.KKKKK.', '.KsKKK.', '.ddddd.', 'KKKKKKK']),
     HALO: ['.iiiii.', 'i.....i', '.iiiii.'],
     HORNS: small(['d.....d', 'dd...dd', '.D...D.']),
     PIRATE: small(['..KKKKK..', '.KKKaKKK.', 'KKKKKKKKK', '.KK...KK.']),
-    CHEF: small(['.aaa.aaa.', 'aaaaaaaaa', '.aaaaaaa.', '..nnnnn..', '..aaaaa..']),
     COWBOY: small(['...uuu...', '..uuuuu..', '..UUUUU..', 'uuuuuuuuu', '.u.....u.']),
     VIKING: small(['a.......a', 'a..jjj..a', '.jjjjjjj.', 'jJjjjjjJj', 'uuuuuuuuu']),
     PROPELLER: small(['.bbb.ddd.', '....k....', '..bdbdb..', '.bdbdbdb.', 'bdbdbdbdb']),
     CATEARS: small(['k.....k', 'kk...kk', 'kpk.kpk', 'kkkkkkk']),
-    ANTENNA: small(['i.....i', 'k.....k', '.k...k.', '..kkk..']),
     STARBAND: small(['..i...i..', '.iIi.iIi.', '..i...i..', 'zzzzzzzzz']),
+    NINJA: small(['.........KK', 'KKKKjjKKK.K', 'KKKKjjKKKK.']),
+    DRAGON: small(['V.......V', 'VV.....VV', '.VZ...ZV.']),
+    UNICORN: small(['..a..', '..p..', '.ap..', '.apa.', 'apapa']),
+    WITCH: small(['....KK...', '...KKK...', '...KKs...', '..KKKKK..', '..SSSSS..', 'KKKKKKKKK']),
+    MOHAWK: small(['.p.p.p.', 'pbpbpbp', 'bbbbbbb']),
+    SAMURAI: small(['...i.i...', '..i...i..', '.jjjjjjj.', 'jJjjjjjJj', 'jjj...jjj']),
     // seltene, goldene Teile
     GOLDCROWN: small(['i.i.i.i', 'iIiIiIi', 'iiRiCii', 'IIIIIII']),
     TIARA: small(['...C...', '..CaC..', '.i.C.i.', 'iiiiiii']),
@@ -779,6 +779,15 @@
   // Engelsflügel (hinter der Figur, links; rechts gespiegelt)
   const WING_L = small(['....aa', '..aaan', '.aaann', 'aaannn', '.aannn', '..ann.']);
   const WING_R = WING_L.map((r) => [...r].reverse().join(''));
+  // Heldenumhang hinter der Figur (zwei Bilder: ruhig und wehend)
+  const CAPE1 = small([
+    '....dddddddd....', '...dddddddddd...', '..dddddddddddd..', '..dddddddddddd..', '.dddddddddddddd.',
+    '.ddddddddddddDD.', 'dddddddddddddDDD', 'ddddddddddddDDDD', 'dDdDdDdDdDdDdDdD',
+  ]);
+  const CAPE2 = small([
+    '....dddddddd....', '...dddddddddd...', '..dddddddddddd..', '.dddddddddddddd.', 'ddddddddddddddDD',
+    'dddddddddddddDDD', 'ddddddddddddDDDD', 'dDdDdDdDdDdDdDdD', 'D..D..D..D..D..D',
+  ]);
   const GIFTGOLD = small(['.d..d.', '..dd..', 'iiddii', 'iIddIi', 'IIddII', 'IIddII']);
   // Schnee: Schneemann neben der Figur, kleine Schneehaube auf dem Kopf
   const SNOWMAN = small([
@@ -823,7 +832,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, SNOWMAN, SNOWCAP, ...ACCESSORIES,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

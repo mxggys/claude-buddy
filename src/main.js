@@ -76,7 +76,9 @@ const DEFAULT_SETTINGS = {
   farbe: 'original', // Farbvariante der Figur
   farbe2: 'original', // Farbvariante der zweiten Figur
   sammlung: [], // Zubehör aus den täglichen Geschenken
-  zubehoer: null, // gerade getragenes Zubehör
+  zubehoer: null, // getragenes Zubehör: Kopf
+  zubehoerBrille: null, // Brille
+  zubehoerEffekt: null, // Effekt (Flügel, Umhang, Aura …)
   geschenkTag: '', // an welchem Tag das letzte Geschenk geöffnet wurde
   mikrofon: false,
   tastatur: true,
@@ -579,6 +581,8 @@ const petSettings = () => ({
   laune: settings.laune,
   zweiteFigur: Boolean(settings.zweiteFigur),
   zubehoer: settings.zubehoer,
+  zubehoerBrille: settings.zubehoerBrille,
+  zubehoerEffekt: settings.zubehoerEffekt,
   geschenk: settings.geschenkTag !== dayKey(),
   geschenkGold: settings.geschenkTag !== dayKey() && goldenToday(),
   name: settings.name,
@@ -723,34 +727,52 @@ function playMenu() {
 }
 
 // ---------- Tägliches Geschenk: jeden Tag ein Päckchen mit einem Zubehör ----------
-const ACCESSORIES = [
-  ['CROWN', 'Krone'], ['WIZARD', 'Zauberhut'], ['BOW', 'Schleife'], ['FLOWER', 'Blume'], ['CAP', 'Basecap'],
-  ['BEANIE', 'Wollmütze'], ['TOPHAT', 'Zylinder'], ['HALO', 'Heiligenschein'], ['HORNS', 'Teufelshörner'], ['SHADES', 'Coole Brille'],
-  ['PIRATE', 'Piratenhut'], ['CHEF', 'Kochmütze'], ['COWBOY', 'Cowboyhut'], ['VIKING', 'Wikingerhelm'],
-  ['PROPELLER', 'Propellermütze'], ['CATEARS', 'Katzenohren'], ['ANTENNA', 'Antennen'], ['STARBAND', 'Sternen-Haarreif'],
+// Drei Plätze, die sich kombinieren lassen: Kopf, Brille, Effekt. ✦ = selten (goldenes Päckchen).
+const SLOTS = { kopf: 'zubehoer', brille: 'zubehoerBrille', effekt: 'zubehoerEffekt' };
+const SLOT_NAMES = { kopf: 'Kopf', brille: 'Brille', effekt: 'Effekt' };
+const ITEMS = [
+  ['CROWN', 'Krone', 'kopf'], ['WIZARD', 'Zauberhut', 'kopf'], ['TOPHAT', 'Zylinder', 'kopf'], ['HALO', 'Heiligenschein', 'kopf'],
+  ['HORNS', 'Teufelshörner', 'kopf'], ['PIRATE', 'Piratenhut', 'kopf'], ['COWBOY', 'Cowboyhut', 'kopf'], ['VIKING', 'Wikingerhelm', 'kopf'],
+  ['PROPELLER', 'Propellermütze', 'kopf'], ['CATEARS', 'Katzenohren', 'kopf'], ['STARBAND', 'Sternen-Haarreif', 'kopf'],
+  ['NINJA', 'Ninja-Stirnband', 'kopf'], ['DRAGON', 'Drachenhörner', 'kopf'], ['UNICORN', 'Einhorn-Horn', 'kopf'],
+  ['WITCH', 'Hexenhut', 'kopf'], ['MOHAWK', 'Punk-Iro', 'kopf'], ['SAMURAI', 'Samurai-Helm', 'kopf'],
+  ['SHADES', 'Coole Brille', 'brille'], ['PIXELSHADES', 'Pixel-Brille', 'brille'],
+  ['CAPE', 'Heldenumhang', 'effekt'],
+  ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['TIARA', 'Diamant-Diadem ✦', 'kopf', true],
+  ['WINGS', 'Engelsflügel ✦', 'effekt', true], ['RAINBOW', 'Regenbogen-Glitzer ✦', 'effekt', true],
+  ['FIREAURA', 'Flammen-Aura ✦', 'effekt', true], ['LIGHTNING', 'Blitz-Aura ✦', 'effekt', true],
 ];
-// selten: goldenes Geschenk mit besonderen Teilen
-const GOLDEN = [['GOLDCROWN', 'Goldkrone ✦'], ['TIARA', 'Diamant-Diadem ✦'], ['WINGS', 'Engelsflügel ✦'], ['RAINBOW', 'Regenbogen-Glitzer ✦']];
-const ALL_ACCESSORIES = [...ACCESSORIES, ...GOLDEN];
+const REMOVED_ITEMS = ['CAP', 'BEANIE', 'BOW', 'FLOWER', 'CHEF', 'ANTENNA']; // alte Standard-Teile
+const itemOf = (key) => ITEMS.find(([k]) => k === key);
+const accessoryName = (key) => (itemOf(key) || [key, key])[1];
+const GOLDEN = ITEMS.filter((it) => it[3]);
+const NORMAL = ITEMS.filter((it) => !it[3]);
+// alte Einstellungen: entfernte Teile raus, getragenes Teil in den passenden Platz
+function migrateAccessories() {
+  settings.sammlung = settings.sammlung.filter((k) => itemOf(k));
+  for (const slotKey of Object.values(SLOTS)) if (settings[slotKey] && !itemOf(settings[slotKey])) settings[slotKey] = null;
+  const old = settings.zubehoer && itemOf(settings.zubehoer);
+  if (old && old[2] !== 'kopf') { settings[SLOTS[old[2]]] = old[0]; settings.zubehoer = null; }
+}
 // heute golden? jedes 10. Geschenk sicher, sonst etwa jeder neunte Tag
 function goldenToday() {
   const day = Math.floor(new Date(`${dayKey()}T12:00`).getTime() / 86400000);
   const missingGold = GOLDEN.some(([k]) => !settings.sammlung.includes(k));
   return missingGold && (settings.geschenkAnzahl % 10 === 9 || day % 9 === 4);
 }
-const accessoryName = (key) => (ALL_ACCESSORIES.find(([k]) => k === key) || [key, key])[1];
 function openGift(sender) {
   if (settings.geschenkTag === dayKey()) return;
   const golden = goldenToday();
   settings.geschenkTag = dayKey();
   settings.geschenkAnzahl++;
-  let missing = (golden ? GOLDEN : ACCESSORIES).filter(([k]) => !settings.sammlung.includes(k));
-  if (!missing.length) missing = ALL_ACCESSORIES.filter(([k]) => !settings.sammlung.includes(k));
+  let missing = (golden ? GOLDEN : NORMAL).filter(([k]) => !settings.sammlung.includes(k));
+  if (!missing.length) missing = ITEMS.filter(([k]) => !settings.sammlung.includes(k));
   let item = null;
   if (missing.length) {
-    [item] = missing[Math.floor(Math.random() * missing.length)];
+    const it = missing[Math.floor(Math.random() * missing.length)];
+    item = it[0];
     settings.sammlung.push(item);
-    settings.zubehoer = item; // gleich anziehen
+    settings[SLOTS[it[2]]] = item; // gleich anziehen
   }
   saveSettings();
   log('geschenk', item || 'alles gesammelt');
@@ -760,21 +782,26 @@ function openGift(sender) {
   buildMenu();
 }
 function accessoryMenu() {
-  const owned = ALL_ACCESSORIES.filter(([k]) => settings.sammlung.includes(k));
-  return [
-    { label: 'Keins', type: 'radio', checked: !settings.zubehoer, click: () => setAccessory(null) },
-    ...owned.map(([k, name]) => ({ label: name, type: 'radio', checked: settings.zubehoer === k, click: () => setAccessory(k) })),
-    { type: 'separator' },
-    {
-      label: owned.length < ALL_ACCESSORIES.length
-        ? `Noch ${ALL_ACCESSORIES.length - owned.length} im täglichen Geschenk zu finden (✦ = selten, goldenes Päckchen)`
-        : 'Alles gesammelt!',
-      enabled: false,
-    },
-  ];
+  const owned = ITEMS.filter(([k]) => settings.sammlung.includes(k));
+  const items = [];
+  for (const [slot, key] of Object.entries(SLOTS)) {
+    const mine = owned.filter((it) => it[2] === slot);
+    if (items.length) items.push({ type: 'separator' });
+    items.push({ label: SLOT_NAMES[slot], enabled: false });
+    items.push({ label: 'Nichts', type: 'radio', checked: !settings[key], click: () => setAccessory(key, null) });
+    for (const [k, name] of mine) items.push({ label: name, type: 'radio', checked: settings[key] === k, click: () => setAccessory(key, k) });
+  }
+  items.push({ type: 'separator' });
+  items.push({
+    label: owned.length < ITEMS.length
+      ? `Noch ${ITEMS.length - owned.length} im täglichen Geschenk zu finden (✦ = selten, goldenes Päckchen)`
+      : 'Alles gesammelt!',
+    enabled: false,
+  });
+  return items;
 }
-function setAccessory(key) {
-  settings.zubehoer = key;
+function setAccessory(slotKey, key) {
+  settings[slotKey] = key;
   saveSettings();
   sendSettings();
   buildMenu();
@@ -1176,7 +1203,7 @@ function buildMenu() {
         { label: settings.name ? `Name: ${settings.name} – ändern …` : 'Name geben …', click: () => askName(false) },
         ...(settings.zweiteFigur ? [{ label: settings.name2 ? `Name der zweiten Figur: ${settings.name2} – ändern …` : 'Zweiter Figur einen Namen geben …', click: () => askName(true) }] : []),
         {
-          label: `Zubehör (${settings.sammlung.length} von ${ALL_ACCESSORIES.length})${settings.zubehoer ? `: ${accessoryName(settings.zubehoer)}` : ''}`,
+          label: `Zubehör (${settings.sammlung.length} von ${ITEMS.length})`,
           submenu: accessoryMenu(),
         },
         { label: `Farbe: ${COLORS.find(([k]) => k === settings.farbe)?.[1] || 'Original'}`, submenu: colorMenu(false) },
@@ -1280,6 +1307,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     loadSettings();
     trimLog();
+    migrateAccessories();
     markOldBadges();
     decayMood();
     setInterval(decayMood, 10 * 60 * 1000);
