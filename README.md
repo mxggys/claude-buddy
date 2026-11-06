@@ -78,18 +78,18 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Schnee im Winter (abschaltbar): Dezember bis Februar ist jeder dritte Tag ein Schneetag (bei echtem Schneewetter
   sowieso). Schnee bleibt auf der Taskleiste und auf dem Fenster liegen, sie baut einen Schneemann und bekommt
   eine kleine Schneehaube.
-- Tägliches Geschenk: jeden Tag ein Päckchen neben ihr, Klick packt es aus. Zubehör für sechs Plätze, die sich
+- Tägliches Geschenk: jeden Tag ein Päckchen neben ihr, Klick packt es aus. Zubehör für vier Plätze, die sich
   kombinieren lassen (Aussehen → Zubehör):
   - Kopf: Krone, Zauberhut, Zylinder, Heiligenschein, Teufelshörner, Piratenhut, Cowboyhut, Wikingerhelm,
     Propellermütze, Katzenohren, Sternen-Haarreif, Ninja-Stirnband, Drachenhörner, Einhorn-Horn, Hexenhut,
     Punk-Iro, Samurai-Helm, Buddy-Snapback, Fischerhut
-  - Brille: Coole Brille, Pixel-Brille
-  - Mund: Zigarette (mit Rauch), Lolli, Kaugummi (macht Blasen, die platzen)
-  - Kleidung: Winterjacke, Hoodie, Lederjacke, Ringelpulli – wird aus der Körperform der gewählten Figur berechnet
+  - Mund: Zigarette, Zigarre, Pfeife, Vape, Seifenblasen-Pfeife, Party-Tröte, Zahnstocher, Lolli, Kaugummi.
+    Klick auf die Figur benutzt es (Zug nehmen und Rauchringe pusten, dicke Vape-Wolke mit gelegentlichem Husten,
+    Seifenblasen, Tröööt mit Konfetti, große Kaugummiblase …), ab und zu auch von selbst.
   - Begleiter: Kuschelkissen (hinter ihr), Skateboard (unter ihr), Teddy (neben ihr)
   - Effekt: Heldenumhang
-  - selten im goldenen Päckchen (jedes 10. sicher): Goldkrone, Diamant-Diadem, Engelsflügel, Regenbogen-Glitzer,
-    Flammen-Aura, Blitz-Aura
+  - selten im goldenen Päckchen (jedes 10. sicher): Goldkrone, Diamant-Diadem, Neon-Vape (wechselnde LED),
+    Engelsflügel, Regenbogen-Glitzer, Flammen-Aura, Blitz-Aura
   Selbst gewähltes Zubehör geht vor Feiertags-Hüten.
 - Eigener Name (Aussehen → Name geben): steht oben im Menü, am Taskleisten-Symbol und als Schild über der Figur,
   wenn der Zeiger auf ihr ruht.

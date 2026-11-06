@@ -47,10 +47,8 @@ let pauses = true;                // Pausen-Erinnerung
 let moodOn = true;                // Laune an
 let moodValue = 70;               // Laune 0 … 100 (kommt aus dem Hauptprogramm)
 let accessory = null;             // getragenes Zubehör: Kopf
-let glassesItem = null;           // Brille
 let effectItem = null;            // Effekt (Flügel, Umhang, Aura …)
-let mouthItem = null;             // Mund: Zigarette, Lolli, Kaugummi
-let clothItem = null;             // Kleidung: passt sich der Körperform der Figur an
+let mouthItem = null;             // Mund: Zigarette, Zigarre, Pfeife, Vape, Tröte … (Klick benutzt es)
 let buddyItem = null;             // Begleiter: Kissen, Skateboard, Teddy
 let giftReady = false;            // heutiges Geschenk liegt bereit
 let giftGold = false;             // heute ist es ein seltenes goldenes Päckchen
@@ -117,37 +115,10 @@ function applySize(size) {
 applyCharacter(CONFIG.figur);
 
 // Jede Pose wird nur einmal Pixel für Pixel gemalt und dann als fertiges Bild wiederverwendet (spart Rechenzeit)
-// Kleidung: Farben je Teil (Grund, Schatten, Licht, Kragen, Reißverschluss/Kordeln)
-const CLOTHES = {
-  WINTERJACKET: { base: '#d63b35', shade: '#a8261f', light: '#f06a5d', collar: '#f4efe6', detail: '#3a2a2a' },
-  HOODIE: { base: '#7d8794', shade: '#5f6874', light: '#a0a9b5', collar: '#5f6874', detail: '#f4f4f4', strings: true },
-  LEATHER: { base: '#2b2b30', shade: '#1b1b1f', light: '#4a4a52', collar: '#3b3b42', detail: '#c9c9d1' },
-  SWEATER: { base: '#3d6fd6', shade: '#2c55ad', light: '#f2f2f2', collar: '#2c55ad', stripes: true },
-};
-const BODY_SKIP = new Set(['E', 'e', 'H', 'P', 'm', 't', 'k', 'X', 'x', 'Y', 'O', 'o', 'q', 'F', 'f', '.']);
-const lightness = (hex) => hexToHsl(hex)[2];
-// Farbe eines Körperpixels im Kleidungsbereich (oder null = Original lassen)
-function clothColor(cloth, ch, row, col, frame) {
-  const c = CLOTHES[cloth];
-  if (!c || BODY_SKIP.has(ch)) return null;
-  const orig = PALETTE[ch];
-  if (!orig) return null;
-  const top = Math.round(HEIGHT * 0.5);
-  const bottom = Math.round(HEIGHT * 0.86);
-  if (row < top || row >= bottom) return null;
-  const above = frame[row - 1] ? frame[row - 1][col] : '.';
-  if (row === top || BODY_SKIP.has(above) && above !== 'E' && above !== 'e') return c.collar; // Kragen
-  const center = Math.floor(WIDTH / 2);
-  if (CHAR.front && c.detail && !c.strings && col === center) return c.detail; // Reißverschluss
-  if (c.strings && CHAR.front && (col === center - 2 || col === center + 1) && row <= top + 3) return c.detail; // Kordeln
-  if (c.stripes) return (row - top) % 3 === 2 ? c.light : c.base;
-  const l = lightness(orig) - lightness(PALETTE.W || orig);
-  return l > 0.06 ? c.light : l < -0.06 ? c.shade : c.base;
-}
 function cachedFrame(frame, flip, map) {
   let entry = frameCache.get(frame);
   if (!entry) { entry = {}; frameCache.set(frame, entry); }
-  const i = `${flip ? 1 : 0}|${clothItem || ''}`;
+  const i = flip ? 1 : 0;
   if (!entry[i]) {
     const c = document.createElement('canvas');
     c.width = WIDTH;
@@ -157,7 +128,7 @@ function cachedFrame(frame, flip, map) {
       for (let col = 0; col < line.length; col++) {
         let ch = line[col];
         if (map && map[ch]) ch = map[ch];
-        const color = (clothItem && clothColor(clothItem, ch, r, col, frame)) || PALETTE[ch];
+        const color = PALETTE[ch];
         if (!color) continue;
         cx.fillStyle = color;
         cx.fillRect(flip ? WIDTH - 1 - col : col, r, 1, 1);
@@ -485,14 +456,9 @@ function paintFigure(t) {
   // Extras: Sonnenbrille, Mütze/Partyhut, Regenschirm
   const offY = frame.eyeDy || 0;
   // Mund-Zubehör (nicht beim Essen und Reden)
-  if ((mouthItem === 'CIGARETTE' || mouthItem === 'LOLLI') && ANCHORS.mouth && duck.action !== 'eat' && duck.beakUntil <= t) {
-    paint(CHAR.props[mouthItem], ANCHORS.mouth[0], ANCHORS.mouth[1] + offY - 1, flip);
-  }
-  // Brillen bleiben auch beim Blinzeln und Lachen auf (sonst flackern sie)
-  if (glassesItem === 'PIXELSHADES') {
-    // Pixel-Brille: schwarz mit weißen Pixel-Glanzlichtern
-    paint(CHAR.props.GLASSES, ANCHORS.glasses[0], ANCHORS.glasses[1] + offY, flip, { s: 'a' });
-  } else if (glassesItem === 'SHADES' || (sunny() && duck.state !== 'sleep')) paint(CHAR.props.GLASSES, ANCHORS.glasses[0], ANCHORS.glasses[1] + offY, flip);
+  drawMouthItem(t, offY, flip);
+  // Sonnenbrille bei Sonne (bleibt auch beim Blinzeln auf, sonst flackert sie)
+  if (sunny() && duck.state !== 'sleep') paint(CHAR.props.GLASSES, ANCHORS.glasses[0], ANCHORS.glasses[1] + offY, flip);
   const hat = activeHat(t);
   if (hat) {
     // Hüte sind verschieden hoch: an Mitte und Unterkante ausrichten (Heiligenschein schwebt darüber)
@@ -673,12 +639,15 @@ function updateParticles(dt) {
     if (p.type === 'heart') p.vx = Math.sin(p.life * 9 + (p.seed || 0)) * 14; // sanft schaukeln
     if (p.type === 'rainbow') { p.vy += 20 * dt; }
     if (p.type === 'flame') p.vx = Math.sin(p.life * 14 + p.seed) * 12;
+    if (p.type === 'ring') { p.r += dt * 9; p.vx *= 0.97; }
+    if (p.type === 'cloud') { p.r += dt * p.grow; p.vx *= 0.95; p.vy *= 0.97; }
+    if (p.type === 'bubble') p.vx = Math.sin(p.life * 6 + p.seed) * 18;
     // Regen/Schnee verschwindet am Boden
     if ((p.type === 'rain' || p.type === 'snow') && p.y > groundY() + DH) p.life = 0;
     if (p.type === 'dust') { p.vy *= 0.9; p.vx *= 0.94; }
     if (p.type === 'food') updateFood(p, dt);
     if (p.type === 'crumb') { p.vy += 380 * dt; p.vx *= 0.97; }
-    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4, smoke: 0.5 }[p.type] || 2.2);
+    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4, smoke: 0.5, ring: 0.55, cloud: 0.4, bubble: 0.3 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
@@ -697,6 +666,28 @@ function drawParticles() {
       // funkeln: abwechselnd Plus und Kreuz, mit weißem Kern
       const twinkle = Math.floor(p.life * 14 + (p.seed || 0)) % 2;
       drawSmall(twinkle ? CHAR.props.STAR : ['i.i', '.I.', 'i.i'], p.x, p.y, px);
+    } else if (p.type === 'ring') {
+      ctx.strokeStyle = `rgba(225, 225, 230, ${0.8 * p.life})`;
+      ctx.lineWidth = Math.max(1, px * 0.8);
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, p.r * Math.max(0.8, SIZE), p.r * 0.6 * Math.max(0.8, SIZE), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (p.type === 'cloud') {
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+      g.addColorStop(0, `rgba(240, 242, 248, ${0.55 * p.life})`);
+      g.addColorStop(1, 'rgba(240, 242, 248, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p.type === 'bubble') {
+      ctx.strokeStyle = `hsla(${(p.seed * 60 + p.life * 120) % 360}, 80%, 80%, ${Math.min(1, p.life * 2)})`;
+      ctx.lineWidth = Math.max(1, px * 0.6);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.7 * p.life})`;
+      ctx.fillRect(Math.round(p.x - p.r * 0.4), Math.round(p.y - p.r * 0.5), Math.max(1, px - 1), Math.max(1, px - 1));
     } else if (p.type === 'smoke') {
       // feine graue Rauchkringel, die sich nach oben auflösen
       ctx.fillStyle = `rgba(210, 210, 215, ${0.5 * p.life})`;
@@ -1237,6 +1228,7 @@ function update(dt, t) {
   updateExtras(t, dt);
   updateSnow(dt, t);
   updateMeal(t);
+  updateMouth(dt, t);
   if (giftReady && duck.onGround && !perch && !duck.walkTo) placeGift();
 
   if (isTyping(t) || micMouth() > 0) return; // beim Tippen / Reden keine Extras
@@ -1579,10 +1571,130 @@ function desktopFile() {
 }
 function stat(key) { if (bridge && bridge.stat) bridge.stat(key); }
 
+// ---------- Mund-Zubehör: zeichnen und benutzen ----------
+// Klick auf die Figur (oder ab und zu von selbst): Zug nehmen, Rauchringe, Vape-Wolke, Blasen, Tröte …
+const SMOKES = new Set(['CIGARETTE', 'CIGAR', 'PIPE']);
+const VAPES = new Set(['VAPE', 'NEONVAPE']);
+const MOUTH_ART = { CIGARETTE: 'CIGARETTE', CIGAR: 'CIGAR', PIPE: 'PIPE', VAPE: 'VAPE', NEONVAPE: 'VAPE', BUBBLEPIPE: 'BUBBLEPIPE', HORN: 'HORN', TOOTHPICK: 'TOOTHPICK', LOLLI: 'LOLLI' };
+const LED_COLORS = ['b', 'p', 'V', 'i', 'C'];
+let mouthUse = null; // { item, start, done }
+const mouthUsing = (t) => mouthUse && t < mouthUse.done;
+function mouthTip() {
+  // Spitze des Mund-Teils in Bildschirm-Koordinaten
+  const rows = CHAR.props[MOUTH_ART[mouthItem] || 'CIGARETTE'];
+  const col = ANCHORS.mouth[0] + (rows ? rows[0].length - 1 : 6);
+  const flip = isFlipped();
+  return { x: duck.x + (flip ? WIDTH - 1 - col : col) * SCALE, y: duck.y + (ANCHORS.mouth[1] - 1) * SCALE };
+}
+function drawMouthItem(t, offY, flip) {
+  const art = MOUTH_ART[mouthItem];
+  if (!art || !ANCHORS.mouth || duck.action === 'eat' || duck.beakUntil > t || duck.state === 'sleep' && !SMOKES.has(mouthItem)) return;
+  const using = mouthUsing(t) ? t - mouthUse.start : -1;
+  let rows = CHAR.props[art];
+  let map = null;
+  let dy = 0;
+  if (SMOKES.has(mouthItem)) {
+    // Glut: beim Ziehen hell, sonst leises Flackern
+    const hot = (using >= 0 && using < 900) || Math.floor(t / 700) % 5 === 0;
+    map = hot ? { R: 'i' } : null;
+  }
+  if (VAPES.has(mouthItem)) {
+    // LED: beim Ziehen hell, die Neon-Vape wechselt ständig die Farbe
+    const pulling = using >= 0 && using < 1000;
+    const led = mouthItem === 'NEONVAPE' ? LED_COLORS[Math.floor(t / 250) % LED_COLORS.length] : (pulling ? 'a' : 'b');
+    map = { b: pulling ? 'a' : led };
+  }
+  if (mouthItem === 'HORN' && using >= 0 && using < 900) rows = CHAR.props.HORN_OUT; // ausgerollt
+  if (mouthItem === 'TOOTHPICK') dy = (using >= 0 ? Math.floor(t / 90) : Math.floor(t / 1400)) % 2; // wippt
+  paint(rows, ANCHORS.mouth[0], ANCHORS.mouth[1] + offY - 1 + dy, flip, map);
+}
+function useMouthItem(t) {
+  if (!mouthItem || mouthUsing(t) || duck.state === 'sleep' || dnd()) return false;
+  if (mouthItem === 'GUM') { gumBig = t; mouthUse = { item: mouthItem, start: t, done: t + 1500 }; kick(); return true; }
+  if (!MOUTH_ART[mouthItem]) return false;
+  const tip = () => mouthTip();
+  mouthUse = { item: mouthItem, start: t, done: t + 2200 };
+  if (SMOKES.has(mouthItem)) {
+    // Zug nehmen (Augen halb zu), kurz halten, dann Rauchringe und eine Wolke auspusten
+    ACTIONS.drag = ACTIONS.drag || { frames: ['sleepy', 'sleepy', 'sleepy', 'idle', 'happy', 'happy'], step: 350, ms: 2100 };
+    startAction('drag', t);
+    setTimeout(() => {
+      const m = mouthPoint();
+      const dir = CHAR.front ? (Math.random() < 0.5 ? -1 : 1) : (isFlipped() ? -1 : 1);
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => particles.push({ type: 'ring', x: m.x + dir * 4, y: m.y - 2, vx: dir * 22, vy: -30, life: 1, r: 2 }), i * 260);
+      }
+      for (let i = 0; i < 6; i++) particles.push({ type: 'smoke', x: m.x, y: m.y, vx: dir * rand(10, 40), vy: rand(-30, -10), life: 1, seed: rand(0, 6) });
+      kick();
+    }, 1100);
+  } else if (VAPES.has(mouthItem)) {
+    // lange ziehen, dann eine dicke Wolke; ab und zu verschluckt sie sich
+    ACTIONS.drag = ACTIONS.drag || { frames: ['sleepy', 'sleepy', 'sleepy', 'idle', 'happy', 'happy'], step: 350, ms: 2100 };
+    startAction('drag', t);
+    setTimeout(() => {
+      const m = mouthPoint();
+      const k = Math.max(0.6, SIZE);
+      for (let i = 0; i < 14; i++) {
+        particles.push({ type: 'cloud', x: m.x + rand(-6, 6), y: m.y + rand(-4, 4), vx: rand(-55, 55) * k, vy: rand(-45, -5) * k, life: 1, r: rand(3, 6) * k, grow: rand(10, 18) * k });
+      }
+      if (Math.random() < 0.18) {
+        setTimeout(() => { react('startle', now()); for (let i = 0; i < 4; i++) particles.push({ type: 'cloud', x: m.x, y: m.y, vx: rand(-80, 80), vy: rand(-40, 10), life: 0.7, r: 2, grow: 8 }); }, 700);
+      }
+      kick();
+    }, 1200);
+  } else if (mouthItem === 'BUBBLEPIPE') {
+    ACTIONS.blow = ACTIONS.blow || { frames: ['happy', 'idle'], step: 300, ms: 2000 };
+    startAction('blow', t);
+    for (let i = 0; i < 6; i++) {
+      setTimeout(() => { const p = tip(); particles.push({ type: 'bubble', x: p.x, y: p.y, vx: rand(-25, 25), vy: rand(-45, -25), life: 1, r: rand(2, 5) * Math.max(0.6, SIZE), seed: rand(0, 6) }); kick(); }, 250 + i * 220);
+    }
+  } else if (mouthItem === 'HORN') {
+    // Tröööt! mit Konfetti
+    mouthUse.done = t + 900;
+    duck.happyUntil = t + 900;
+    squash(0.9, 1.12, 140);
+    const p = tip();
+    for (let i = 0; i < 12; i++) spawn('confetti', p.x + rand(0, 30) * Math.max(0.6, SIZE), p.y - rand(0, 10));
+    spawn('bang', p.x + 12, p.y - 8);
+  } else if (mouthItem === 'LOLLI') {
+    ACTIONS.lick = ACTIONS.lick || { frames: ['talk', 'idle', 'talk', 'idle', 'happy'], step: 220, ms: 1300 };
+    startAction('lick', t);
+    sparkle(2);
+  } else if (mouthItem === 'TOOTHPICK') {
+    mouthUse.done = t + 1100; // wippt schnell hin und her
+    duck.happyUntil = t + 1100;
+  }
+  stat('gestreichelt');
+  kick();
+  return true;
+}
+// Ab und zu benutzt sie ihr Mund-Teil von selbst
+function updateMouth(dt, t) {
+  if (!mouthItem || hardSave() || duck.state !== 'idle' || acting(t) || isTyping(t)) return;
+  if (Math.random() < dt / 40) useMouthItem(t);
+  // Zigarette & Co.: feiner Rauch aus der Spitze, ab und zu fällt Asche
+  if (SMOKES.has(mouthItem) && ANCHORS.mouth && Math.random() < dt * 2) {
+    const p = mouthTip();
+    particles.push({ type: 'smoke', x: p.x, y: p.y, vx: rand(-6, 6), vy: rand(-26, -16), life: 1, seed: rand(0, 6) });
+  }
+  if (mouthItem === 'CIGARETTE' && Math.random() < dt / 12) {
+    const p = mouthTip();
+    particles.push({ type: 'crumb', x: p.x, y: p.y + 2, vx: rand(-5, 5), vy: 10, life: 1, color: '#9a9aa2' });
+  }
+  // Vape: dünner Dampf aus der Spitze
+  if (VAPES.has(mouthItem) && Math.random() < dt * 0.8) {
+    const p = mouthTip();
+    particles.push({ type: 'smoke', x: p.x, y: p.y, vx: rand(-4, 4), vy: rand(-20, -12), life: 0.8, seed: rand(0, 6) });
+  }
+}
+let gumBig = -Infinity; // Klick: extra große Blase, die im Gesicht platzt
+
 // ---------- Kaugummi: Blase wird größer und platzt ----------
 function drawGum(t) {
   if (mouthItem !== 'GUM' || duck.state === 'sleep' || duck.action === 'eat' || hardSave()) return;
-  const cycle = (t % 5200) / 5200; // alle ~5 s eine Blase
+  const big = t - gumBig < 1500;
+  let cycle = (t % 5200) / 5200; // alle ~5 s eine Blase
+  if (big) cycle = 0.45 + ((t - gumBig) / 1500) * 0.5; // per Klick: schneller und größer
   if (cycle < 0.45) return;
   const m = mouthPoint();
   const k = Math.max(0.6, SIZE);
@@ -1592,7 +1704,7 @@ function drawGum(t) {
     return;
   }
   drawGum.popped = false;
-  const r = ((cycle - 0.45) / 0.48) * 9 * k + 1;
+  const r = ((cycle - 0.45) / 0.48) * (big ? 16 : 9) * k + 1;
   const cx = m.x + (CHAR.front ? 0 : (isFlipped() ? -r : r));
   ctx.fillStyle = 'rgba(255, 143, 192, .85)';
   ctx.beginPath();
@@ -1715,7 +1827,7 @@ function drawSnow() {
 }
 
 // ---------- Tägliches Geschenk ----------
-const SPECIAL_ACCESSORIES = new Set(['WINGS', 'RAINBOW', 'SHADES', 'PIXELSHADES', 'CAPE', 'FIREAURA', 'LIGHTNING']); // keine Hüte
+const SPECIAL_ACCESSORIES = new Set(['WINGS', 'RAINBOW', 'CAPE', 'FIREAURA', 'LIGHTNING']); // keine Hüte
 // Regenbogen-Glitzer: zieht beim Bewegen eine bunte Spur, in Ruhe funkelt es leise
 let rainbowAcc = 0;
 function updateAccessoryFx(dt, t) {
@@ -1741,12 +1853,6 @@ function updateAccessoryFx(dt, t) {
       rainbowAcc--;
       particles.push({ type: 'rainbow', x: duck.x + DW * rand(0.2, 0.8), y: duck.y + DH * rand(0.5, 0.95), vx: rand(-15, 15), vy: rand(-25, 5), life: 1, hue: (t / 4) % 360 });
     }
-  }
-  if (mouthItem === 'CIGARETTE' && ANCHORS.mouth && Math.random() < dt * 2.2 && duck.state !== 'sleep') {
-    const flip = isFlipped();
-    const col = ANCHORS.mouth[0] + 7;
-    const tipX = duck.x + (flip ? WIDTH - 1 - col : col) * SCALE;
-    particles.push({ type: 'smoke', x: tipX, y: duck.y + (ANCHORS.mouth[1] - 1) * SCALE, vx: rand(-6, 6), vy: rand(-26, -16), life: 1, seed: rand(0, 6) });
   }
   if ((accessory === 'GOLDCROWN' || accessory === 'TIARA') && Math.random() < dt * 0.7) {
     spawn('star', duck.x + DW / 2 + rand(-DW * 0.25, DW * 0.25), duck.y + rand(-4, DH * 0.15));
@@ -1812,8 +1918,8 @@ function openGift() {
 }
 function onGift({ item, golden, slot }) {
   const PREVIEW = {
-    SHADES: 'GLASSES', PIXELSHADES: 'GLASSES', WINGS: 'WING_L', CAPE: 'CAPE1', RAINBOW: 'STAR', FIREAURA: 'STAR', LIGHTNING: 'STAR',
-    GUM: 'STAR', WINTERJACKET: 'GIFT', HOODIE: 'GIFT', LEATHER: 'GIFT', SWEATER: 'GIFT',
+    WINGS: 'WING_L', CAPE: 'CAPE1', RAINBOW: 'STAR', FIREAURA: 'STAR', LIGHTNING: 'STAR',
+    GUM: 'STAR', NEONVAPE: 'VAPE',
   };
   if (reveal) reveal.item = PREVIEW[item] || item;
   if (golden) {
@@ -1823,9 +1929,7 @@ function onGift({ item, golden, slot }) {
   setTimeout(() => {
     react('cheer', now());
     giftX = null;
-    if (slot === 'brille' || item === 'SHADES' || item === 'PIXELSHADES') glassesItem = item;
-    else if (slot === 'mund') mouthItem = item;
-    else if (slot === 'kleidung') clothItem = item;
+    if (slot === 'mund') mouthItem = item;
     else if (slot === 'begleiter') buddyItem = item;
     else if (slot === 'effekt' || SPECIAL_ACCESSORIES.has(item)) effectItem = item;
     else if (item) accessory = item;
@@ -1956,7 +2060,7 @@ function settle() {
 
 // ---------- Bildrate: nur so oft zeichnen wie nötig (spart Akku) ----------
 // Dauer-Effekte halten die Bildrate nicht hoch (sie sehen auch mit 15 Bildern/s gut aus)
-const AMBIENT_FX = new Set(['rain', 'snow', 'steam', 'flame', 'spark', 'rainbow', 'smoke']);
+const AMBIENT_FX = new Set(['rain', 'snow', 'steam', 'flame', 'spark', 'rainbow', 'smoke', 'crumb']);
 let lastCursorMove = 0;
 function targetFps(t) {
   const busy = duck.dragging || duck.sliding || ball.on || pauseUntil > t || (duck.walkTo !== null && duck.walkTo !== undefined) || !duck.onGround || particles.some((p) => !AMBIENT_FX.has(p.type)) || isTyping(t) || acting(t)
@@ -2184,10 +2288,8 @@ function applyAppSettings(s) {
   pauses = s.pausen !== false && !SECOND; // eine Erinnerung reicht
   moodOn = s.launeAn !== false;
   accessory = s.zubehoer || null;
-  glassesItem = s.zubehoerBrille || null;
   effectItem = s.zubehoerEffekt || null;
   mouthItem = s.zubehoerMund || null;
-  clothItem = s.zubehoerKleidung || null;
   buddyItem = s.zubehoerBegleiter || null;
   giftReady = Boolean(s.geschenk) && !SECOND;
   giftGold = Boolean(s.geschenkGold);
@@ -2428,6 +2530,8 @@ window.addEventListener('mouseup', (e) => {
         return;
       }
     }
+    // mit Mund-Teil: Klick benutzt es (Zug nehmen, tröten, Blasen …)
+    if (useMouthItem(t)) { duck.vy = 0; duck.onGround = true; return; }
     duck.beakUntil = t + 220;
     duck.vy = -420;
     squash(0.88, 1.14, 160);
@@ -2659,8 +2763,8 @@ if (bridge) {
     showPause() { work.start = 1; work.nextAt = 0; duck.lastKeyAt = performance.now(); updatePause(performance.now()); },
     setMood(v) { moodValue = v; }, pounceNow() { pounceCooldown = 0; },
     desktopFile, snow, openGift,
-    setGift(on, gold = false) { giftReady = on; giftGold = gold; giftX = null; }, setAccessory(a) { accessory = a; }, setGlasses(a) { glassesItem = a; }, setEffect(a) { effectItem = a; },
-    setMouth(a) { mouthItem = a; }, setCloth(a) { clothItem = a; }, setBuddy(a) { buddyItem = a; },
+    setGift(on, gold = false) { giftReady = on; giftGold = gold; giftX = null; }, setAccessory(a) { accessory = a; }, setEffect(a) { effectItem = a; },
+    setMouth(a) { mouthItem = a; }, setBuddy(a) { buddyItem = a; }, useMouth: () => useMouthItem(performance.now()),
     setName(n) { petName = n; nameUntil = performance.now() + 3000; }, glow() { glowUntil = performance.now() + 3000; },
     setColor(v) { CONFIG.farbe = v; applyCharacter(CHAR.id); },
     setWalking(on) { walking = on; }, maybeWalk, launchTo,

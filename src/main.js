@@ -734,11 +734,8 @@ function playMenu() {
 
 // ---------- Tägliches Geschenk: jeden Tag ein Päckchen mit einem Zubehör ----------
 // Drei Plätze, die sich kombinieren lassen: Kopf, Brille, Effekt. ✦ = selten (goldenes Päckchen).
-const SLOTS = {
-  kopf: 'zubehoer', brille: 'zubehoerBrille', mund: 'zubehoerMund',
-  kleidung: 'zubehoerKleidung', begleiter: 'zubehoerBegleiter', effekt: 'zubehoerEffekt',
-};
-const SLOT_NAMES = { kopf: 'Kopf', brille: 'Brille', mund: 'Mund', kleidung: 'Kleidung', begleiter: 'Begleiter', effekt: 'Effekt' };
+const SLOTS = { kopf: 'zubehoer', mund: 'zubehoerMund', begleiter: 'zubehoerBegleiter', effekt: 'zubehoerEffekt' };
+const SLOT_NAMES = { kopf: 'Kopf', mund: 'Mund (Klick auf die Figur benutzt es)', begleiter: 'Begleiter', effekt: 'Effekt' };
 const ITEMS = [
   ['CROWN', 'Krone', 'kopf'], ['WIZARD', 'Zauberhut', 'kopf'], ['TOPHAT', 'Zylinder', 'kopf'], ['HALO', 'Heiligenschein', 'kopf'],
   ['HORNS', 'Teufelshörner', 'kopf'], ['PIRATE', 'Piratenhut', 'kopf'], ['COWBOY', 'Cowboyhut', 'kopf'], ['VIKING', 'Wikingerhelm', 'kopf'],
@@ -746,17 +743,18 @@ const ITEMS = [
   ['NINJA', 'Ninja-Stirnband', 'kopf'], ['DRAGON', 'Drachenhörner', 'kopf'], ['UNICORN', 'Einhorn-Horn', 'kopf'],
   ['WITCH', 'Hexenhut', 'kopf'], ['MOHAWK', 'Punk-Iro', 'kopf'], ['SAMURAI', 'Samurai-Helm', 'kopf'],
   ['SNAPBACK', 'Buddy-Snapback', 'kopf'], ['BUCKETHAT', 'Fischerhut', 'kopf'],
-  ['CIGARETTE', 'Zigarette', 'mund'], ['LOLLI', 'Lolli', 'mund'], ['GUM', 'Kaugummi (macht Blasen)', 'mund'],
-  ['WINTERJACKET', 'Winterjacke', 'kleidung'], ['HOODIE', 'Hoodie', 'kleidung'], ['LEATHER', 'Lederjacke', 'kleidung'],
-  ['SWEATER', 'Ringelpulli', 'kleidung'],
+  ['CIGARETTE', 'Zigarette', 'mund'], ['CIGAR', 'Zigarre', 'mund'], ['PIPE', 'Pfeife', 'mund'], ['VAPE', 'Vape', 'mund'],
+  ['BUBBLEPIPE', 'Seifenblasen-Pfeife', 'mund'], ['HORN', 'Party-Tröte', 'mund'], ['TOOTHPICK', 'Zahnstocher', 'mund'],
+  ['LOLLI', 'Lolli', 'mund'], ['GUM', 'Kaugummi', 'mund'],
   ['PILLOW', 'Kuschelkissen', 'begleiter'], ['SKATEBOARD', 'Skateboard', 'begleiter'], ['TEDDY', 'Teddy', 'begleiter'],
-  ['SHADES', 'Coole Brille', 'brille'], ['PIXELSHADES', 'Pixel-Brille', 'brille'],
   ['CAPE', 'Heldenumhang', 'effekt'],
   ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['TIARA', 'Diamant-Diadem ✦', 'kopf', true],
   ['WINGS', 'Engelsflügel ✦', 'effekt', true], ['RAINBOW', 'Regenbogen-Glitzer ✦', 'effekt', true],
   ['FIREAURA', 'Flammen-Aura ✦', 'effekt', true], ['LIGHTNING', 'Blitz-Aura ✦', 'effekt', true],
+  ['NEONVAPE', 'Neon-Vape ✦', 'mund', true],
 ];
-const REMOVED_ITEMS = ['CAP', 'BEANIE', 'BOW', 'FLOWER', 'CHEF', 'ANTENNA']; // alte Standard-Teile
+// alte Teile (Standard-Mützen, Brillen, Kleidung): fliegen aus der Sammlung
+const REMOVED_ITEMS = ['CAP', 'BEANIE', 'BOW', 'FLOWER', 'CHEF', 'ANTENNA', 'SHADES', 'PIXELSHADES', 'WINTERJACKET', 'HOODIE', 'LEATHER', 'SWEATER'];
 const itemOf = (key) => ITEMS.find(([k]) => k === key);
 const accessoryName = (key) => (itemOf(key) || [key, key])[1];
 const GOLDEN = ITEMS.filter((it) => it[3]);
@@ -765,6 +763,8 @@ const NORMAL = ITEMS.filter((it) => !it[3]);
 function migrateAccessories() {
   settings.sammlung = settings.sammlung.filter((k) => itemOf(k));
   for (const slotKey of Object.values(SLOTS)) if (settings[slotKey] && !itemOf(settings[slotKey])) settings[slotKey] = null;
+  settings.zubehoerBrille = null; // Plätze gibt es nicht mehr
+  settings.zubehoerKleidung = null;
   const old = settings.zubehoer && itemOf(settings.zubehoer);
   if (old && old[2] !== 'kopf') { settings[SLOTS[old[2]]] = old[0]; settings.zubehoer = null; }
 }
