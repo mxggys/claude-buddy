@@ -532,7 +532,6 @@ function draw(t) {
   if (duck.state === 'sleep' || (duck.action === 'nap' && acting(t))) { drawZzz(t); drawSnore(t); }
   if (claudeActive && CHAR.thinks && duck.state !== 'sleep' && !isTyping(t)) drawThinking(t);
   drawMeal();
-  drawGum(t);
   drawTemperature();
   drawPauseSign(t);
   drawNameTag(t);
@@ -641,13 +640,12 @@ function updateParticles(dt) {
     if (p.type === 'flame') p.vx = Math.sin(p.life * 14 + p.seed) * 12;
     if (p.type === 'ring') { p.r += dt * 9; p.vx *= 0.97; }
     if (p.type === 'cloud') { p.r += dt * p.grow; p.vx *= 0.95; p.vy *= 0.97; }
-    if (p.type === 'bubble') p.vx = Math.sin(p.life * 6 + p.seed) * 18;
     // Regen/Schnee verschwindet am Boden
     if ((p.type === 'rain' || p.type === 'snow') && p.y > groundY() + DH) p.life = 0;
     if (p.type === 'dust') { p.vy *= 0.9; p.vx *= 0.94; }
     if (p.type === 'food') updateFood(p, dt);
     if (p.type === 'crumb') { p.vy += 380 * dt; p.vx *= 0.97; }
-    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4, smoke: 0.5, ring: 0.55, cloud: 0.4, bubble: 0.3 }[p.type] || 2.2);
+    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4, smoke: 0.5, ring: 0.55, cloud: 0.4 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
@@ -680,14 +678,6 @@ function drawParticles() {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fill();
-    } else if (p.type === 'bubble') {
-      ctx.strokeStyle = `hsla(${(p.seed * 60 + p.life * 120) % 360}, 80%, 80%, ${Math.min(1, p.life * 2)})`;
-      ctx.lineWidth = Math.max(1, px * 0.6);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.7 * p.life})`;
-      ctx.fillRect(Math.round(p.x - p.r * 0.4), Math.round(p.y - p.r * 0.5), Math.max(1, px - 1), Math.max(1, px - 1));
     } else if (p.type === 'smoke') {
       // feine graue Rauchkringel, die sich nach oben auflösen
       ctx.fillStyle = `rgba(210, 210, 215, ${0.5 * p.life})`;
@@ -1575,7 +1565,7 @@ function stat(key) { if (bridge && bridge.stat) bridge.stat(key); }
 // Klick auf die Figur (oder ab und zu von selbst): Zug nehmen, Rauchringe, Vape-Wolke, Blasen, Tröte …
 const SMOKES = new Set(['CIGARETTE', 'CIGAR', 'PIPE']);
 const VAPES = new Set(['VAPE', 'NEONVAPE']);
-const MOUTH_ART = { CIGARETTE: 'CIGARETTE', CIGAR: 'CIGAR', PIPE: 'PIPE', VAPE: 'VAPE', NEONVAPE: 'VAPE', BUBBLEPIPE: 'BUBBLEPIPE', HORN: 'HORN', TOOTHPICK: 'TOOTHPICK', LOLLI: 'LOLLI' };
+const MOUTH_ART = { CIGARETTE: 'CIGARETTE', CIGAR: 'CIGAR', PIPE: 'PIPE', VAPE: 'VAPE', NEONVAPE: 'VAPE', TOOTHPICK: 'TOOTHPICK' };
 const LED_COLORS = ['b', 'p', 'V', 'i', 'C'];
 let mouthUse = null; // { item, start, done }
 const mouthUsing = (t) => mouthUse && t < mouthUse.done;
@@ -1604,15 +1594,12 @@ function drawMouthItem(t, offY, flip) {
     const led = mouthItem === 'NEONVAPE' ? LED_COLORS[Math.floor(t / 250) % LED_COLORS.length] : (pulling ? 'a' : 'b');
     map = { b: pulling ? 'a' : led };
   }
-  if (mouthItem === 'HORN' && using >= 0 && using < 900) rows = CHAR.props.HORN_OUT; // ausgerollt
   if (mouthItem === 'TOOTHPICK') dy = (using >= 0 ? Math.floor(t / 90) : Math.floor(t / 1400)) % 2; // wippt
   paint(rows, ANCHORS.mouth[0], ANCHORS.mouth[1] + offY - 1 + dy, flip, map);
 }
 function useMouthItem(t) {
   if (!mouthItem || mouthUsing(t) || duck.state === 'sleep' || dnd()) return false;
-  if (mouthItem === 'GUM') { gumBig = t; mouthUse = { item: mouthItem, start: t, done: t + 1500 }; kick(); return true; }
   if (!MOUTH_ART[mouthItem]) return false;
-  const tip = () => mouthTip();
   mouthUse = { item: mouthItem, start: t, done: t + 2200 };
   if (SMOKES.has(mouthItem)) {
     // Zug nehmen (Augen halb zu), kurz halten, dann Rauchringe und eine Wolke auspusten
@@ -1642,24 +1629,6 @@ function useMouthItem(t) {
       }
       kick();
     }, 1200);
-  } else if (mouthItem === 'BUBBLEPIPE') {
-    ACTIONS.blow = ACTIONS.blow || { frames: ['happy', 'idle'], step: 300, ms: 2000 };
-    startAction('blow', t);
-    for (let i = 0; i < 6; i++) {
-      setTimeout(() => { const p = tip(); particles.push({ type: 'bubble', x: p.x, y: p.y, vx: rand(-25, 25), vy: rand(-45, -25), life: 1, r: rand(2, 5) * Math.max(0.6, SIZE), seed: rand(0, 6) }); kick(); }, 250 + i * 220);
-    }
-  } else if (mouthItem === 'HORN') {
-    // Tröööt! mit Konfetti
-    mouthUse.done = t + 900;
-    duck.happyUntil = t + 900;
-    squash(0.9, 1.12, 140);
-    const p = tip();
-    for (let i = 0; i < 12; i++) spawn('confetti', p.x + rand(0, 30) * Math.max(0.6, SIZE), p.y - rand(0, 10));
-    spawn('bang', p.x + 12, p.y - 8);
-  } else if (mouthItem === 'LOLLI') {
-    ACTIONS.lick = ACTIONS.lick || { frames: ['talk', 'idle', 'talk', 'idle', 'happy'], step: 220, ms: 1300 };
-    startAction('lick', t);
-    sparkle(2);
   } else if (mouthItem === 'TOOTHPICK') {
     mouthUse.done = t + 1100; // wippt schnell hin und her
     duck.happyUntil = t + 1100;
@@ -1686,32 +1655,6 @@ function updateMouth(dt, t) {
     const p = mouthTip();
     particles.push({ type: 'smoke', x: p.x, y: p.y, vx: rand(-4, 4), vy: rand(-20, -12), life: 0.8, seed: rand(0, 6) });
   }
-}
-let gumBig = -Infinity; // Klick: extra große Blase, die im Gesicht platzt
-
-// ---------- Kaugummi: Blase wird größer und platzt ----------
-function drawGum(t) {
-  if (mouthItem !== 'GUM' || duck.state === 'sleep' || duck.action === 'eat' || hardSave()) return;
-  const big = t - gumBig < 1500;
-  let cycle = (t % 5200) / 5200; // alle ~5 s eine Blase
-  if (big) cycle = 0.45 + ((t - gumBig) / 1500) * 0.5; // per Klick: schneller und größer
-  if (cycle < 0.45) return;
-  const m = mouthPoint();
-  const k = Math.max(0.6, SIZE);
-  if (cycle > 0.93) {
-    // geplatzt: kurz ein paar rosa Fetzen
-    if (!drawGum.popped) { drawGum.popped = true; for (let i = 0; i < 5; i++) particles.push({ type: 'crumb', x: m.x, y: m.y, vx: rand(-60, 60), vy: rand(-60, 0), life: 0.6, color: '#ff8fc0' }); }
-    return;
-  }
-  drawGum.popped = false;
-  const r = ((cycle - 0.45) / 0.48) * (big ? 16 : 9) * k + 1;
-  const cx = m.x + (CHAR.front ? 0 : (isFlipped() ? -r : r));
-  ctx.fillStyle = 'rgba(255, 143, 192, .85)';
-  ctx.beginPath();
-  ctx.arc(cx, m.y + r * 0.2, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255, 255, 255, .6)';
-  ctx.fillRect(Math.round(cx - r * 0.45), Math.round(m.y - r * 0.4), Math.max(1, Math.round(r * 0.3)), Math.max(1, Math.round(r * 0.3)));
 }
 
 // ---------- Lichtschein und Namensschild ----------
@@ -1919,7 +1862,7 @@ function openGift() {
 function onGift({ item, golden, slot }) {
   const PREVIEW = {
     WINGS: 'WING_L', CAPE: 'CAPE1', RAINBOW: 'STAR', FIREAURA: 'STAR', LIGHTNING: 'STAR',
-    GUM: 'STAR', NEONVAPE: 'VAPE',
+    NEONVAPE: 'VAPE',
   };
   if (reveal) reveal.item = PREVIEW[item] || item;
   if (golden) {

@@ -793,13 +793,9 @@
   ]);
   // Mund-Zubehör (vom Mund nach rechts)
   const CIGARETTE = small(['yyaaaaR']);
-  const LOLLI = small(['....ppp', 'aaaapRp', '....ppp']);
   const CIGAR = small(['uuudUuuuR', 'UuudUuuuR']);
   const PIPE = small(['......uuu', 'kkkkkkuUu', '......uuu']);
   const VAPE = small(['kjjjjjjjb']); // b = Leuchtdiode, wechselt die Farbe
-  const BUBBLEPIPE = small(['.....aaa', 'kkkkka.a', '.....aaa']);
-  const HORN = small(['ppbbR']); // Party-Tröte, eingerollt
-  const HORN_OUT = small(['pbpbpbpbpbiR']); // ausgerollt
   const TOOTHPICK = small(['nnnnnn']);
   // Begleiter: Kissen hinter ihr, Skateboard unter ihr, Teddy neben ihr
   const PILLOW = small(['.CCCCCCCCCCCCCC.', 'CCCCCCCCCCCCCCCC', 'CCaCCCCCCCCCCaCC', 'CCCCCCCCCCCCCCCC', 'CCCCCCCCCCCCCCCC', '.CCCCCCCCCCCCCC.']);
@@ -849,7 +845,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, LOLLI, CIGAR, PIPE, VAPE, BUBBLEPIPE, HORN, HORN_OUT, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

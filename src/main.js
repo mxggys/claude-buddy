@@ -744,8 +744,7 @@ const ITEMS = [
   ['WITCH', 'Hexenhut', 'kopf'], ['MOHAWK', 'Punk-Iro', 'kopf'], ['SAMURAI', 'Samurai-Helm', 'kopf'],
   ['SNAPBACK', 'Buddy-Snapback', 'kopf'], ['BUCKETHAT', 'Fischerhut', 'kopf'],
   ['CIGARETTE', 'Zigarette', 'mund'], ['CIGAR', 'Zigarre', 'mund'], ['PIPE', 'Pfeife', 'mund'], ['VAPE', 'Vape', 'mund'],
-  ['BUBBLEPIPE', 'Seifenblasen-Pfeife', 'mund'], ['HORN', 'Party-Tröte', 'mund'], ['TOOTHPICK', 'Zahnstocher', 'mund'],
-  ['LOLLI', 'Lolli', 'mund'], ['GUM', 'Kaugummi', 'mund'],
+  ['TOOTHPICK', 'Zahnstocher', 'mund'],
   ['PILLOW', 'Kuschelkissen', 'begleiter'], ['SKATEBOARD', 'Skateboard', 'begleiter'], ['TEDDY', 'Teddy', 'begleiter'],
   ['CAPE', 'Heldenumhang', 'effekt'],
   ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['TIARA', 'Diamant-Diadem ✦', 'kopf', true],
@@ -754,7 +753,8 @@ const ITEMS = [
   ['NEONVAPE', 'Neon-Vape ✦', 'mund', true],
 ];
 // alte Teile (Standard-Mützen, Brillen, Kleidung): fliegen aus der Sammlung
-const REMOVED_ITEMS = ['CAP', 'BEANIE', 'BOW', 'FLOWER', 'CHEF', 'ANTENNA', 'SHADES', 'PIXELSHADES', 'WINTERJACKET', 'HOODIE', 'LEATHER', 'SWEATER'];
+const REMOVED_ITEMS = ['CAP', 'BEANIE', 'BOW', 'FLOWER', 'CHEF', 'ANTENNA', 'SHADES', 'PIXELSHADES', 'WINTERJACKET', 'HOODIE', 'LEATHER', 'SWEATER',
+  'BUBBLEPIPE', 'HORN', 'LOLLI', 'GUM'];
 const itemOf = (key) => ITEMS.find(([k]) => k === key);
 const accessoryName = (key) => (itemOf(key) || [key, key])[1];
 const GOLDEN = ITEMS.filter((it) => it[3]);
