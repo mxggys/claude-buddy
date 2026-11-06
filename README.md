@@ -140,7 +140,7 @@ und installiert sie beim Beenden (oder sofort per „Neu starten und installiere
 
 ## Neue Version veröffentlichen
 Versionsnummer in `package.json` erhöhen und pushen. Der Workflow
-`.github/workflows/desktop-ente-release.yml` baut auf Windows und erstellt das Release.
+`.github/workflows/release.yml` baut auf Windows und erstellt das Release.
 
 ## Entwickeln
 ```
