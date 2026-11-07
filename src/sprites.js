@@ -800,10 +800,11 @@
     'dddddddddddddDDD', 'ddddddddddddDDDD', 'dDdDdDdDdDdDdDdD', 'D..D..D..D..D..D',
   ]);
   // Mund-Zubehör (vom Mund nach rechts)
-  const CIGARETTE = small(['yyaaaaR']);
-  const CIGAR = small(['uuudUuuuR', 'UuudUuuuR']);
-  const PIPE = small(['......uuu', 'kkkkkkuUu', '......uuu']);
-  const VAPE = small(['kjjjjjjjb']); // b = Leuchtdiode, wechselt die Farbe
+  // größer und dicker: Filter (y), Papier (a), Glut (R)
+  const CIGARETTE = small(['yyyaaaaaaaR', 'yyyaaaaaaaR']);
+  const CIGAR = small(['uuuuudUuuuuR', 'UuuuudUuuuuR', 'uuuuudUuuuuR']);
+  const PIPE = small(['.........uuuu', '.........uUuu', 'kkkkkkkkkuuuu', '.........uuuu']);
+  const VAPE = small(['kkjjjjjjjjjb', 'kkjjjjjjjjjb']); // b = Leuchtdiode, wechselt die Farbe
   const TOOTHPICK = small(['nnnnnn']);
   // Begleiter: Kissen hinter ihr, Skateboard unter ihr, Teddy neben ihr
   const PILLOW = small(['.CCCCCCCCCCCCCC.', 'CCCCCCCCCCCCCCCC', 'CCaCCCCCCCCCCaCC', 'CCCCCCCCCCCCCCCC', 'CCCCCCCCCCCCCCCC', '.CCCCCCCCCCCCCC.']);

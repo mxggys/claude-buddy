@@ -85,7 +85,8 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
     Punk-Iro, Samurai-Helm, Buddy-Snapback, Fischerhut
   - Mund: Zigarette, Zigarre, Pfeife, Vape, Zahnstocher. Figuren mit Armen halten Zigarette & Co. in der Hand.
     Klick auf die Figur: Hand zum Mund, Zug mit halb geschlossenen Augen (Glut/LED leuchtet auf), Hand runter,
-    dann sanfte Rauchringe bzw. eine dicke Vape-Wolke (mit gelegentlichem Husten); ab und zu auch von selbst.
+    dann ausatmen: ein Rauchstrahl, der nach vorne zieht, aufsteigt und zerfließt (manchmal mit Rauchring),
+    bzw. eine dicke Vape-Wolke (mit gelegentlichem Husten). Ab und zu auch von selbst und meistens nach einem Sturz.
   - Begleiter: Kuschelkissen (hinter ihr), Skateboard (unter ihr), Teddy (neben ihr)
   - Effekt: Heldenumhang
   - selten im goldenen Päckchen (jedes 10. sicher): Goldkrone, Diamant-Diadem, Neon-Vape (wechselnde LED),

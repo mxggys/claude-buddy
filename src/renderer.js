@@ -639,6 +639,8 @@ function updateParticles(dt) {
     if (p.type === 'rainbow') { p.vy += 20 * dt; }
     if (p.type === 'flame') p.vx = Math.sin(p.life * 14 + p.seed) * 12;
     if (p.type === 'ring') { p.r += dt * 9; p.vx *= 0.97; }
+    // ausgeatmeter Rauch wird langsamer, steigt auf und verwirbelt leicht
+    if (p.type === 'smoke' && p.exhaled) { p.vx *= Math.exp(-2.2 * dt); p.vy -= 14 * dt; p.vx += Math.sin(p.life * 7 + p.seed) * 6 * dt; }
     if (p.type === 'cloud') { p.r += dt * p.grow; p.vx *= 0.95; p.vy *= 0.97; }
     // Regen/Schnee verschwindet am Boden
     if ((p.type === 'rain' || p.type === 'snow') && p.y > groundY() + DH) p.life = 0;
@@ -681,7 +683,7 @@ function drawParticles() {
     } else if (p.type === 'smoke') {
       // weiche, runde Rauchwölkchen: werden größer und lösen sich sanft auf
       const r = Math.max(1, px * (0.7 + (1 - p.life) * 2.4) * (p.big || 1));
-      ctx.fillStyle = `rgba(228, 230, 236, ${0.34 * p.life})`;
+      ctx.fillStyle = `rgba(230, 233, 240, ${(p.exhaled ? 0.3 : 0.34) * Math.min(1, p.life * 1.3)})`;
       ctx.beginPath();
       ctx.arc(p.x + Math.sin(p.life * 6 + p.seed) * 2.5, p.y, r, 0, Math.PI * 2);
       ctx.fill();
@@ -1132,6 +1134,7 @@ function update(dt, t) {
 
   updateBall(dt, t); // Ball fliegt auch weiter, während man die Figur hält
   updateAccessoryFx(dt, t); // Regenbogen-Spur auch im Flug und beim Tragen
+  updateExhale(dt, t);
   sendState(t);
   if (duck.dragging) return;
 
@@ -1185,7 +1188,12 @@ function update(dt, t) {
         squash(1.5, 0.55, 220);
         return;
       }
-      if (fell > Math.max(110, DH * 1.5) && !dnd()) { duck.vy = 0; duck.vx = 0; duck.onGround = true; settle(); react('dizzy', t); return; }
+      if (fell > Math.max(110, DH * 1.5) && !dnd()) {
+        duck.vy = 0; duck.vx = 0; duck.onGround = true; settle(); react('dizzy', t);
+        calmDown(ACTIONS.dizzy.ms + 300);
+        return;
+      }
+      if (fell > 40) calmDown(650); // runtergefallen: erst mal einen Zug nehmen
       // Landung: je schneller, desto stärker plattgedrückt
       const hit = Math.min(1, duck.vy / 1400);
       const soft = CHAR.squishy ? 1.8 : 1; // Schleim wird beim Landen richtig platt
@@ -1620,14 +1628,14 @@ function useMouthItem(t) {
   if (SMOKES.has(mouthItem)) {
     startAction('drag', t);
     setTimeout(() => {
-      // Mund kurz auf, zwei sanfte Rauchringe und ein paar weiche Wölkchen
-      duck.beakUntil = now() + 650;
-      const m = mouthPoint();
+      // Mund auf und ausatmen: ein gleichmäßiger Strahl, der nach vorne zieht, aufsteigt und zerfließt
+      duck.beakUntil = now() + 900;
       const dir = CHAR.front ? (Math.random() < 0.5 ? -1 : 1) : (isFlipped() ? -1 : 1);
-      for (let i = 0; i < 2; i++) {
-        setTimeout(() => particles.push({ type: 'ring', x: m.x + dir * 3, y: m.y - 2, vx: dir * 16, vy: -22, life: 1, r: 2 }), 120 + i * 320);
+      exhale = { until: now() + 850, dir, acc: 0 };
+      // ab und zu zum Schluss ein einzelner Rauchring
+      if (Math.random() < 0.35) {
+        setTimeout(() => { const m = mouthPoint(); particles.push({ type: 'ring', x: m.x + dir * 3, y: m.y - 2, vx: dir * 14, vy: -18, life: 1, r: 2 }); }, 950);
       }
-      for (let i = 0; i < 5; i++) particles.push({ type: 'smoke', x: m.x + dir * 2, y: m.y, vx: dir * rand(8, 26), vy: rand(-20, -8), life: 1, seed: rand(0, 6), big: 1.6 });
       kick();
     }, AT_MOUTH_MS[1] + 100);
   } else if (VAPES.has(mouthItem)) {
@@ -1653,6 +1661,30 @@ function useMouthItem(t) {
   kick();
   return true;
 }
+// Nach einem Sturz: mit Zigarette & Co. erst mal einen Zug nehmen (meistens)
+function calmDown(delay) {
+  if (!HELD.has(mouthItem) || Math.random() > 0.75) return;
+  setTimeout(() => { if (duck.onGround && !duck.dragging) { duck.action = null; useMouthItem(now()); } }, delay);
+}
+
+// Ausatmen: ein paar Bilder lang strömt Rauch aus dem Mund
+let exhale = null; // { until, dir, acc, kind }
+function updateExhale(dt, t) {
+  if (!exhale || t > exhale.until) { exhale = null; return; }
+  const m = mouthPoint();
+  const k = Math.max(0.6, SIZE);
+  const left = (exhale.until - t) / 850; // 1 → 0: am Anfang kräftig, dann schwächer
+  exhale.acc += dt * 34;
+  while (exhale.acc >= 1) {
+    exhale.acc--;
+    particles.push({
+      type: 'smoke', x: m.x + exhale.dir * 2, y: m.y + rand(-1, 1),
+      vx: exhale.dir * (30 + 50 * left) * k + rand(-6, 6), vy: rand(-10, -2) * k,
+      life: 1, seed: rand(0, 6), big: 1.4 + (1 - left) * 1.2, exhaled: true,
+    });
+  }
+}
+
 // Ab und zu benutzt sie ihr Mund-Teil von selbst
 function updateMouth(dt, t) {
   if (!mouthItem || hardSave() || duck.state !== 'idle' || acting(t) || isTyping(t)) return;
