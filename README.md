@@ -83,8 +83,9 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
   - Kopf: Krone, Zauberhut, Zylinder, Heiligenschein, Teufelshörner, Piratenhut, Cowboyhut, Wikingerhelm,
     Propellermütze, Katzenohren, Sternen-Haarreif, Ninja-Stirnband, Drachenhörner, Einhorn-Horn, Hexenhut,
     Punk-Iro, Samurai-Helm, Buddy-Snapback, Fischerhut
-  - Mund: Zigarette, Zigarre, Pfeife, Vape, Zahnstocher. Klick auf die Figur benutzt es (Zug nehmen und
-    Rauchringe pusten, dicke Vape-Wolke mit gelegentlichem Husten, wippender Zahnstocher), ab und zu auch von selbst.
+  - Mund: Zigarette, Zigarre, Pfeife, Vape, Zahnstocher. Figuren mit Armen halten Zigarette & Co. in der Hand.
+    Klick auf die Figur: Hand zum Mund, Zug mit halb geschlossenen Augen (Glut/LED leuchtet auf), Hand runter,
+    dann sanfte Rauchringe bzw. eine dicke Vape-Wolke (mit gelegentlichem Husten); ab und zu auch von selbst.
   - Begleiter: Kuschelkissen (hinter ihr), Skateboard (unter ihr), Teddy (neben ihr)
   - Effekt: Heldenumhang
   - selten im goldenen Päckchen (jedes 10. sicher): Goldkrone, Diamant-Diadem, Neon-Vape (wechselnde LED),

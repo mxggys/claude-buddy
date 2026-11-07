@@ -154,6 +154,9 @@
     wink: { eye: 'wink' },
     dance1: { arms: 'danceL', eye: 'happy', feet: 'step1' },
     dance2: { arms: 'danceR', eye: 'happy', feet: 'step2' },
+    // Rauchen: Hand zum Mund führen, dann mit halb geschlossenen Augen ziehen
+    smokeHold: { arms: 'smokeUp', wing: 'up' },
+    smokeUp: { arms: 'smokeUp', wing: 'up', eye: 'sleepy' },
     // auf dem Bauch rutschen (Pinguin), Bambus kauen (Panda)
     slide: { eye: 'happy', sit: true, feet: 'none', wing: 'up', arms: 'cheer' },
     chew1: { beak: 1 },
@@ -280,6 +283,7 @@
     if (arms === 'waveL1') lA = 0;
     if (arms === 'waveL2') lA = 1;
     if (arms === 'reach') { lA = 1; rA = 1; }
+    if (arms === 'smokeUp') rA = 1; // rechte Hand am Gesicht
     if (arms === 'cheer') { lA = 0; rA = 0; }
     if (arms === 'danceL') { lA = 0; rA += 2; }
     if (arms === 'danceR') { rA = 0; lA += 2; }
@@ -334,7 +338,7 @@
     voice: 'blip',
     idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'],
     typingFrames: ['tapL', 'tapR'],
-    anchors: { mouth: [16, 13], keyboard: [8, 16], tap: [15, 17], idea: [13, -7], lens: [26, 4], mushroom: [-9, 16], snore: [17, 11],
+    anchors: { mouth: [16, 13], hand: [28, 11], keyboard: [8, 16], tap: [15, 17], idea: [13, -7], lens: [26, 4], mushroom: [-9, 16], snore: [17, 11],
       hat: [15, 7], umbrella: [9, -11], glasses: [6, 7] },
     width: CW,
     height: CH,
@@ -375,6 +379,7 @@
         if (arms === 'waveL1') l = up;
         if (arms === 'waveL2') l = up + 1;
         if (arms === 'reach') { l = up + 1; r = up + 1; }
+        if (arms === 'smokeUp') r = up + 1; // rechte Hand am Gesicht
         if (arms === 'danceL') { l = up; r += 1; }
         if (arms === 'danceR') { r = up; l += 1; }
         if (arms === 'droop') { l += 1; r += 1; }
@@ -661,7 +666,10 @@
       glasses: glassesFor(def.eyes),
       anchors: {
         keyboard: [5, 16], tap: [12, 17], idea: [10, -8], lens: [20, 4], mushroom: [-9, 15], snore: [17, 8],
-        umbrella: [5, -11], mouth: [def.mouth[0] + 2, def.mouth[1]], ...def.anchors,
+        umbrella: [5, -11], mouth: [def.mouth[0] + 2, def.mouth[1]],
+        // Zigarette & Co. in der rechten Hand (Figuren mit Armen)
+        ...(def.arms ? { hand: [def.arms[1] + def.arms[3] - 1, def.arms[2] + def.arms[4] - 2] } : {}),
+        ...def.anchors,
       },
       width: VW,
       height: VH,
