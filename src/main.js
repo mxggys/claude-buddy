@@ -743,7 +743,7 @@ const ITEMS = [
   ['NINJA', 'Ninja-Stirnband', 'kopf'], ['DRAGON', 'Drachenhörner', 'kopf'], ['UNICORN', 'Einhorn-Horn', 'kopf'],
   ['WITCH', 'Hexenhut', 'kopf'], ['MOHAWK', 'Punk-Iro', 'kopf'], ['SAMURAI', 'Samurai-Helm', 'kopf'],
   ['SNAPBACK', 'Buddy-Snapback', 'kopf'], ['BUCKETHAT', 'Fischerhut', 'kopf'],
-  ['CIGARETTE', 'Zigarette', 'mund'], ['CIGAR', 'Zigarre', 'mund'], ['PIPE', 'Pfeife', 'mund'], ['VAPE', 'Vape', 'mund'],
+  ['CIGARETTE', 'Zigarette', 'mund'], ['JOINT', 'Joint', 'mund'], ['CIGAR', 'Zigarre', 'mund'], ['PIPE', 'Pfeife', 'mund'], ['VAPE', 'Vape', 'mund'],
   ['TOOTHPICK', 'Zahnstocher', 'mund'],
   ['PILLOW', 'Kuschelkissen', 'begleiter'], ['SKATEBOARD', 'Skateboard', 'begleiter'], ['TEDDY', 'Teddy', 'begleiter'],
   ['CAPE', 'Heldenumhang', 'effekt'],

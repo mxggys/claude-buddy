@@ -2,11 +2,11 @@
 
 Kleiner Pixel-Begleiter für Windows 11, der unten an der Taskleiste sitzt.
 
-Figuren: Mini-Claude, Klassik-Ente, Boo (Geist, schwebt), Frosti (Pinguin, watschelt beim Tippen),
-Glibber (Schleim, wabbelt bei jedem Tastendruck, wird beim Landen platt), Axo (Axolotl, Kiemen wackeln beim Tippen),
+Figuren: Mini-Claude (tippt auf einem Laptop, macht Kaffeepausen), Boo (Bettlaken-Geist, schwebt),
+Frosti (Pinguin, watschelt beim Tippen), Axo (Axolotl, Kiemen wackeln beim Tippen),
 Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda),
-Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster), Flitz (Otter, jongliert einen Stein,
-feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger).
+Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
+Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger).
 
 ## Was sie kann
 - Sitzt unten rechts an der Taskleiste. Gedrückt halten und ziehen setzt sie um, der Platz wird gemerkt.
@@ -20,7 +20,7 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
   > Mikrofon > Streicheln > Leerlauf.
 - Leerlauf: gähnen, strecken, putzen, picken, schütteln, watscheln, umschauen, Pilz, Ideen-Glühbirne;
   Mini-Claude winkt, zwinkert und tanzt (auch nach 3 Minuten Tippen am Stück).
-- Schlaf: Zzz, Schnarchblase, die Ente dreht sich ab und zu um.
+- Schlaf: Zzz, Schnarchblase.
 - Akku: in Ruhe 15, im Schlaf 8 Bilder pro Sekunde, im Akkubetrieb höchstens 30. Keine GPU-Nutzung,
   nur 2 Prozesse (Grafik und Netzwerk im Hauptprozess), unnötige Chromium-Dienste aus.
 - Energiesparmodus in Stufen (Bewegung / Ruhe / Schlaf in Bildern pro Sekunde):
@@ -44,7 +44,7 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Erinnerung / Wecker im Menü: in 5 bis 60 Minuten, eigene Minuten oder eine Uhrzeit. Dann klingelt die Figur
   mit Glocke und hüpft (bis du draufklickst, höchstens 30 s), und am Symbol erscheint eine Windows-Meldung.
 - Werfen: schnell ziehen und loslassen, die Figur fliegt, prallt an den Bildschirmrändern ab und bleibt dort, wo sie landet.
-  Frosti rutscht danach auf dem Bauch weiter, Glibber prallt noch einmal ab.
+  Frosti rutscht danach auf dem Bauch weiter.
 - Tageszeit: morgens nach dem Aufwachen ein Winken, mittags ab und zu ein Nickerchen, abends öfter Gähnen,
   nachts schläft sie mit Schlafmütze. Nach über 10 Minuten Pause: Willkommen zurück.
 - Fenster: Wird ein Fenster nah an der Figur verschoben, schaut sie hin; schiebt es sich über sie, erschrickt sie.
@@ -83,7 +83,7 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
   - Kopf: Krone, Zauberhut, Zylinder, Heiligenschein, Teufelshörner, Piratenhut, Cowboyhut, Wikingerhelm,
     Propellermütze, Katzenohren, Sternen-Haarreif, Ninja-Stirnband, Drachenhörner, Einhorn-Horn, Hexenhut,
     Punk-Iro, Samurai-Helm, Buddy-Snapback, Fischerhut
-  - Mund: Zigarette, Zigarre, Pfeife, Vape, Zahnstocher. Figuren mit Armen halten Zigarette & Co. in der Hand.
+  - Mund: Zigarette, Joint, Zigarre, Pfeife, Vape, Zahnstocher. Glut-Teile haben zwei feine, verschnörkelte Rauchfäden. Figuren mit Armen halten Zigarette & Co. in der Hand.
     Klick auf die Figur: Hand zum Mund, Zug mit halb geschlossenen Augen (Glut/LED leuchtet auf), Hand runter,
     dann ausatmen: ein Rauchstrahl, der nach vorne zieht, aufsteigt und zerfließt (manchmal mit Rauchring),
     bzw. eine dicke Vape-Wolke (mit gelegentlichem Husten). Ab und zu auch von selbst und meistens nach einem Sturz.
@@ -104,7 +104,7 @@ feiert Rekorde), Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen k
 - Stabiler und sparsamer: abgestürzte oder hängende Figur wird neu geladen, Posen werden zwischengespeichert,
   das Fehler-Log wird automatisch gekürzt.
 - Eigenheiten: Pando kaut Bambus und kugelt sich bei Klick-Spam, Boo wird beim Anklicken durchsichtig und verblasst
-  ab und zu, Hopsi macht Freudensprünge, Glibber zerfließt und ploppt zurück, alle hüpfen ab und zu vor Freude.
+  ab und zu, Hopsi macht Freudensprünge, alle hüpfen ab und zu vor Freude.
 - Ostern (Hasenohren, Osterei) und Halloween (Kürbis, Fledermäuse am Abend), abschaltbar unter Extras.
 - Vollbild-Spiele und -Videos: wird ausgeblendet (abschaltbar).
 - Läuft zusammen mit TranslucentTB (durchsichtige Taskleiste): Fährt der Zeiger über die Figur, holt sie sich

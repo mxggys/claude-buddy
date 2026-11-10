@@ -307,6 +307,7 @@ const ACTIONS = {
   sneeze: { frames: ['sleepy', 'yawn', 'startle', 'idle'], step: 330, ms: 1400 }, // Hatschi!
   spin: { frames: ['happy'], ms: 900 },                    // einmal im Kreis drehen
   juggle: { frames: ['cheer1', 'cheer2'], step: 300, ms: 3600 }, // Otter: Stein jonglieren
+  coffee: { frames: ['coffee', 'coffee', 'coffee', 'sip', 'sip', 'coffee', 'coffee', 'sip', 'coffee'], step: 600, ms: 5400 }, // Kaffeepause
   // Reaktionen haben Vorrang vor allem anderen
   startle: { frames: ['startle'], ms: 900, priority: true },
   dizzy: { frames: ['dizzy1', 'dizzy2'], step: 200, ms: 2400, priority: true },
@@ -436,7 +437,12 @@ function paintFigure(t) {
     const { dx, dy } = lookOffset(t, flip);
     for (const [col, row] of EYE.positions) paint(EYE.pattern, col + dx, row + (frame.eyeDy || 0) + dy, flip);
   }
-  if (isTyping(t)) {
+  if (isTyping(t) && CHAR.laptop && ANCHORS.laptop) {
+    // Laptop vor ihm: Hände verschwinden hinter dem Deckel; beim Tastendruck blinkt die Leuchte
+    const rows = CHAR.props.LAPTOP;
+    paint(rows, ...ANCHORS.laptop, flip);
+    if (duck.pressedKey && duck.pressedUntil > t) paint(['i'], ANCHORS.laptop[0] + rows[0].length - 4, ANCHORS.laptop[1] + rows.length - 2, flip);
+  } else if (isTyping(t)) {
     paint(KEYBOARD, ...ANCHORS.keyboard, flip);
     if (duck.pressedKey && duck.pressedUntil > t) {
       const [kc, kr] = duck.pressedKey;
@@ -452,6 +458,7 @@ function paintFigure(t) {
     paint(CHAR.props.IDEA, ANCHORS.idea[0], ANCHORS.idea[1] + Math.round(Math.sin(t / 250)), flip, lit ? null : { i: 'j', I: 'j' });
   }
   if (duck.action === 'mushroom' && acting(t) && ANCHORS.mushroom) paint(CHAR.props.MUSHROOM, ...ANCHORS.mushroom, flip);
+  if (duck.action === 'coffee' && acting(t) && ANCHORS.mug) drawCoffee(t, frame, flip);
 
   // Extras: Sonnenbrille, Mütze/Partyhut, Regenschirm
   const offY = frame.eyeDy || 0;
@@ -641,13 +648,20 @@ function updateParticles(dt) {
     if (p.type === 'ring') { p.r += dt * 9; p.vx *= 0.97; }
     // ausgeatmeter Rauch wird langsamer, steigt auf und verwirbelt leicht
     if (p.type === 'smoke' && p.exhaled) { p.vx *= Math.exp(-2.2 * dt); p.vy -= 14 * dt; p.vx += Math.sin(p.life * 7 + p.seed) * 6 * dt; }
+    if (p.type === 'wisp') {
+      p.age += dt;
+      const a = p.age;
+      const amp = p.px * (0.6 + a * 2.2); // wird nach oben hin weiter
+      p.x = p.x0 + Math.sin(a * 5.5 + p.line * 2.6) * amp + (p.line ? 1 : -1) * a * p.px * 1.2;
+      p.y = p.y0 - a * p.px * 13;
+    }
     if (p.type === 'cloud') { p.r += dt * p.grow; p.vx *= 0.95; p.vy *= 0.97; }
     // Regen/Schnee verschwindet am Boden
     if ((p.type === 'rain' || p.type === 'snow') && p.y > groundY() + DH) p.life = 0;
     if (p.type === 'dust') { p.vy *= 0.9; p.vx *= 0.94; }
     if (p.type === 'food') updateFood(p, dt);
     if (p.type === 'crumb') { p.vy += 380 * dt; p.vx *= 0.97; }
-    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4, smoke: 0.5, ring: 0.55, cloud: 0.4 }[p.type] || 2.2);
+    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4, smoke: 0.5, wisp: 0.7, ring: 0.55, cloud: 0.4 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
@@ -680,6 +694,12 @@ function drawParticles() {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fill();
+    } else if (p.type === 'wisp') {
+      // einzelne graue Pixel, aufs Raster gesetzt: wirkt wie gezeichnet
+      const q = Math.max(2, Math.round(p.px));
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.6));
+      ctx.fillStyle = '#949494';
+      ctx.fillRect(Math.round(p.x / q) * q, Math.round(p.y / q) * q, q, q);
     } else if (p.type === 'smoke') {
       // weiche, runde Rauchwölkchen: werden größer und lösen sich sanft auf
       const r = Math.max(1, px * (0.7 + (1 - p.life) * 2.4) * (p.big || 1));
@@ -1091,6 +1111,8 @@ function pickState(t) {
   // lange nicht beachtet: wird traurig
   else if (m === 'awake' && t - lastAttention > 45 * 60 * 1000 && r < 0.35) startAction('sad', t);
   else if (m === 'tired' && r < 0.45) startAction('yawn', t);
+  // Kaffee: morgens und in Tipp-Pausen öfter
+  else if (CHAR.laptop && ((hour() >= 6 && hour() < 11 && r < 0.2) || (t - duck.lastKeyAt > 20000 && t - duck.lastKeyAt < 180000 && r < 0.15))) startAction('coffee', t);
   // mittags ab und zu ein Nickerchen, wenn gerade nicht getippt wird
   else if (hour() >= 12 && hour() < 14 && t - duck.lastKeyAt > 3 * 60 * 1000 && r < 0.12) startAction('nap', t);
   // abends öfter gähnen
@@ -1571,16 +1593,48 @@ function desktopFile() {
 }
 function stat(key) { if (bridge && bridge.stat) bridge.stat(key); }
 
+// ---------- Kaffeepause (Mini-Claude): Becher in der Hand, Dampf, Laptop daneben ----------
+function drawCoffee(t, frame, flip) {
+  const sip = frame === FRAMES.sip;
+  const [mx, my] = ANCHORS.mug;
+  const y = my - (sip ? 3 : 0);
+  paint(CHAR.props.MUG, mx, y, flip);
+  // Dampf: kleine beige Quadrate, die aufsteigen und verschwinden
+  for (let i = 0; i < 3; i++) {
+    const k = ((t / 380 + i * 1.4) % 4.2);
+    if (k > 3.6) continue;
+    const sx = mx + 2 + Math.round(Math.sin(t / 500 + i * 2) * 1.2) + i * 2;
+    paint(['&'], sx, y - 1 - Math.floor(k * 1.5), flip);
+  }
+  if (buddyItem !== 'TEDDY') {
+    const lap = CHAR.props.LAPTOP_MINI;
+    paint(lap, WIDTH, HEIGHT - lap.length + 1, flip);
+  }
+}
+
 // ---------- Mund-Zubehör: zeichnen und benutzen ----------
 // Klick auf die Figur (oder ab und zu von selbst): Zug nehmen, Rauchringe, Vape-Wolke, Blasen, Tröte …
-const SMOKES = new Set(['CIGARETTE', 'CIGAR', 'PIPE']);
+const SMOKES = new Set(['CIGARETTE', 'CIGAR', 'PIPE', 'JOINT']);
 const VAPES = new Set(['VAPE', 'NEONVAPE']);
-const MOUTH_ART = { CIGARETTE: 'CIGARETTE', CIGAR: 'CIGAR', PIPE: 'PIPE', VAPE: 'VAPE', NEONVAPE: 'VAPE', TOOTHPICK: 'TOOTHPICK' };
+const MOUTH_ART = { JOINT: 'JOINT', CIGARETTE: 'CIGARETTE', CIGAR: 'CIGAR', PIPE: 'PIPE', VAPE: 'VAPE', NEONVAPE: 'VAPE', TOOTHPICK: 'TOOTHPICK' };
 const LED_COLORS = ['b', 'p', 'V', 'i', 'C'];
 let mouthUse = null; // { item, start, done }
 const mouthUsing = (t) => mouthUse && t < mouthUse.done;
 // Zigarette, Zigarre, Pfeife und Vape hält sie in der Hand; zum Ziehen führt sie die Hand zum Mund
-const HELD = new Set(['CIGARETTE', 'CIGAR', 'PIPE', 'VAPE', 'NEONVAPE']);
+const HELD = new Set(['CIGARETTE', 'CIGAR', 'PIPE', 'JOINT', 'VAPE', 'NEONVAPE']);
+// Glut beim Ziehen: heller (je Teil eigene Farben)
+const EMBER_HOT = { CIGARETTE: { 7: '8', 6: '7' }, JOINT: { '+': '7', '-': '+' } };
+const EMBER_KEYS = ['7', '+', 'R', 'b'];
+// Wo im Bild die Glut sitzt (einmal je Bild berechnet)
+const emberCache = new Map();
+function emberCell(rows) {
+  if (!emberCache.has(rows)) {
+    let best = null;
+    rows.forEach((line, r) => [...line].forEach((ch, c) => { if (EMBER_KEYS.includes(ch) && (!best || c > best[0] || (c === best[0] && r < best[1]))) best = [c, r]; }));
+    emberCache.set(rows, best || [rows[0].length - 1, 0]);
+  }
+  return emberCache.get(rows);
+}
 const AT_MOUTH_MS = [250, 1150]; // so lange ist die Hand am Mund
 function itemAnchor(t) {
   const using = mouthUsing(t) ? t - mouthUse.start : -1;
@@ -1591,9 +1645,10 @@ function mouthTip() {
   // Spitze des Teils (Glut, LED) in Bildschirm-Koordinaten
   const rows = CHAR.props[MOUTH_ART[mouthItem] || 'CIGARETTE'];
   const { pos } = itemAnchor(now());
-  const col = pos[0] + (rows ? rows[0].length - 1 : 6);
+  const [ec, er] = rows ? emberCell(rows) : [6, 0];
+  const col = pos[0] + ec + 0.5;
   const flip = isFlipped();
-  return { x: duck.x + (flip ? WIDTH - 1 - col : col) * SCALE, y: duck.y + (pos[1] - 1) * SCALE };
+  return { x: duck.x + (flip ? WIDTH - col : col) * SCALE, y: duck.y + (pos[1] - 1 + er) * SCALE };
 }
 function drawMouthItem(t, offY, flip) {
   const art = MOUTH_ART[mouthItem];
@@ -1607,7 +1662,7 @@ function drawMouthItem(t, offY, flip) {
   if (SMOKES.has(mouthItem)) {
     // Glut: beim Ziehen hell, sonst leises Flackern
     const hot = (using >= AT_MOUTH_MS[0] && using < AT_MOUTH_MS[1]) || Math.floor(t / 700) % 5 === 0;
-    map = hot ? { R: 'i' } : null;
+    map = hot ? (EMBER_HOT[mouthItem] || { R: 'i' }) : null;
   }
   if (VAPES.has(mouthItem)) {
     // LED: beim Ziehen hell, die Neon-Vape wechselt ständig die Farbe
@@ -1685,15 +1740,29 @@ function updateExhale(dt, t) {
   }
 }
 
+// Rauchfäden: zwei dünne, verschnörkelte Pixel-Linien steigen aus der Glut auf
+// Jedes Pixel bewegt sich nach derselben Regel, so ergibt die Reihe eine Wellenlinie, die nach oben fließt.
+const wisp = { acc: 0, n: 0 };
+function emitWisps(dt) {
+  const p = mouthTip();
+  const px = fxPx();
+  wisp.acc += dt * 18;
+  const count = Math.floor(wisp.acc);
+  wisp.acc -= count;
+  for (let i = 0; i < count; i++) {
+    const age = (i / Math.max(1, count)) * dt; // bei wenigen Bildern/s gleichmäßig verteilen
+    for (const line of [0, 1]) {
+      particles.push({ type: 'wisp', x0: p.x + (line ? px * 1.5 : -px * 0.5), y0: p.y - px, age, line, life: 1 - age * 0.7, px });
+    }
+  }
+}
+
 // Ab und zu benutzt sie ihr Mund-Teil von selbst
 function updateMouth(dt, t) {
   if (!mouthItem || hardSave() || duck.state !== 'idle' || acting(t) || isTyping(t)) return;
   if (Math.random() < dt / 40) useMouthItem(t);
   // Zigarette & Co.: feiner Rauch aus der Spitze, ab und zu fällt Asche
-  if (SMOKES.has(mouthItem) && ANCHORS.mouth && Math.random() < dt * 1.3) {
-    const p = mouthTip();
-    particles.push({ type: 'smoke', x: p.x, y: p.y - 1, vx: rand(-3, 3), vy: rand(-14, -9), life: 1, seed: rand(0, 6) });
-  }
+  if (SMOKES.has(mouthItem) && ANCHORS.mouth) emitWisps(dt);
   if (mouthItem === 'CIGARETTE' && Math.random() < dt / 25) {
     const p = mouthTip();
     particles.push({ type: 'crumb', x: p.x, y: p.y + 2, vx: rand(-5, 5), vy: 10, life: 1, color: '#9a9aa2' });
@@ -2051,7 +2120,7 @@ function settle() {
 
 // ---------- Bildrate: nur so oft zeichnen wie nötig (spart Akku) ----------
 // Dauer-Effekte halten die Bildrate nicht hoch (sie sehen auch mit 15 Bildern/s gut aus)
-const AMBIENT_FX = new Set(['rain', 'snow', 'steam', 'flame', 'spark', 'rainbow', 'smoke', 'crumb']);
+const AMBIENT_FX = new Set(['rain', 'snow', 'steam', 'flame', 'spark', 'rainbow', 'smoke', 'crumb', 'wisp']);
 let lastCursorMove = 0;
 function targetFps(t) {
   const busy = duck.dragging || duck.sliding || ball.on || pauseUntil > t || (duck.walkTo !== null && duck.walkTo !== undefined) || !duck.onGround || particles.some((p) => !AMBIENT_FX.has(p.type)) || isTyping(t) || acting(t)

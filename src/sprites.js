@@ -41,6 +41,12 @@
     M: '#7bbf4a', // Bambus
     Z: '#4a8a2c',
     C: '#9fd3ff', // Osterei
+    // Zigarette: Filter, Papier, Asche, Glut
+    1: '#e8a066', 2: '#c47c44', 3: '#f6f5f0', 4: '#cfcfca', 5: '#8a8a90', 6: '#3c3c42', 7: '#ff7a1a', 8: '#ffd04a',
+    // Joint: Papier hell/dunkel, Glut und Glutrand, Rauchfaden
+    9: '#8b4400', 0: '#663200', '+': '#b84142', '-': '#571f20', '~': '#949494',
+    // Kaffeebecher: Becher, Schatten, Kaffee, Dampf
+    '=': '#efe6d2', '#': '#cdbf9f', '%': '#3b2414', '&': '#e3cfa8',
   };
 
   const grid = (w, h) => Array.from({ length: h }, () => Array(w).fill('.'));
@@ -157,109 +163,15 @@
     // Rauchen: Hand zum Mund führen, dann mit halb geschlossenen Augen ziehen
     smokeHold: { arms: 'smokeUp', wing: 'up' },
     smokeUp: { arms: 'smokeUp', wing: 'up', eye: 'sleepy' },
+    // Kaffee: Becher in der linken Hand, zum Trinken anheben
+    coffee: { eye: 'happy', arms: 'cup' },
+    sip: { eye: 'happy', arms: 'sip', headDy: -1 },
     // auf dem Bauch rutschen (Pinguin), Bambus kauen (Panda)
     slide: { eye: 'happy', sit: true, feet: 'none', wing: 'up', arms: 'cheer' },
     chew1: { beak: 1 },
     chew2: { eye: 'happy' },
   };
   const framesOf = (draw) => Object.fromEntries(Object.entries(POSES).map(([k, o]) => [k, draw(o)]));
-
-  // ---------------------------------------------------------------------------------------------
-  // Enten (Seitenansicht, blicken nach rechts), Raster 26 x 23
-  const DW = 26;
-  const DH = 23;
-
-  function sideDuck(look) {
-    const L = {
-      head: [15, 6.3, 4.9, 4.6], body: [10.7, 15.3, 7.9, 4.75], neck: [14.2, 11.5, 3.3, 3.3],
-      tail: true, feet: true, beak: [20.6, 7.6, 2.8, 1.25], cheek: true, sitDrop: 2, ...look.shape,
-    };
-    const body = tone('W', 'w', 'v', 'h');
-    return function draw({ beak = 0, eye = 'open', feet = 'stand', wing = 'down', headDy = 0, sit = false }) {
-      const g = grid(DW, DH);
-      const by = sit || !L.feet ? L.sitDrop : 0;
-      const hy = headDy + by;
-      if (L.tail) {
-        ellipse(g, 4, 12.3 + by, 2.4, 1.8, look.tailPaint || body, -0.5);
-        ellipse(g, 5.3, 13.8 + by, 2.6, 2, look.tailPaint || body);
-      }
-      ellipse(g, L.body[0], L.body[1] + by, L.body[2], L.body[3], look.bodyPaint || body);
-      ellipse(g, L.neck[0], L.neck[1] + hy * 0.5 + by * 0.5, L.neck[2], L.neck[3], look.neckPaint || body);
-      if (look.chest) look.chest(g, by, hy);
-      ellipse(g, L.head[0], L.head[1] + hy, L.head[2], L.head[3], look.headPaint || body);
-      if (look.headExtra) look.headExtra(g, hy);
-      const wp = look.wingPaint || wingTone('W', 'w', 'v');
-      if (wing === 'up') ellipse(g, 8.4, 12.4 + by, 5, 2.6, wp, -0.55);
-      else ellipse(g, 9.1, 14.7 + by, 4.9, 2.8, wp, 0.08);
-      if (look.wingExtra) look.wingExtra(g, by, wing);
-
-      // Schnabel
-      const [bx, bcy, brx, bry] = L.beak;
-      ellipse(g, bx, bcy + hy, brx, bry, beakTone);
-      for (let i = 0; i < beak; i++) {
-        rect(g, Math.round(bx - brx + 0.6), Math.round(bcy + bry) + hy + i, Math.round(bx + brx - 1.2), Math.round(bcy + bry) + hy + i, i ? 't' : 'm');
-      }
-      ellipse(g, bx - 0.5, bcy + bry + 0.3 + hy + beak, brx * 0.85, bry * 0.7, () => 'o');
-
-      // Auge (Pupille wird vom Renderer gezeichnet, hier nur Platzhalter E)
-      const ex = look.eye ? look.eye[0] : 16;
-      const ey = (look.eye ? look.eye[1] : 4) + hy;
-      if (L.cheek) set(g, [[ex - 1, ey + 4], [ex, ey + 4]], 'P');
-      if (eye === 'closed' || eye === 'wink') set(g, [[ex - 1, ey + 1], [ex, ey + 1], [ex + 1, ey + 1], [ex + 2, ey]], 'X');
-      else if (eye === 'sleepy') { set(g, [[ex - 1, ey], [ex, ey], [ex + 1, ey], [ex + 2, ey]], 'X'); set(g, [[ex, ey + 1], [ex + 1, ey + 1]], 'e'); }
-      else if (eye === 'wide') { rect(g, ex, ey - 1, ex + 1, ey + 1, 'e'); set(g, [[ex, ey - 1]], 'H'); }
-      else if (eye === 'dizzy') set(g, [[ex - 1, ey - 1], [ex + 1, ey - 1], [ex, ey], [ex - 1, ey + 1], [ex + 1, ey + 1]], 'e');
-      else if (eye === 'happy') set(g, [[ex - 1, ey + 1], [ex, ey], [ex + 1, ey], [ex + 2, ey + 1]], 'X');
-      else {
-        rect(g, ex, ey, ex + 1, ey + 1, 'E');
-        if (eye === 'angry') set(g, [[ex - 2, ey - 2], [ex - 1, ey - 2], [ex, ey - 1], [ex + 1, ey - 1], [ex + 2, ey - 1]], 'X');
-      }
-
-      // Beine
-      if (L.feet && feet !== 'none') {
-        const foot = (lx, fx, lift = 0) => {
-          set(g, [[lx, 19 - lift], [lx, 20 - lift]], 'f');
-          rect(g, fx, 21 - lift, fx + 2, 21 - lift, 'F');
-        };
-        if (feet === 'stand') { foot(8, 7); foot(13, 12); }
-        if (feet === 'step1') { foot(7, 5); foot(13, 13, 1); }
-        if (feet === 'step2') { foot(9, 8, 1); foot(12, 10); }
-      }
-      return finish(g, hy);
-    };
-  }
-
-  const duckAnchors = {
-    keyboard: [15, 17], wingUp: [18, 12], wingDown: [19, 15], tap: [21, 17],
-    idea: [13, -7],
-    mushroom: [23, 15],
-    snore: [23, 9],
-    hat: [15, 3],        // Mütze / Partyhut: Mitte und Unterkante auf dem Kopf
-    umbrella: [3, -10],  // Schirm über der Ente
-    glasses: [15, 3],    // Sonnenbrille über dem Auge
-    mouth: [21, 9],      // Mund-Zubehör (Zigarette, Lolli) am Schnabel
-  };
-  const duckEye = { positions: [[16, 4]], pattern: ['HE', 'EE'] };
-  const DUCK_BEAK = { O: '#ffb53d', o: '#e8841c', q: '#fff1a8', F: '#ffb53d', f: '#e8841c' };
-
-  const ducks = {
-    'ente-klassik': {
-      name: 'Klassik',
-      palette: { W: '#fffbf2', w: '#ede3cd', v: '#d2c1a0', h: '#ffffff', P: '#ffb0a8', ...DUCK_BEAK },
-      draw: sideDuck({
-        // kleine Haartolle auf dem Kopf
-        headExtra(g, hy) { set(g, [[14, 1 + hy], [15, 1 + hy], [15, 0 + hy]], 'W'); },
-        // Federlinien am Flügel
-        wingExtra(g, by, wing) {
-          if (wing !== 'up') set(g, [[6, 16 + by], [7, 16 + by], [9, 17 + by], [10, 17 + by]], 'v');
-        },
-      }),
-    },
-  };
-  for (const d of Object.values(ducks)) {
-    Object.assign(d, { frames: framesOf(d.draw), eye: duckEye, anchors: duckAnchors, width: DW, height: DH, scale: 3 });
-    d.eyeBg = d.eyeBg || 'W';
-  }
 
   // ---------------------------------------------------------------------------------------------
   // Mini-Claude (Vorderansicht), Raster 30 x 23
@@ -284,6 +196,7 @@
     if (arms === 'waveL2') lA = 1;
     if (arms === 'reach') { lA = 1; rA = 1; }
     if (arms === 'smokeUp') rA = 1; // rechte Hand am Gesicht
+    if (arms === 'sip') lA = 0;     // Becher anheben
     if (arms === 'cheer') { lA = 0; rA = 0; }
     if (arms === 'danceL') { lA = 0; rA += 2; }
     if (arms === 'danceR') { rA = 0; lA += 2; }
@@ -335,11 +248,12 @@
     front: true,
     arms: true,
     thinks: true, // denkt mit, wenn ein Claude-Fenster vorne ist
+    laptop: true, // tippt auf einem Laptop statt auf der Mini-Tastatur, trinkt Kaffee
     voice: 'blip',
-    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'],
+    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin', 'coffee'],
     typingFrames: ['tapL', 'tapR'],
     anchors: { mouth: [16, 13], hand: [28, 11], keyboard: [8, 16], tap: [15, 17], idea: [13, -7], lens: [26, 4], mushroom: [-9, 16], snore: [17, 11],
-      hat: [15, 7], umbrella: [9, -11], glasses: [6, 7] },
+      hat: [15, 7], umbrella: [9, -11], glasses: [6, 7], laptop: [4, 11], mug: [-8, 8] },
     width: CW,
     height: CH,
     scale: 3,
@@ -353,8 +267,10 @@
   const body = tone('W', 'w', 'v', 'h');
 
   function critter(cfg) {
+    const GW = cfg.w || VW;
+    const GH = cfg.h || VH;
     return function draw({ beak = 0, eye = 'open', feet = 'stand', wing = 'down', headDy = 0, sit = false, arms = 'down' }) {
-      const g = grid(VW, VH);
+      const g = grid(GW, GH);
       const by = sit ? 1 : 0;
       const breathe = headDy > 0 && !sit ? 1 : 0;
       const lift = headDy < 0 ? 1 : 0;
@@ -392,7 +308,7 @@
       if (cfg.feet && feet !== 'none' && !sit) {
         cfg.feet.forEach(([x, w], i) => {
           const up = (step === 1 && i === 0) || (step === 2 && i === 1) ? 1 : 0;
-          rect(g, x, VH - 1 - up, x + w - 1, VH - 1 - up, cfg.footKey || 'w');
+          rect(g, x, GH - 1 - up, x + w - 1, GH - 1 - up, cfg.footKey || 'w');
         });
       }
 
@@ -421,7 +337,7 @@
         rect(g, mx, my + hy, mx + 1, my + hy, 'm');
         if (beak > 1) rect(g, mx, my + hy + 1, mx + 1, my + hy + 1, 't');
       } else if (cfg.face) cfg.face(g, o);
-      return finish(g, hy);
+      return finish(g, hy, !cfg.noOutline);
     };
   }
 
@@ -438,25 +354,66 @@
     return rows.map((r) => r.join(''));
   }
 
+  const BOO = [
+    '...........XXXXXX...............',
+    '.........XXWWWWwwXX.............',
+    '........XWWWWWWWwwwX............',
+    '.......XWWWWWWWWwwwwX...........',
+    '......XWWWWWWWWWWWwwwX..........',
+    '.....XWWWWWWWWWWWWwwwX..........',
+    '.....XWWWWWWWWWWWWWwwwX.........',
+    '.....XWWWWWWWWWWWWWwwwX.........',
+    '.....XWWWWWWWWWWWWWwwwX.........',
+    '...XXXWWWWWWWWWWWWWwwwX.........',
+    '..XWWWWWWWWWWWWXXXXwwwwX........',
+    '.XWWWWwWWWWWWWXWWWWXwwwX........',
+    'XWWWWwwWWWWWWXWWWWWWwwwX........',
+    'XWWWWwwWWWWWWXWWWWWWWwwX........',
+    'XWWWwwwWWWWWWXWWWWWWWwwX........',
+    'XWWwwwwWWWWWWXXXWWWWWwwX........',
+    'XXXXwwwWWwWWWwXwXXWWWWwwX.......',
+    '.XwwXwwWWwWWWWXwwXWWWWwwX.......',
+    '..XwXwwWWwWWWwwXwXWWwWwwX.......',
+    '...XXwwWWwWWWwwXwXWWwwwwX.......',
+    '....XwwWWwWWWwwXwXWWwwwwX.......',
+    '....XwwWWwWWWwwwwXWWwwwwwX......',
+    '....XwwWWwWWWwwwwXWWwwwwwX......',
+    '....XwwWWwWWWwwwwwWWwwwwwX......',
+    '....XwwWwwWWWwwwwwWWwwwwwwX.....',
+    '....XwXXXXXWWwwwwwwWwwwwwwwX....',
+    '....XXwwwwXXwwwwwwwWwwwwwwwX....',
+    '....XXwwwwXwXwwwwwwwwwwwwwwwX...',
+    '.....XXXXvvXXXXXXwwwwwwwwwwwwX..',
+    '..........XX.....XXXXXXXXXXXXXX.',
+  ];
+
   const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'];
   const critterDefs = {
     boo: {
+      // nach Vorlage: Bettlaken-Geist, Kopf oben links, linker Arm angehoben, rechter Arm angelegt,
+      // Saum läuft nach rechts unten aus. Fertig gezeichnet (mit Umriss), daher größeres Raster.
       name: 'Boo (Geist)',
-      palette: { W: '#f4f6ff', w: '#dfe3fa', v: '#c3c9ee', h: '#ffffff', X: '#3a3f66', x: '#7a80b4', E: '#1c1d2e', e: '#1c1d2e', P: '#ffb3c8', m: '#3a2a40', t: '#ff8fa8' },
+      palette: { W: '#f4f6ff', w: '#cfd3ea', v: '#a9aed0', h: '#ffffff', X: '#4a4a52', x: '#7a7a86', E: '#141418', e: '#141418', P: '#ffb3c8', m: '#2a2a30', t: '#ff8fa8' },
       float: true, // schwebt über dem Boden
       extraActions: ['vanish'],
-      eyes: { xs: [8, 14], y: 8, w: 2, h: 3 },
+      w: 32, h: 31, scale: 2.25, noOutline: true,
+      eyes: { xs: [7, 12], y: 7, w: 2, h: 3 },
       pattern: ['HE', 'EE', 'EE'],
-      cheeks: [7, 16],
-      mouth: [11, 13],
-      arms: [3, 19, 11, 2, 3],
+      cheeks: [6, 14],
+      mouth: [9, 12],
       shape(g, o) {
-        ellipse(g, 12, 9.5 + o.hy, 7, 7, body);
-        rect(g, 5, 9 + o.hy, 18, 17, (x) => (x >= 17 ? 'w' : x === 5 ? 'h' : 'W'));
-        for (let x = 5; x < 19; x++) if ((x + o.step) % 4 < 2) set(g, [[x, 18]], x >= 17 ? 'w' : 'W');
+        BOO.forEach((row, y) => [...row].forEach((ch, x) => {
+          if (ch === '.') return;
+          // Saum weht beim Schweben leicht
+          const dx = y >= 27 && o.step === 1 ? 1 : 0;
+          set(g, [[x + dx, y + 1 + o.hy]], ch);
+        }));
       },
-      face(g, o) { set(g, [[11, 13 + o.hy], [12, 13 + o.hy]], 'm'); },
-      anchors: { hat: [12, 4], glasses: [7, 7] },
+      face(g, o) { set(g, [[9, 12 + o.hy], [10, 12 + o.hy]], 'm'); },
+      anchors: {
+        hat: [14, 2], glasses: [6, 6], keyboard: [6, 19], tap: [13, 22], idea: [12, -8], lens: [24, 4],
+        mushroom: [-9, 24], snore: [22, 5], umbrella: [6, -12], mouth: [11, 12],
+      },
     },
     frosti: {
       name: 'Frosti (Pinguin)',
@@ -478,25 +435,6 @@
       },
       face(g, o) { rect(g, 11, 11 + o.hy, 12, 11 + o.hy, 'O'); set(g, [[11, 12 + o.hy]], 'o'); },
       anchors: { hat: [12, 6], glasses: [8, 7] },
-    },
-    glibber: {
-      name: 'Glibber (Schleim)',
-      palette: { W: '#5ab4ff', w: '#3a96e8', v: '#2a74c4', h: '#a8dbff', X: '#15386a', x: '#3a6aa8', E: '#0d1b33', e: '#0d1b33', m: '#0d1b33', t: '#ff7d9a', P: '#ff9ec7' },
-      squishy: true, // wabbelt beim Tippen, stärker plattgedrückt beim Landen, prallt ab
-      extraActions: ['melt'],
-      eyes: { xs: [8, 14], y: 13, w: 2, h: 3 },
-      pattern: ['HE', 'EE', 'EE'],
-      cheeks: [7, 16],
-      mouth: [11, 17],
-      shape(g, o) {
-        const sq = o.typing ? 1 : 0;
-        ellipse(g, 12, 16.5 + sq * 0.5, 9.5 + sq, 5.5 - sq * 0.5, body);
-        ellipse(g, 12, 12 + o.hy + sq, 5.5, 4 - sq * 0.5, body);
-        set(g, [[12, 7 + o.hy + sq]], 'W');
-        set(g, [[8, 11 + o.hy + sq], [7, 12 + o.hy + sq]], 'h');
-      },
-      face(g) { rect(g, 11, 17, 12, 17, 'm'); },
-      anchors: { hat: [12, 8], glasses: [7, 12] },
     },
     axo: {
       name: 'Axo (Axolotl)',
@@ -598,28 +536,6 @@
       face(g, o) { ellipse(g, 12, 14.5 + o.hy, 1.7, 2.2, () => 'G'); },
       anchors: { hat: [12, 6], glasses: [7, 10] },
     },
-    flitz: {
-      name: 'Flitz (Otter)',
-      palette: { W: '#8a5a36', w: '#73492a', v: '#5c3920', h: '#a8774f', B: '#e8cfae', G: '#140c06', X: '#2b1a0e', x: '#5a3a22', E: '#140c06', e: '#140c06', P: '#f2a39a', m: '#3a1a10', t: '#f07a6a' },
-      record: true, // klatscht bei einem neuen Tipp-Rekord
-      extraActions: ['juggle', 'juggle'],
-      eyes: { xs: [8, 14], y: 10, w: 2, h: 2 },
-      pattern: ['HE', 'EE'],
-      cheeks: [7, 16],
-      mouth: [11, 14],
-      arms: [6, 16, 15, 2, 3],
-      feet: [[8, 2], [14, 2]],
-      shape(g, o) {
-        ellipse(g, 6, 7 + o.hy, 1.8, 1.8, body);
-        ellipse(g, 18, 7 + o.hy, 1.8, 1.8, body);
-        ellipse(g, 12, 17.5 + o.by, 6, 4, body);
-        ellipse(g, 12, 11 + o.hy, 7, 5.5, body);
-        ellipse(g, 12, 13 + o.hy, 4, 2.5, () => 'B');
-        ellipse(g, 12, 18 + o.by, 3.5, 2.5, () => 'B');
-      },
-      face(g, o) { rect(g, 11, 12 + o.hy, 12, 12 + o.hy, 'G'); set(g, [[11, 14 + o.hy], [12, 14 + o.hy]], 'G'); },
-      anchors: { hat: [12, 6], glasses: [7, 9], stone: [11, 3] },
-    },
     mokka: {
       name: 'Mokka (Kaffeetasse)',
       palette: { W: '#f2ece4', w: '#d6cbbd', v: '#bfb2a2', h: '#ffffff', A: '#6b3e22', a: '#4f2c16', X: '#3a2418', x: '#7a5a48', E: '#1a110b', e: '#1a110b', P: '#f4a0a8', m: '#3a1a10', t: '#f07a6a' },
@@ -671,9 +587,9 @@
         ...(def.arms ? { hand: [def.arms[1] + def.arms[3] - 1, def.arms[2] + def.arms[4] - 2] } : {}),
         ...def.anchors,
       },
-      width: VW,
-      height: VH,
-      scale: 3,
+      width: def.w || VW,
+      height: def.h || VH,
+      scale: def.scale || 3,
     };
   }
 
@@ -801,7 +717,20 @@
   ]);
   // Mund-Zubehör (vom Mund nach rechts)
   // größer und dicker: Filter (y), Papier (a), Glut (R)
-  const CIGARETTE = small(['yyyaaaaaaaR', 'yyyaaaaaaaR']);
+  // nach Vorlage: gesprenkelter Filter (1/2), weißes Papier (3/4), Asche (5) und Glut (7, mit 6)
+  const CIGARETTE = small(['2112333333333557', '1211444444444567']);
+  // Joint: schräg nach unten, dünnes Ende im Mund, Glut am dicken Ende
+  const JOINT = small([
+    '0.........',
+    '90........',
+    '.990......',
+    '..990.....',
+    '...9990...',
+    '....9990..',
+    '.....-++-.',
+    '.....-++-.',
+    '......--..',
+  ]);
   const CIGAR = small(['uuuuudUuuuuR', 'UuuuudUuuuuR', 'uuuuudUuuuuR']);
   const PIPE = small(['.........uuuu', '.........uUuu', 'kkkkkkkkkuuuu', '.........uuuu']);
   const VAPE = small(['kkjjjjjjjjjb', 'kkjjjjjjjjjb']); // b = Leuchtdiode, wechselt die Farbe
@@ -832,6 +761,22 @@
   const FISH = small(['.ccc.z', 'ckcccz', '.ccc.z']);
   const CARROT = small(['..VV', '.yV.', 'yyy.', 'yy..', 'y...']);
 
+  // Laptop (Rückseite des Deckels) vor Mini-Claude beim Tippen, kleiner Laptop neben ihm beim Kaffee
+  const LAPTOP = small([
+    'KKKKKKKKKKKKKKKKKKKK',
+    'KsKKKKKKKKKKKKKKKKKK',
+    'KKKKKKKKKaKKKKKKKKKK',
+    'KKKKKKKaKaKaKKKKKKKK',
+    'KKKKKKKKaaaKKKKKKKKK',
+    'KKKKKKKaKaKaKKKKKKKK',
+    'KKKKKKKKKaKKKKKKKKKK',
+    'KKKKKKKKKKKKKKKKKKKK',
+    'jjjjjjjjjjjjjjjjjjjj',
+  ]);
+  const LAPTOP_MINI = small(['KKKKKKK', 'KsKKKKK', 'KKKaKKK', 'KKaaaKK', 'KKKaKKK', 'KKKKKKK', 'jjjjjjj']);
+  // Kaffeebecher: cremefarben, dunkler Kaffee, Henkel rechts
+  const MUG = small(['=%%%%=..', '======##', '=====#.#', '=====#.#', '=====###', '.####...']);
+
   const IDEA = small(['.iii.', 'iIiii', 'iiiii', '.iii.', '.jjj.', '..j..']);
   const LENS = small(['.jjjj.', 'jJJJJj', 'jJJJJj', 'jJJJJj', '.jjjj.', '....jj', '.....j']);
 
@@ -843,18 +788,18 @@
     storm: ['..LLL..', '.LLLLL.', 'LLLLLLL', '...ii..', '..ii...', '...i...', '..i....'],
   };
 
-  const CHARACTERS = { ...ducks, claude, ...critters };
-  const ORDER = ['ente-klassik', 'claude', ...Object.keys(critters)];
+  const CHARACTERS = { claude, ...critters };
+  const ORDER = ['claude', ...Object.keys(critters)];
 
   function character(id) {
-    const c = CHARACTERS[id] || CHARACTERS['ente-klassik'];
+    const c = CHARACTERS[id] || CHARACTERS.claude;
     return {
-      id: CHARACTERS[id] ? id : 'ente-klassik',
+      id: CHARACTERS[id] ? id : 'claude',
       ...c,
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, JOINT, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };
