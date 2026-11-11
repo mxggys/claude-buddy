@@ -1,6 +1,6 @@
 {
   "name": "claude-buddy",
-  "version": "1.32.4",
+  "version": "1.32.5",
   "description": "Kleiner Pixel-Begleiter an der Taskleiste: Mini-Claude und kleine Viecher.",
   "main": "src/main.js",
   "scripts": {

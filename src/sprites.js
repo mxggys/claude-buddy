@@ -665,44 +665,31 @@
         A: '#b5b4bc', O: '#c6c3c7', o: '#d4d0cf', F: '#e2dcd6', q: '#ece5db', f: '#f6f0e2',
         x: '#312c42', E: '#090718', e: '#090718', P: '#ffb0b8', m: '#2a1a1e', t: '#ff7d8a',
       },
-      eyeBg: 'f',
+      eyeBg: 'q',
       fizzy: true, // sprudelt beim schnellen Tippen
       w: 42, h: 84, scale: 1.2, noOutline: true,
-      // Pupillen (bewegen sich), drumherum weiße Augäpfel mit dunklem Rand
-      eyes: { xs: [14, 27], y: 15, w: 2, h: 3 },
-      pattern: ['EE', 'EE', 'EE'],
-      cheeks: [12, 30],
-      mouth: [20, 20],
+      // Augen wie bei Mini-Claude: 3 x 3 schwarz mit Glanzpunkt oben links
+      eyes: { xs: [12, 26], y: 14, w: 4, h: 4 },
+      pattern: ['HEEE', 'EEEE', 'EEEE', 'EEEE'],
+      mouth: [20, 19],
       shape(g, o) {
         MONSTI.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.') g[y][x] = ch; }));
-        // Augäpfel nur bei offenen Augen (zu, fröhlich, müde: nur der Lidstrich)
-        [14, 27].forEach((px, i) => {
-          const open = !['closed', 'happy', 'sleepy'].includes(o.eye) && !(o.eye === 'wink' && i === 1);
-          if (!open) return;
-          const top = 15 + o.hy - 2;
-          for (let y = top; y <= top + 6; y++) {
-            for (let x = px - 2; x <= px + 3; x++) {
-              const edgeY = y === top || y === top + 6;
-              const edgeX = x === px - 2 || x === px + 3;
-              if (edgeY && edgeX) continue; // abgerundete Ecken
-              g[y][x] = edgeY || edgeX ? 'X' : 'f';
-            }
-          }
-        });
       },
       face(g, o) {
-        set(g, [[20, 20 + o.hy], [21, 20 + o.hy]], 'm');
-        set(g, [[19, 19 + o.hy], [22, 19 + o.hy]], 'm'); // kleines Lächeln
-        // breite Lidstriche bzw. fröhlicher Bogen
-        [14, 27].forEach((px, i) => {
-          const y = 15 + o.hy;
-          const shut = o.eye === 'closed' || o.eye === 'sleepy' || (o.eye === 'wink' && i === 1);
-          if (shut) rect(g, px - 2, y + 2, px + 3, y + 2, 'X');
-          if (o.eye === 'happy') set(g, [[px - 2, y + 2], [px - 1, y + 1], [px, y], [px + 1, y], [px + 2, y + 1], [px + 3, y + 2]], 'X');
+        // wie Mini-Claude: kein Mund im Ruhezustand; fröhlich = flache Augen mit Glanzpunkt und rote Bäckchen, müde = halb zu
+        [12, 26].forEach((x) => {
+          const y = 14 + o.hy;
+          if (o.eye === 'happy') {
+            rect(g, x, y, x + 3, y + 1, 'q');
+            rect(g, x, y + 2, x + 3, y + 3, 'e');
+            set(g, [[x, y + 2]], 'H');
+            rect(g, x, y + 5, x + 3, y + 5, 'P');
+          }
+          if (o.eye === 'sleepy') { rect(g, x, y + 1, x + 3, y + 1, 'q'); rect(g, x, y + 2, x + 3, y + 3, 'e'); }
         });
       },
       anchors: {
-        hat: [21, 0], glasses: [12, 14], keyboard: [14, 70], tap: [21, 72], idea: [17, -8], lens: [36, 15],
+        hat: [21, 0], glasses: [11, 13], keyboard: [14, 70], tap: [21, 72], idea: [17, -8], lens: [36, 15],
         mushroom: [-9, 75], snore: [34, 10], umbrella: [14, -12], mug: [-9, 45], fizz: [21, 5],
       },
       mug: ['N', 'v'],
