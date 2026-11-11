@@ -284,7 +284,7 @@
       // Tippen: manche Viecher watscheln oder wackeln dabei
       const typing = arms === 'tapL' ? 1 : arms === 'tapR' ? 2 : 0;
       const step = feet === 'step1' ? 1 : feet === 'step2' ? 2 : cfg.waddle ? typing : 0;
-      const o = { hy, by, sit, step, typing, wiggle: step || typing || wing === 'up' ? 1 : 0 };
+      const o = { hy, by, sit, step, typing, eye, wiggle: step || typing || wing === 'up' ? 1 : 0 };
       cfg.shape(g, o);
 
       // Arme / Pfoten: Höhe je nach Pose
@@ -392,6 +392,93 @@
     '....XXwwwwXwXwwwwwwwwwwwwwwwX...',
     '.....XXXXvvXXXXXXwwwwwwwwwwwwX..',
     '..........XX.....XXXXXXXXXXXXXX.',
+  ];
+
+  const MONSTI = [
+    '............XXBBXBBXXXXXXXXXX.............',
+    '.........XXXXXXXGGGGGvvvvwwNwXXXX.........',
+    '.......XXBBBNNNhOOOOOOOOOooooWGGGBXX......',
+    '......XXWWNNWwwwwwwwvvwwwwwwwwOOAWBBX.....',
+    '.....XWWvvvvwvwwvvvBXXXXXXvwwwwwvvWWNX....',
+    '....XAvvvwvvwvvAovXXWhwBXXXGAWwvvvvwWX....',
+    '....XhvvvwwNwwwvXXXXXXXXBBwWhhWWNvvvhX....',
+    '.....XvwvwWvvvvXGXXGBXXXXNOOOOhNvvvvX.....',
+    '....XXNNWOhvvWOvXXXXXXBwWWWhhwvvvwvXX.....',
+    '...BBhXXXBhqqqqqffffFoWOooOOOAhWwXXvwX....',
+    '...GhAAWNwXXXwwwwwwwwNwwwwwwGXXXXvvNNwX...',
+    '..BBNhOOAOhNwwXXXXXXXXXXXXXXXwwwwwwwwWwX..',
+    '..GAWhoOAoAOffoOANNwwwwwwwwNNWOAWWNvwwwG..',
+    '.vhOOWOAAoAqfOoFFAAWWhOFFoAOhOoONWNwWwNwX.',
+    'XGAOoOFOOFqqqAOFOofAFFoqqFqqoWFFwAWWWWWWw.',
+    'XvAooqqfqFqfooAFAAfAOFNWFNWAWNNOOAhhhWWNNX',
+    'XvhAAAqqqqffqooqOOfqqFAOOhFFAWAoooAhhwwwNX',
+    'XvWAOOOqqqqffffffqffffqfffffffqFoOhhNwwwNX',
+    'XvhWOOOOoFqqqqqqqffffffffffqqqoOAWNWwwwwNX',
+    'XwhWWOooFFFFoooooooOOOoooFOAAAhhWWNwwwNNNX',
+    'XwhWhoooFqFFFoooooOAOOooooOOOOAAhANNwwNwNX',
+    'XwAAOoFFFXAFoooFAGXXXXvooOOOOOAAhAWNNwwwNX',
+    'XwhAOooXXNXXooNXBGAOOOvBOOOOGXXhhANWNwwwNX',
+    'XwhAXXXWAOohXhGWWAWAoONBBOhXGANXwAWWNNNwNX',
+    'XwhAXXwNAOoNWNBGGhhhAONBXXXWAAWwXhWWNNNwNX',
+    'XvhAWhXXNOoAWNwhGBhhAAvXBNWAOOhwXhWNNwwwNX',
+    'XvAWoqfXNhOAWXqFoXhhhNXXBGGvAAhwXhNNwwwNNX',
+    'BvhWhFffNhOwBOFFFXAhhwvwowNvNhWwXAWNNwNNNX',
+    'BvhhhoffvhAWXFqFqXAhWvGAFFoOXhWwXAWNNNNNNX',
+    'BvhhAOqfvAAWXFFFqWvhhwXAFoohXAwGGAWNWNNwNX',
+    'BvAAOAqFvOAXqFFqFFXAhWBNFoohBAGXAhhNWwwwNX',
+    'BvhAOOfXWOWXqFoqqFXOOWBNoooGhAvBAhhNNNwNNX',
+    'BvhhOoqXNoWXFFOqqqXAOOBNoovBOhvvAAhWwNNNNX',
+    'BvhWOoFXNOhXqqoqqqXAONBNooGBAWXAAAhhNwNNNX',
+    'BvAhAoFXNOhXqqqqqqXhAwwFoovGAWXAAAhNNNwwNX',
+    'BvAAAoFqwOAXFqqqqqXOAGNooOGvOABAAAhWWNwwNX',
+    'BvhAAFfqvOoWXqqqFFXOAGNoooAwWOvXAhhWWwwwNX',
+    'BGhhFFFqvAoNXqFFFFONAGwooooNwOvXhhhNWwwwNX',
+    'BGAWOFqqGAONXqqooFFXOWGAOOovNAvXhAWNNNwwNX',
+    'BGhAhoFqhWOWXqqooooXOAvNOOoOvhWwXAWNwNNwNX',
+    'BGhAAhqFFXANXqqOooOXOhwwOOooGwWwXAWNNwNNNX',
+    'BGhhAAFFoGAWXqqOooOXWvGoOAooGNWwXAhWNwNNNX',
+    'BGAAAqFFFBAWWXFFooXhAwhooooovwWGhAhNNNNNNX',
+    'GGAOAoqFqBAhWXqFooXAhBFooOOovNvXAAhNwNNNNX',
+    'BGAAOOFoOGANXhqooOvhWBoOOOAovwBGAhWWNNwNNX',
+    'GGAAOFFFBAAhXqqoOXhhwBoOAAoOGNBBAWNwNNwwNX',
+    'GGAAOoFoBWOhXqqFFXhhNBoOAAooGNBBAhWWNNwwNX',
+    'GvhAAoFoqXhWXqqqFXvhNGoohoooBNXGAhhWNNwwNX',
+    'GvAWhoFoFBhhXqqqqFXAwGFFOoooBNXGhhWNNNwwNX',
+    'BvhWhFqFFXWFXqqqqFXOwvFoOooANWXGhhhNNNwwNX',
+    'GvhhhhoooOXoXqFqqFXowvoOOoOBNWXvhhhNwwNNNX',
+    'BvhWhhFqqFXoXqqqqFXowvoOoooBWvBAAhhNwwNNNX',
+    'BvhWAAWFFqXoXqqqqFXhwwooOoOBWBWAAhWwwwNNNX',
+    'BwAhhoohFqWwXqqqqFXhWBFooOOAXXWANhhWwNwNNX',
+    'BwhAOhhhqqqBXqqqFFXhhvWooOOOXBAAANhhNNwwNX',
+    'BwAAOOOhFqqBXqqqFFNvhBWoOOOOXAAhAhwNWwwwNX',
+    'BwhhAoOOoFqfXqqqqFFXWGooOOOOOOAAAhWwNwwwNX',
+    'BwAhAoFFoqfffqqqqFoXhGooAOOOOOAAhhWWNNwNNX',
+    'BwAAAooqoFqqqqqqqFFXwvoooOOOOOAAhWWWNNwNNX',
+    'BwAAOoqqqqfqqFqqqqFXXoooOOAOOOAAAhWWWNNNNX',
+    'BwAXOFFOqqoffqqqqqFFFFooOOOOOAAAhhWWWNNNNX',
+    'BwhXXOvvFwXFqqqFqWFFFFoooOOOOOAAhhNBXwNwNX',
+    'BwhXhGXvBwXXWqBFOXoovBBAAvvBXhBXXWBNNXwwNX',
+    'BwhXhBXwBqwNXfXvOXoBBNAhhNXhAhXhWWGXXNNwNX',
+    'BwhGAFAwBvXoXFXNXXOAXBBOoAXAAAXBwWGGXNwwNX',
+    'BwhAAFhNhXXNBoXoOXOqWhXWOhXAOOXwNWGwvBvwNX',
+    'BwhhAFFFqqXGfFXFFXOXoOGWAOXAOAXvBWWNNNwwNX',
+    'BwhAAoFqqqNfqqfqqGFFXXwoOOOOOAwBhhWWNNwwNX',
+    'BwWAAAFFqqfqqqqqqqqqqqFFooooOOOAAhhWNNNwNX',
+    'BwAhOhqNNNAfOqhqqFqqqqFFFoOWNOOAAwhWNNwwNX',
+    'BwAhoWqNqqffWfWqhfAOqNWAooWWOOAwWwWWNwwwNX',
+    'BwhNOoFNFfffWWWqWNhOqWNNoOWhNAOANWWWNwwNNX',
+    'XwNAOFFhWFffofNFWOffqWWWOOwOhhAAWhWWNwwwNX',
+    'BwAAOoFqqffffqqfoNNooOFoWAhwNAAAhhWNNNwwNX',
+    'GvAAAAFqqqffffofqOfqFFFoOAOOOAAAAhWNNwvvNX',
+    'GvAAhhAFqqfofffqqqAfqqFOOOOOAAAWWWWNNwwvNX',
+    '.GwhAOAAqfOoOOfqFqFOqqFOooAhAAWWWWWWNwwwBB',
+    '..NhAOOAoffqOoFqoFqoOqoOOoOAhAAhWNWWwwwXBB',
+    '...BXGhhOFqfffFfFOFqqOooAAAOAhhhhNNNwvBXBG',
+    '....XXXvwWhFfffffffqoooFFoOOAAhhhWwwXXX...',
+    '.....XXGvvvNhOOAOAAOOOAhhhWNNNNwvvXXX.....',
+    '.......XBNWvvvvvvvvvvvvvvvvvvvvvvvX.......',
+    '........XXXNAAAAAhWWNNwwwwwwwwwGXX........',
+    '...........XXXXXXXXXXXXXXXXXXXXX..........',
   ];
 
   const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'];
@@ -571,58 +658,52 @@
       noCoffee: true, // ist selbst eine Tasse
     },
     monsti: {
-      // nach Foto: hohe, silbern-weiße Dose mit Deckelrand, Trinköffnung, Krallen-Streifen und Schriftzug, dazu ein Gesicht
+      // nach Foto Pixel für Pixel übernommen (weiße Energydose, volle Auflösung), nur mit Gesicht
       name: 'Monsti (Energydose)',
       palette: {
-        W: '#eef0f5', w: '#cfd3dc', v: '#a4a9b6', h: '#ffffff', N: '#c4c8d2', B: '#3e424e', G: '#6f7482',
-        X: '#25272e', x: '#5d616c', E: '#121318', e: '#121318', P: '#ffb0b8', m: '#2a1a1e', t: '#ff7d8a',
+        X: '#090718', B: '#1c1a2a', G: '#312c42', v: '#46455e', w: '#5f5f7b', N: '#777790', W: '#8d8da2', h: '#a5a4b2',
+        A: '#b5b4bc', O: '#c6c3c7', o: '#d4d0cf', F: '#e2dcd6', q: '#ece5db', f: '#f6f0e2',
+        x: '#312c42', E: '#090718', e: '#090718', P: '#ffb0b8', m: '#2a1a1e', t: '#ff7d8a',
       },
+      eyeBg: 'f',
       fizzy: true, // sprudelt beim schnellen Tippen
-      w: 20, h: 28, scale: 2.75,
-      eyes: { xs: [6, 12], y: 6, w: 2, h: 2 },
-      pattern: ['HE', 'EE'],
-      cheeks: [5, 14],
-      mouth: [9, 9],
-      arms: [1, 17, 12, 2, 3],
-      feet: [[6, 2], [12, 2]],
+      w: 42, h: 84, scale: 1.2, noOutline: true,
+      // Pupillen (bewegen sich), drumherum weiße Augäpfel mit dunklem Rand
+      eyes: { xs: [14, 27], y: 15, w: 2, h: 3 },
+      pattern: ['EE', 'EE', 'EE'],
+      cheeks: [12, 30],
+      mouth: [20, 20],
       shape(g, o) {
-        const b = o.by;
-        // Deckel: grauer Rand, heller Deckel, dunkle Trinköffnung, Hals
-        rect(g, 5, 0 + b, 14, 0 + b, 'v');
-        rect(g, 4, 1 + b, 15, 1 + b, (x) => (x === 4 || x === 15 ? 'v' : 'N'));
-        rect(g, 7, 1 + b, 10, 1 + b, 'B');
-        rect(g, 4, 2 + b, 15, 2 + b, 'v'); // Schulter: etwas schmaler als die Dose
-        // Dose: links Schatten, rechts Glanz, feine Sprenkel wie gebürstetes Metall
-        const speck = (x, y) => ((x * 7 + y * 13) % 19 === 0 ? 'w' : 'W');
-        rect(g, 3, 3 + b, 16, 25, (x, y) => (x === 3 ? 'v' : x === 4 ? 'w' : x === 16 ? 'w' : x === 15 ? 'h' : y === 3 + b ? 'w' : speck(x, y)));
-        // kleine Schrift oben
-        rect(g, 7, 4 + b, 12, 4 + b, (x) => (x % 2 ? 'v' : 'w'));
-        // Krallen-Streifen wie auf dem Foto: drei hellgraue, zackige Striche mit dunklem Rand,
-        // oben nach innen gebogen, der mittlere am längsten
-        const strokes = [
-          // [y, x0, x1] je Zeile
-          [[10, 5, 7], [11, 5, 6], [12, 5, 6], [13, 6, 7], [14, 6, 7], [15, 6, 6], [16, 6, 7], [17, 7, 7]],
-          [[10, 8, 11], [11, 9, 10], [12, 9, 10], [13, 9, 10], [14, 10, 11], [15, 9, 10], [16, 9, 10], [17, 10, 10], [18, 10, 10], [19, 10, 10]],
-          [[10, 12, 14], [11, 13, 14], [12, 13, 14], [13, 12, 13], [14, 12, 13], [15, 13, 13], [16, 13, 14], [17, 13, 13]],
-        ];
-        for (const st of strokes) {
-          for (const [y, x0, x1] of st) {
-            rect(g, x0, y + 1 + b, x1, y + 1 + b, 'G');
-            set(g, [[x0, y + 1 + b]], 'B'); // dunkle Kante links
+        MONSTI.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.') g[y][x] = ch; }));
+        // Augäpfel nur bei offenen Augen (zu, fröhlich, müde: nur der Lidstrich)
+        [14, 27].forEach((px, i) => {
+          const open = !['closed', 'happy', 'sleepy'].includes(o.eye) && !(o.eye === 'wink' && i === 1);
+          if (!open) return;
+          const top = 15 + o.hy - 2;
+          for (let y = top; y <= top + 6; y++) {
+            for (let x = px - 2; x <= px + 3; x++) {
+              const edgeY = y === top || y === top + 6;
+              const edgeX = x === px - 2 || x === px + 3;
+              if (edgeY && edgeX) continue; // abgerundete Ecken
+              g[y][x] = edgeY || edgeX ? 'X' : 'f';
+            }
           }
-          const [ty, tx] = st[st.length - 1];
-          set(g, [[tx, ty + 1 + b]], 'B'); // dunkle Spitze
-        }
-        // Schriftzug: dunkle Zeile, darunter hellere
-        rect(g, 5, 22, 14, 22, (x) => (x % 3 === 2 ? 'W' : 'B'));
-        rect(g, 6, 24, 13, 24, (x) => (x % 2 ? 'v' : 'W'));
-        // Boden
-        rect(g, 4, 26, 15, 26, 'v');
+        });
       },
-      face(g, o) { set(g, [[9, 9 + o.hy], [10, 9 + o.hy]], 'm'); },
+      face(g, o) {
+        set(g, [[20, 20 + o.hy], [21, 20 + o.hy]], 'm');
+        set(g, [[19, 19 + o.hy], [22, 19 + o.hy]], 'm'); // kleines Lächeln
+        // breite Lidstriche bzw. fröhlicher Bogen
+        [14, 27].forEach((px, i) => {
+          const y = 15 + o.hy;
+          const shut = o.eye === 'closed' || o.eye === 'sleepy' || (o.eye === 'wink' && i === 1);
+          if (shut) rect(g, px - 2, y + 2, px + 3, y + 2, 'X');
+          if (o.eye === 'happy') set(g, [[px - 2, y + 2], [px - 1, y + 1], [px, y], [px + 1, y], [px + 2, y + 1], [px + 3, y + 2]], 'X');
+        });
+      },
       anchors: {
-        hat: [10, 0], glasses: [5, 5], keyboard: [3, 21], tap: [10, 22], idea: [8, -8], lens: [17, 4],
-        mushroom: [-9, 22], snore: [15, 4], umbrella: [3, -12],
+        hat: [21, 0], glasses: [12, 14], keyboard: [14, 70], tap: [21, 72], idea: [17, -8], lens: [36, 15],
+        mushroom: [-9, 75], snore: [34, 10], umbrella: [14, -12], mug: [-9, 45], fizz: [21, 5],
       },
       mug: ['N', 'v'],
     },

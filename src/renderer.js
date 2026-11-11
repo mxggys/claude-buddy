@@ -893,8 +893,8 @@ function updateSteam(dt, t) {
     fizzAcc += dt * Math.min(12, keyTimes.length * 1.5);
     while (fizzAcc >= 1) {
       fizzAcc--;
-      const col = 11.5;
-      particles.push({ type: 'fizz', x: duck.x + (isFlipped() ? WIDTH - col : col) * SCALE, y: duck.y + 2 * SCALE, vx: rand(-14, 14), vy: rand(-70, -40), life: 1 });
+      const [fc, fr] = ANCHORS.fizz || [11.5, 2];
+      particles.push({ type: 'fizz', x: duck.x + (isFlipped() ? WIDTH - fc : fc) * SCALE, y: duck.y + fr * SCALE, vx: rand(-14, 14), vy: rand(-70, -40), life: 1 });
     }
   }
   if (!CHAR.steams || hardSave() || duck.state === 'sleep') return;
