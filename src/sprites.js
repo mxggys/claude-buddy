@@ -903,6 +903,65 @@
   ]);
   // Vape: Pod mit dunklem Mundstück, Metall-Gehäuse, Leuchtdiode (b) an der Spitze
   const VAPE = small(['**??????????????', '**@@@@@@@@@@@@@b', '**$$$$$$$$$$$$$b']);
+  // weitere Rauchwaren: Zigarillo (Holzspitze), Selbstgedrehte (krumm), Slim (extra dünn), bunte Einweg-Vape
+  const CIGARILLO = small(['^^((((((((((457', '^^))))))))))567']);
+  const ROLLIE = small([
+    '3333.......',
+    '43333333...',
+    '.4433333457',
+    '...44444567',
+  ]);
+  const SLIM = small(['11333333333333357']);
+  const FRUITVAPE = small(['**ggggppppCCCCcb', '**ppppCCCCcccczb']);
+  // Grillz: Goldzähne, sichtbar beim Grinsen
+  const GRILLZ = ['iIiI'];
+  // Begleiter: Mini-Shisha (Kohle, Kopf, Rauchsäule, Glasbauch mit Wasser), Schlauch wird extra gezeichnet
+  const SHISHA = small([
+    '...777...',
+    '..jjjjj..',
+    '...jjj...',
+    '....j....',
+    '....j....',
+    '..jjjjjj.',
+    '....j....',
+    '....j....',
+    '..ccccc..',
+    '.caccccc.',
+    'cazzzzzcc',
+    'czzzzzzzc',
+    'czzzzzzzc',
+    '.czzzzzc.',
+    '..ccccc..',
+  ]);
+  // Mini-Bong: Glasrohr, Kopf seitlich, grünes Wasser
+  const BONG = small([
+    '..ccc..',
+    '..cac..',
+    '..cac..',
+    '..cac..',
+    '..cac..',
+    '..cac..',
+    '..cac6R',
+    '.ccac6.',
+    'caaccc.',
+    'cVVVVVc',
+    'cVVVVVc',
+    '.ccccc.',
+  ]);
+  // kleine Energydose zum Trinken
+  const ENERGYCAN = small(['.jjj.', 'jKjjj', 'aaaaa', 'aKaKa', 'aKaKa', 'aaKaa', 'aaaaa', '.jjj.']);
+  // Snus-Dose (zu / Deckel offen mit Beuteln)
+  const SNUSCAN = small(['........', '.SSSSSS.', 'TTTTTTTT', 'aaaaaaaa', 'aSaaaaSa', 'aaaaaaaa']);
+  const SNUSCAN_OPEN = small(['.SSSSSS.', 'T......T', 'aananaaa', 'aaaaaaaa', 'aSaaaaSa', 'aaaaaaaa']);
+  // Kippenschachtel (zu / offen mit Filtern)
+  const CIGPACK = small(['......', 'aaaaaa', 'dddddd', 'daaaad', 'dddddd', 'dddddd', 'DDDDDD']);
+  const CIGPACK_OPEN = small(['.1.1..', 'a1a1aa', 'dddddd', 'daaaad', 'dddddd', 'dddddd', 'DDDDDD']);
+  // Sturmfeuerzeug (zu / auf mit Flamme)
+  const ZIPPO = small(['......', '......', 'jjjjjj', 'jsjjjj', 'jj4jjj', 'jjjjjj', 'jjjjjj']);
+  const ZIPPO_OPEN = small(['jj..8.', 'jj.878', 'jj.j4j', 'jjjjjj', 'jj4jjj', 'jjjjjj', 'jjjjjj']);
+  // Joint-Krone (golden): drei kleine Joints auf einem Band
+  const JOINTCROWN = small(['.+...+...+.', '.9...9...9.', '.9...9...9.', '.0...0...0.', '99999999999']);
+
   // Aschenbecher (Glas), Kippe darin; Feuerzeug zum Anzünden
   const ASHTRAY = small(['4555555554', '5444444445', '.55555555.']);
   const BUTT = ['2113'];
@@ -972,7 +1031,8 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER,
+        CIGARILLO, ROLLIE, SLIM, FRUITVAPE, GRILLZ, SHISHA, BONG, ENERGYCAN, SNUSCAN, SNUSCAN_OPEN, CIGPACK, CIGPACK_OPEN, ZIPPO, ZIPPO_OPEN, JOINTCROWN, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };

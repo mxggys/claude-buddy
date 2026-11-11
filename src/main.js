@@ -71,6 +71,7 @@ const DEFAULT_SETTINGS = {
   tage: {}, // Tageswerte für den Wochenrückblick: { '2026-10-25': { min, gefuettert, gestreichelt, ball } }
   rueckblick: '', // Sonntag, für den der Wochenrückblick schon gezeigt wurde
   name: '', // eigener Name der Figur
+  rauchen: { selbst: true, oft: 'normal', abbrennen: true, effekt: true }, // Einstellungen fürs Rauchen
   name2: '', // Name der zweiten Figur
   geschenkAnzahl: 0, // wie viele Geschenke schon geöffnet wurden
   farbe: 'original', // Farbvariante der Figur
@@ -136,6 +137,7 @@ function loadSettings() {
     ...DEFAULT_SETTINGS,
     ...saved,
     extras: { ...DEFAULT_SETTINGS.extras, ...saved.extras },
+    rauchen: { ...DEFAULT_SETTINGS.rauchen, ...saved.rauchen },
     zaehler: { ...DEFAULT_SETTINGS.zaehler, ...saved.zaehler },
     spielzeit: { ...DEFAULT_SETTINGS.spielzeit, ...saved.spielzeit },
     abzeichen: { ...saved.abzeichen },
@@ -593,6 +595,7 @@ const petSettings = () => ({
   geschenkGold: settings.geschenkTag !== dayKey() && goldenToday(),
   name: settings.name,
   name2: settings.name2,
+  rauchen: settings.rauchen,
   extras: { ...settings.extras, ort: undefined },
 });
 
@@ -745,11 +748,17 @@ const ITEMS = [
   ['SNAPBACK', 'Buddy-Snapback', 'kopf'], ['BUCKETHAT', 'Fischerhut', 'kopf'],
   ['CIGARETTE', 'Zigarette', 'mund'], ['JOINT', 'Joint', 'mund'], ['CIGAR', 'Zigarre', 'mund'], ['PIPE', 'Pfeife', 'mund'], ['VAPE', 'Vape', 'mund'],
   ['TOOTHPICK', 'Zahnstocher', 'mund'],
+  ['CIGARILLO', 'Zigarillo', 'mund'], ['ROLLIE', 'Selbstgedrehte', 'mund'], ['SLIM', 'Slim-Zigarette', 'mund'],
+  ['FRUITVAPE', 'Bunte Einweg-Vape', 'mund'], ['CHEW', 'Kautabak', 'mund'], ['GRILLZ', 'Grillz (Goldzähne)', 'mund'],
+  ['SHISHA', 'Mini-Shisha', 'begleiter'], ['BONG', 'Mini-Bong', 'begleiter'], ['ENERGYCAN', 'Energydose', 'begleiter'],
+  ['SNUSCAN', 'Snus-Dose', 'begleiter'], ['CIGPACK', 'Kippenschachtel', 'begleiter'], ['ZIPPO', 'Sturmfeuerzeug', 'begleiter'],
+  ['RINGPRO', 'Rauchring-Profi', 'effekt'],
   ['PILLOW', 'Kuschelkissen', 'begleiter'], ['SKATEBOARD', 'Skateboard', 'begleiter'], ['TEDDY', 'Teddy', 'begleiter'], ['ASHTRAY', 'Aschenbecher', 'begleiter'],
   ['CAPE', 'Heldenumhang', 'effekt'],
   ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['TIARA', 'Diamant-Diadem ✦', 'kopf', true],
   ['WINGS', 'Engelsflügel ✦', 'effekt', true], ['RAINBOW', 'Regenbogen-Glitzer ✦', 'effekt', true],
-  ['FIREAURA', 'Flammen-Aura ✦', 'effekt', true], ['LIGHTNING', 'Blitz-Aura ✦', 'effekt', true],
+  ['FIREAURA', 'Flammen-Aura ✦', 'effekt', true], ['SMOKEAURA', 'Rauch-Aura ✦', 'effekt', true],
+  ['JOINTCROWN', 'Joint-Krone ✦', 'kopf', true], ['LIGHTNING', 'Blitz-Aura ✦', 'effekt', true],
   ['NEONVAPE', 'Neon-Vape ✦', 'mund', true],
 ];
 // alte Teile (Standard-Mützen, Brillen, Kleidung): fliegen aus der Sammlung
@@ -1175,6 +1184,8 @@ function buildMenu() {
     label, type: 'checkbox', checked: Boolean(settings[key]),
     click: (item) => { settings[key] = item.checked; saveSettings(); sendSettings(); buildMenu(); },
   });
+  const setSmoke = (key, value) => { settings.rauchen = { ...settings.rauchen, [key]: value }; saveSettings(); sendSettings(); buildMenu(); };
+  const smokeToggle = (label, key) => ({ label, type: 'checkbox', checked: settings.rauchen[key] !== false, click: (item) => setSmoke(key, item.checked) });
   const dnd = settings.nichtStoerenBis > Date.now();
   const warning = tokenWarning();
 
@@ -1255,6 +1266,21 @@ function buildMenu() {
         { type: 'separator' },
         toggle('Pausen-Erinnerung (nach 60 Min. Tippen)', 'pausen'),
         toggle('Laune (Füttern, Streicheln, Spielen)', 'launeAn'),
+      ],
+    },
+    {
+      label: 'Rauchen',
+      submenu: [
+        smokeToggle('Raucht von selbst (sonst nur per Klick)', 'selbst'),
+        {
+          label: `Wie oft: ${{ selten: 'Selten', normal: 'Normal', oft: 'Oft' }[settings.rauchen.oft] || 'Normal'}`,
+          submenu: [['selten', 'Selten'], ['normal', 'Normal'], ['oft', 'Oft']].map(([k, label]) => ({
+            label, type: 'radio', checked: settings.rauchen.oft === k, click: () => setSmoke('oft', k),
+          })),
+        },
+        { type: 'separator' },
+        smokeToggle('Zigarette brennt ab und wird neu angezündet', 'abbrennen'),
+        smokeToggle('Joint & Bong: rote Augen und Heißhunger', 'effekt'),
       ],
     },
     {

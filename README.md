@@ -10,6 +10,9 @@ Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
 ## Was sie kann
+- Menü „Rauchen“: raucht von selbst an/aus, wie oft (selten/normal/oft), Zigarette brennt ab an/aus,
+  Joint & Bong-Effekt (rote Augen, Heißhunger) an/aus.
+- Neue Effekte: Rauchring-Profi (perfekte Ringe, einer fliegt durch den anderen), Rauch-Aura ✦; neuer Hut: Joint-Krone ✦.
 - Sitzt unten rechts an der Taskleiste. Gedrückt halten und ziehen setzt sie um, der Platz wird gemerkt.
   Mit „Schwerkraft“ aus bleibt sie überall stehen, wo du sie hinziehst (oben, Mitte, unten).
 - Schaut zum Mauszeiger, tippt mit, wenn du tippst, bewegt den Mund zum Mikrofon (optional).
@@ -84,14 +87,17 @@ Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schn
   - Kopf: Krone, Zauberhut, Zylinder, Heiligenschein, Teufelshörner, Piratenhut, Cowboyhut, Wikingerhelm,
     Propellermütze, Katzenohren, Sternen-Haarreif, Ninja-Stirnband, Drachenhörner, Einhorn-Horn, Hexenhut,
     Punk-Iro, Samurai-Helm, Buddy-Snapback, Fischerhut
-  - Mund: Zigarette, Joint, Zigarre, Pfeife, Vape, Zahnstocher. Glut-Teile haben zwei feine, verschnörkelte Rauchfäden.
+  - Mund: Zigarette, Joint, Zigarre, Zigarillo, Selbstgedrehte (Tabakfusseln), Slim-Zigarette, Pfeife, Vape,
+    bunte Einweg-Vape (farbige Wolke), Kautabak (dicke Backe, spuckt), Grillz (Goldzähne blitzen beim Grinsen), Zahnstocher. Glut-Teile haben zwei feine, verschnörkelte Rauchfäden.
     Die Zigarette brennt ab (ca. 6 Minuten, jeder Zug kürzt sie), wird ausgedrückt und mit dem Feuerzeug neu angezündet.
     Nach dem Joint: rote, müde Augen und kurz darauf Heißhunger (Denkblase mit Keks, Füttern stillt ihn). Figuren mit Armen halten Zigarette & Co. in der Hand.
     Klick auf die Figur: Hand zum Mund, Zug mit halb geschlossenen Augen (Glut/LED leuchtet auf), Hand runter,
     dann ausatmen: ein Rauchstrahl, der nach vorne zieht, aufsteigt und zerfließt (manchmal mit Rauchring),
     bzw. eine dicke Vape-Wolke (mit gelegentlichem Husten). Ab und zu auch von selbst und meistens nach einem Sturz.
   - Begleiter: Kuschelkissen (hinter ihr), Skateboard (unter ihr), Teddy (neben ihr), Aschenbecher (neben ihr:
-    Asche wird dort abgeklopft, ausgedrückte Kippen sammeln sich)
+    Asche wird dort abgeklopft, ausgedrückte Kippen sammeln sich), Mini-Shisha (zieht am Schlauch, es blubbert, dicke Wolke),
+    Mini-Bong (blubbert, Wolke, rote Augen), Energydose (trinkt, danach kurz hyper), Snus-Dose (Beutel unter die Lippe),
+    Kippenschachtel (geht beim Neu-Anzünden auf), Sturmfeuerzeug (klappt auf, Flamme). Klick auf die Figur ohne Mund-Teil benutzt den Begleiter.
   - Effekt: Heldenumhang
   - selten im goldenen Päckchen (jedes 10. sicher): Goldkrone, Diamant-Diadem, Neon-Vape (wechselnde LED),
     Engelsflügel, Regenbogen-Glitzer, Flammen-Aura, Blitz-Aura
