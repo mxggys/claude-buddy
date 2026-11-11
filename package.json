@@ -1,6 +1,6 @@
 {
   "name": "claude-buddy",
-  "version": "1.32.0",
+  "version": "1.32.1",
   "description": "Kleiner Pixel-Begleiter an der Taskleiste: Mini-Claude und kleine Viecher.",
   "main": "src/main.js",
   "scripts": {
@@ -41,7 +41,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "clavicular-alt",
+      "owner": "mxggys",
       "repo": "claude-buddy",
       "private": true,
       "releaseType": "release"

@@ -2,7 +2,7 @@
 // Der Lese-Schlüssel (Token) liegt nur in den Einstellungen auf deinem PC, nie im Code.
 const { app, net } = require('electron');
 
-const REPO = { owner: 'clavicular-alt', repo: 'claude-buddy' };
+const REPO = { owner: 'mxggys', repo: 'claude-buddy' };
 const CHECK_EVERY = 4 * 60 * 60 * 1000;
 
 // Prüft den Schlüssel direkt bei GitHub: gültig? Wann läuft er ab?
