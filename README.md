@@ -6,7 +6,8 @@ Figuren: Mini-Claude (tippt auf einem Laptop, macht Kaffeepausen), Boo (Bettlake
 Frosti (Pinguin, watschelt beim Tippen), Axo (Axolotl, Kiemen wackeln beim Tippen),
 Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda),
 Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
-Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger).
+Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
+Monsti (Energydose, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
 ## Was sie kann
 - Sitzt unten rechts an der Taskleiste. Gedrückt halten und ziehen setzt sie um, der Platz wird gemerkt.
@@ -83,11 +84,14 @@ Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger).
   - Kopf: Krone, Zauberhut, Zylinder, Heiligenschein, Teufelshörner, Piratenhut, Cowboyhut, Wikingerhelm,
     Propellermütze, Katzenohren, Sternen-Haarreif, Ninja-Stirnband, Drachenhörner, Einhorn-Horn, Hexenhut,
     Punk-Iro, Samurai-Helm, Buddy-Snapback, Fischerhut
-  - Mund: Zigarette, Joint, Zigarre, Pfeife, Vape, Zahnstocher. Glut-Teile haben zwei feine, verschnörkelte Rauchfäden. Figuren mit Armen halten Zigarette & Co. in der Hand.
+  - Mund: Zigarette, Joint, Zigarre, Pfeife, Vape, Zahnstocher. Glut-Teile haben zwei feine, verschnörkelte Rauchfäden.
+    Die Zigarette brennt ab (ca. 6 Minuten, jeder Zug kürzt sie), wird ausgedrückt und mit dem Feuerzeug neu angezündet.
+    Nach dem Joint: rote, müde Augen und kurz darauf Heißhunger (Denkblase mit Keks, Füttern stillt ihn). Figuren mit Armen halten Zigarette & Co. in der Hand.
     Klick auf die Figur: Hand zum Mund, Zug mit halb geschlossenen Augen (Glut/LED leuchtet auf), Hand runter,
     dann ausatmen: ein Rauchstrahl, der nach vorne zieht, aufsteigt und zerfließt (manchmal mit Rauchring),
     bzw. eine dicke Vape-Wolke (mit gelegentlichem Husten). Ab und zu auch von selbst und meistens nach einem Sturz.
-  - Begleiter: Kuschelkissen (hinter ihr), Skateboard (unter ihr), Teddy (neben ihr)
+  - Begleiter: Kuschelkissen (hinter ihr), Skateboard (unter ihr), Teddy (neben ihr), Aschenbecher (neben ihr:
+    Asche wird dort abgeklopft, ausgedrückte Kippen sammeln sich)
   - Effekt: Heldenumhang
   - selten im goldenen Päckchen (jedes 10. sicher): Goldkrone, Diamant-Diadem, Neon-Vape (wechselnde LED),
     Engelsflügel, Regenbogen-Glitzer, Flammen-Aura, Blitz-Aura

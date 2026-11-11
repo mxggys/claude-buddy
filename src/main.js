@@ -745,7 +745,7 @@ const ITEMS = [
   ['SNAPBACK', 'Buddy-Snapback', 'kopf'], ['BUCKETHAT', 'Fischerhut', 'kopf'],
   ['CIGARETTE', 'Zigarette', 'mund'], ['JOINT', 'Joint', 'mund'], ['CIGAR', 'Zigarre', 'mund'], ['PIPE', 'Pfeife', 'mund'], ['VAPE', 'Vape', 'mund'],
   ['TOOTHPICK', 'Zahnstocher', 'mund'],
-  ['PILLOW', 'Kuschelkissen', 'begleiter'], ['SKATEBOARD', 'Skateboard', 'begleiter'], ['TEDDY', 'Teddy', 'begleiter'],
+  ['PILLOW', 'Kuschelkissen', 'begleiter'], ['SKATEBOARD', 'Skateboard', 'begleiter'], ['TEDDY', 'Teddy', 'begleiter'], ['ASHTRAY', 'Aschenbecher', 'begleiter'],
   ['CAPE', 'Heldenumhang', 'effekt'],
   ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['TIARA', 'Diamant-Diadem ✦', 'kopf', true],
   ['WINGS', 'Engelsflügel ✦', 'effekt', true], ['RAINBOW', 'Regenbogen-Glitzer ✦', 'effekt', true],

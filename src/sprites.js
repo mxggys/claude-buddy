@@ -47,6 +47,12 @@
     9: '#8b4400', 0: '#663200', '+': '#b84142', '-': '#571f20', '~': '#949494',
     // Kaffeebecher: Becher, Schatten, Kaffee, Dampf
     '=': '#efe6d2', '#': '#cdbf9f', '%': '#3b2414', '&': '#e3cfa8',
+    // Zigarre: Deckblatt hell/mittel/dunkel, Bauchbinde gold/rot
+    '[': '#9a5a32', '(': '#74401f', ')': '#4f2a12', ']': '#d9b23a', '!': '#b02a2a',
+    // Pfeife: Mundstück schwarz glänzend, Holzkopf mit Maserung
+    '{': '#1d1b20', '}': '#4a4650', '<': '#8a4a22', '>': '#5e2f12', '^': '#b06a38',
+    // Vape: Gehäuse dunkel/mittel/Glanz, Mundstück
+    '$': '#2b2f3a', '@': '#4c5364', '?': '#9aa3b6', '*': '#15161b',
   };
 
   const grid = (w, h) => Array.from({ length: h }, () => Array(w).fill('.'));
@@ -296,6 +302,7 @@
         if (arms === 'waveL2') l = up + 1;
         if (arms === 'reach') { l = up + 1; r = up + 1; }
         if (arms === 'smokeUp') r = up + 1; // rechte Hand am Gesicht
+        if (arms === 'sip') l = up + 1;     // Becher anheben
         if (arms === 'danceL') { l = up; r += 1; }
         if (arms === 'danceR') { r = up; l += 1; }
         if (arms === 'droop') { l += 1; r += 1; }
@@ -410,6 +417,7 @@
         }));
       },
       face(g, o) { set(g, [[9, 12 + o.hy], [10, 12 + o.hy]], 'm'); },
+      mug: ['K', 's'],
       anchors: {
         hat: [14, 2], glasses: [6, 6], keyboard: [6, 19], tap: [13, 22], idea: [12, -8], lens: [24, 4],
         mushroom: [-9, 24], snore: [22, 5], umbrella: [6, -12], mouth: [11, 12],
@@ -434,6 +442,7 @@
         ellipse(g, 12, 9.5 + o.hy, 5, 3.2, () => 'B');
       },
       face(g, o) { rect(g, 11, 11 + o.hy, 12, 11 + o.hy, 'O'); set(g, [[11, 12 + o.hy]], 'o'); },
+      mug: ['b', 'z'],
       anchors: { hat: [12, 6], glasses: [8, 7] },
     },
     axo: {
@@ -457,6 +466,7 @@
         }
       },
       face(g, o) { set(g, [[11, 13 + o.hy], [12, 13 + o.hy], [10, 12 + o.hy], [13, 12 + o.hy]], 'e'); },
+      mug: ['g', 'p'],
       anchors: { hat: [12, 6], glasses: [7, 9] },
       record: true, // freut sich besonders über einen Tipp-Rekord
     },
@@ -485,6 +495,7 @@
         set(g, [[12, 14 + o.hy]], 'A');
         set(g, [[11, 15 + o.hy], [13, 15 + o.hy]], 'e');
       },
+      mug: ['y', 'Q'],
       anchors: { hat: [12, 10], glasses: [7, 11] },
     },
     pando: {
@@ -512,6 +523,7 @@
         rect(g, 14, 19, 17, 20, 'G');
       },
       face(g, o) { rect(g, 11, 14 + o.hy, 12, 14 + o.hy, 'G'); set(g, [[11, 15 + o.hy], [12, 15 + o.hy]], 'G'); },
+      mug: ['M', 'Z'],
       anchors: { hat: [12, 6], glasses: [7, 9], bamboo: [17, 10] },
     },
     kuschel: {
@@ -535,6 +547,7 @@
       },
       face(g, o) { ellipse(g, 12, 14.5 + o.hy, 1.7, 2.2, () => 'G'); },
       anchors: { hat: [12, 6], glasses: [7, 10] },
+      mug: ['V', 'Z'], // Eukalyptus-grün
     },
     mokka: {
       name: 'Mokka (Kaffeetasse)',
@@ -555,6 +568,42 @@
       },
       face(g, o) { rect(g, 10, 16 + o.hy, 12, 16 + o.hy, 'e'); },
       anchors: { hat: [11, 9], glasses: [8, 12] },
+      noCoffee: true, // ist selbst eine Tasse
+    },
+    monsti: {
+      // kleine Energydose mit Gesicht: silbern-weiß, Lasche oben, eigener Blitz statt Markenlogo
+      name: 'Monsti (Energydose)',
+      palette: {
+        W: '#eef0f5', w: '#cfd3dc', v: '#a4a9b6', h: '#ffffff', N: '#b9bec9', B: '#4b505c', G: '#7d8391',
+        X: '#25272e', x: '#5d616c', E: '#121318', e: '#121318', P: '#ffb0b8', m: '#2a1a1e', t: '#ff7d8a',
+      },
+      fizzy: true, // sprudelt beim schnellen Tippen
+      eyes: { xs: [8, 14], y: 7, w: 2, h: 2 },
+      pattern: ['HE', 'EE'],
+      cheeks: [7, 16],
+      mouth: [11, 10],
+      arms: [3, 19, 10, 2, 3],
+      feet: [[8, 2], [14, 2]],
+      shape(g, o) {
+        const b = o.by;
+        // Deckel mit Rand und Lasche
+        rect(g, 7, 1 + b, 16, 1 + b, 'N');
+        rect(g, 6, 2 + b, 17, 2 + b, 'v');
+        set(g, [[10, 1 + b], [11, 1 + b], [12, 1 + b]], 'G');
+        set(g, [[11, 1 + b]], 'B');
+        // Dose: links Glanz, rechts Schatten
+        rect(g, 5, 3 + b, 18, 19, (x, y) => (x === 5 ? 'h' : x === 6 ? 'W' : x >= 17 ? 'v' : x >= 15 ? 'w' : 'W'));
+        // Boden
+        rect(g, 6, 20, 17, 20, 'v');
+        // Blitz
+        const bolt = [[13, 12], [14, 12], [12, 13], [13, 13], [11, 14], [12, 14], [11, 15], [12, 15], [13, 15], [14, 15], [13, 16], [14, 16], [12, 17], [13, 17], [11, 18], [12, 18]];
+        set(g, bolt.map(([x, y]) => [x, y + b]), 'B');
+        // feiner Schriftzug darunter angedeutet
+        rect(g, 8, 19, 15, 19, (x) => (x % 2 ? 'G' : 'w'));
+      },
+      face(g, o) { set(g, [[11, 10 + o.hy], [12, 10 + o.hy]], 'm'); },
+      anchors: { hat: [12, 1], glasses: [7, 6] },
+      mug: ['N', 'v'],
     },
   };
 
@@ -577,7 +626,9 @@
       record: def.record || false,
       cuddly: def.cuddly || false,
       steams: def.steams || false,
-      idleActions: [...CRITTER_ACTIONS, ...(def.extraActions || [])],
+      fizzy: def.fizzy || false,
+      mug: def.mug || null,
+      idleActions: [...CRITTER_ACTIONS, ...(def.extraActions || []), ...(def.noCoffee ? [] : ['coffee'])],
       typingFrames: ['tapL', 'tapR'],
       glasses: glassesFor(def.eyes),
       anchors: {
@@ -585,6 +636,8 @@
         umbrella: [5, -11], mouth: [def.mouth[0] + 2, def.mouth[1]],
         // Zigarette & Co. in der rechten Hand (Figuren mit Armen)
         ...(def.arms ? { hand: [def.arms[1] + def.arms[3] - 1, def.arms[2] + def.arms[4] - 2] } : {}),
+        // Kaffeebecher links neben der linken Pfote
+        mug: def.arms ? [def.arms[0] - 9, def.arms[2] - 1] : [-9, 11],
         ...def.anchors,
       },
       width: def.w || VW,
@@ -731,9 +784,30 @@
     '.....-++-.',
     '......--..',
   ]);
-  const CIGAR = small(['uuuuudUuuuuR', 'UuuuudUuuuuR', 'uuuuudUuuuuR']);
-  const PIPE = small(['.........uuuu', '.........uUuu', 'kkkkkkkkkuuuu', '.........uuuu']);
-  const VAPE = small(['kkjjjjjjjjjb', 'kkjjjjjjjjjb']); // b = Leuchtdiode, wechselt die Farbe
+  // Zigarette brennt ab: n = übriges Papier (1 … 9)
+  const CIG_STAGES = Array.from({ length: 10 }, (_, n) => small(['2112' + '3'.repeat(Math.max(1, n)) + '557', '1211' + '4'.repeat(Math.max(1, n)) + '567']));
+  const cigarette = (n) => CIG_STAGES[Math.max(1, Math.min(9, Math.round(n)))];
+  // Zigarre: Deckblatt mit Glanzkante, gold-rote Bauchbinde, Asche und Glut
+  const CIGAR = small([
+    '[[[[[[]!][[[[[[[4557',
+    '((((((]!](((((((5567',
+    '))))))]!])))))))5576',
+  ]);
+  // Pfeife: schwarzes Mundstück, gebogen, Holzkopf mit glimmendem Tabak
+  const PIPE = small([
+    '..........>7767>',
+    '..........<^<<<>',
+    '{{{{{{{{{{<^<<>>',
+    '}}}}}}}}}{<^<<>>',
+    '..........<<<>>.',
+    '...........>>>..',
+  ]);
+  // Vape: Pod mit dunklem Mundstück, Metall-Gehäuse, Leuchtdiode (b) an der Spitze
+  const VAPE = small(['**??????????????', '**@@@@@@@@@@@@@b', '**$$$$$$$$$$$$$b']);
+  // Aschenbecher (Glas), Kippe darin; Feuerzeug zum Anzünden
+  const ASHTRAY = small(['4555555554', '5444444445', '.55555555.']);
+  const BUTT = ['2113'];
+  const LIGHTER = small(['jj.', 'bbb', 'bzb', 'bzb', 'bbb']);
   const TOOTHPICK = small(['nnnnnn']);
   // Begleiter: Kissen hinter ihr, Skateboard unter ihr, Teddy neben ihr
   const PILLOW = small(['.CCCCCCCCCCCCCC.', 'CCCCCCCCCCCCCCCC', 'CCaCCCCCCCCCCaCC', 'CCCCCCCCCCCCCCCC', 'CCCCCCCCCCCCCCCC', '.CCCCCCCCCCCCCC.']);
@@ -799,13 +873,13 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, JOINT, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
     };
   }
 
-  const api = { CHARACTERS, ORDER, character, KEYBOARD, WING, HEART, WEATHER_ICONS };
+  const api = { CHARACTERS, ORDER, character, cigarette, KEYBOARD, WING, HEART, WEATHER_ICONS };
   if (typeof module !== 'undefined') module.exports = api;
   else root.DuckSprites = api;
 })(this);
