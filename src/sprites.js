@@ -586,19 +586,23 @@
       feet: [[8, 2], [14, 2]],
       shape(g, o) {
         const b = o.by;
-        // Deckel mit Rand und Lasche
-        rect(g, 7, 1 + b, 16, 1 + b, 'N');
+        // nach Vorlage: grauer Deckelrand, heller Deckel mit dunkler Trinköffnung
+        rect(g, 7, 0 + b, 16, 0 + b, 'v');
+        rect(g, 6, 1 + b, 17, 1 + b, (x) => (x === 6 || x === 17 ? 'v' : 'N'));
+        set(g, [[10, 1 + b], [11, 1 + b], [12, 1 + b], [13, 1 + b]], 'B');
         rect(g, 6, 2 + b, 17, 2 + b, 'v');
-        set(g, [[10, 1 + b], [11, 1 + b], [12, 1 + b]], 'G');
-        set(g, [[11, 1 + b]], 'B');
-        // Dose: links Glanz, rechts Schatten
-        rect(g, 5, 3 + b, 18, 19, (x, y) => (x === 5 ? 'h' : x === 6 ? 'W' : x >= 17 ? 'v' : x >= 15 ? 'w' : 'W'));
+        // Dose: gebürstetes Metall mit feinen Sprenkeln, links Schatten, rechts heller Glanz
+        const speck = (x, y) => ((x * 7 + y * 13) % 19 === 0 ? 'w' : 'W');
+        rect(g, 5, 3 + b, 18, 19, (x, y) => (x === 5 ? 'v' : x === 6 ? 'w' : x === 18 ? 'w' : x === 17 ? 'h' : speck(x, y)));
+        // feine Schrift oben angedeutet
+        rect(g, 9, 4 + b, 14, 4 + b, (x) => (x % 2 ? 'G' : 'w'));
         // Boden
         rect(g, 6, 20, 17, 20, 'v');
-        // Blitz
+        // eigenes Zeichen: grauer Blitz mit hellem Rand
         const bolt = [[13, 12], [14, 12], [12, 13], [13, 13], [11, 14], [12, 14], [11, 15], [12, 15], [13, 15], [14, 15], [13, 16], [14, 16], [12, 17], [13, 17], [11, 18], [12, 18]];
         set(g, bolt.map(([x, y]) => [x, y + b]), 'B');
-        // feiner Schriftzug darunter angedeutet
+        set(g, [[15, 12], [14, 13], [13, 14], [15, 15], [15, 16], [14, 17], [13, 18]].map(([x, y]) => [x, y + b]), 'G');
+        // Schriftzug unten angedeutet
         rect(g, 8, 19, 15, 19, (x) => (x % 2 ? 'G' : 'w'));
       },
       face(g, o) { set(g, [[11, 10 + o.hy], [12, 10 + o.hy]], 'm'); },
@@ -770,8 +774,6 @@
   ]);
   // Mund-Zubehör (vom Mund nach rechts)
   // größer und dicker: Filter (y), Papier (a), Glut (R)
-  // nach Vorlage: gesprenkelter Filter (1/2), weißes Papier (3/4), Asche (5) und Glut (7, mit 6)
-  const CIGARETTE = small(['2112333333333557', '1211444444444567']);
   // Joint: schräg nach unten, dünnes Ende im Mund, Glut am dicken Ende
   const JOINT = small([
     '0.........',
@@ -784,9 +786,21 @@
     '.....-++-.',
     '......--..',
   ]);
-  // Zigarette brennt ab: n = übriges Papier (1 … 9)
-  const CIG_STAGES = Array.from({ length: 10 }, (_, n) => small(['2112' + '3'.repeat(Math.max(1, n)) + '557', '1211' + '4'.repeat(Math.max(1, n)) + '567']));
+  // Zigarette nach Vorlage: dick (3 Pixel), leicht schräg nach unten; gesprenkelter Filter, weißes Papier
+  // mit Schatten, grauer Übergang, oranger Glutring und runde, dunkle Asche. Brennt ab: n = übriges Papier
+  function cigaretteRows(n) {
+    const cols = [];
+    cols.push(['1', '2', '1'], ['2', '1', '1'], ['1', '1', '2'], ['1', '2', '1'], ['2', '1', '2']);
+    for (let i = 0; i < n; i++) cols.push(['3', '3', '4']);
+    cols.push(['4', '5', '5'], ['7', '7', '7'], ['6', '5', '6'], ['.', '6', '.']);
+    const h = 3 + Math.floor((cols.length - 1) / 7);
+    const g = Array.from({ length: h }, () => Array(cols.length).fill('.'));
+    cols.forEach((c, x) => c.forEach((ch, y) => { g[y + Math.floor(x / 7)][x] = ch; }));
+    return small(g.map((r) => r.join('')));
+  }
+  const CIG_STAGES = Array.from({ length: 10 }, (_, n) => cigaretteRows(Math.max(1, n)));
   const cigarette = (n) => CIG_STAGES[Math.max(1, Math.min(9, Math.round(n)))];
+  const CIGARETTE = CIG_STAGES[9];
   // Zigarre: Deckblatt mit Glanzkante, gold-rote Bauchbinde, Asche und Glut
   const CIGAR = small([
     '[[[[[[]!][[[[[[[4557',
