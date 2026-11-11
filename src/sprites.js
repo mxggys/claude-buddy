@@ -571,42 +571,59 @@
       noCoffee: true, // ist selbst eine Tasse
     },
     monsti: {
-      // kleine Energydose mit Gesicht: silbern-weiß, Lasche oben, eigener Blitz statt Markenlogo
+      // nach Foto: hohe, silbern-weiße Dose mit Deckelrand, Trinköffnung, Krallen-Streifen und Schriftzug, dazu ein Gesicht
       name: 'Monsti (Energydose)',
       palette: {
-        W: '#eef0f5', w: '#cfd3dc', v: '#a4a9b6', h: '#ffffff', N: '#b9bec9', B: '#4b505c', G: '#7d8391',
+        W: '#eef0f5', w: '#cfd3dc', v: '#a4a9b6', h: '#ffffff', N: '#c4c8d2', B: '#3e424e', G: '#6f7482',
         X: '#25272e', x: '#5d616c', E: '#121318', e: '#121318', P: '#ffb0b8', m: '#2a1a1e', t: '#ff7d8a',
       },
       fizzy: true, // sprudelt beim schnellen Tippen
-      eyes: { xs: [8, 14], y: 7, w: 2, h: 2 },
+      w: 20, h: 28, scale: 2.75,
+      eyes: { xs: [6, 12], y: 6, w: 2, h: 2 },
       pattern: ['HE', 'EE'],
-      cheeks: [7, 16],
-      mouth: [11, 10],
-      arms: [3, 19, 10, 2, 3],
-      feet: [[8, 2], [14, 2]],
+      cheeks: [5, 14],
+      mouth: [9, 9],
+      arms: [1, 17, 12, 2, 3],
+      feet: [[6, 2], [12, 2]],
       shape(g, o) {
         const b = o.by;
-        // nach Vorlage: grauer Deckelrand, heller Deckel mit dunkler Trinköffnung
-        rect(g, 7, 0 + b, 16, 0 + b, 'v');
-        rect(g, 6, 1 + b, 17, 1 + b, (x) => (x === 6 || x === 17 ? 'v' : 'N'));
-        set(g, [[10, 1 + b], [11, 1 + b], [12, 1 + b], [13, 1 + b]], 'B');
-        rect(g, 6, 2 + b, 17, 2 + b, 'v');
-        // Dose: gebürstetes Metall mit feinen Sprenkeln, links Schatten, rechts heller Glanz
+        // Deckel: grauer Rand, heller Deckel, dunkle Trinköffnung, Hals
+        rect(g, 5, 0 + b, 14, 0 + b, 'v');
+        rect(g, 4, 1 + b, 15, 1 + b, (x) => (x === 4 || x === 15 ? 'v' : 'N'));
+        rect(g, 7, 1 + b, 10, 1 + b, 'B');
+        rect(g, 4, 2 + b, 15, 2 + b, 'v'); // Schulter: etwas schmaler als die Dose
+        // Dose: links Schatten, rechts Glanz, feine Sprenkel wie gebürstetes Metall
         const speck = (x, y) => ((x * 7 + y * 13) % 19 === 0 ? 'w' : 'W');
-        rect(g, 5, 3 + b, 18, 19, (x, y) => (x === 5 ? 'v' : x === 6 ? 'w' : x === 18 ? 'w' : x === 17 ? 'h' : speck(x, y)));
-        // feine Schrift oben angedeutet
-        rect(g, 9, 4 + b, 14, 4 + b, (x) => (x % 2 ? 'G' : 'w'));
+        rect(g, 3, 3 + b, 16, 25, (x, y) => (x === 3 ? 'v' : x === 4 ? 'w' : x === 16 ? 'w' : x === 15 ? 'h' : y === 3 + b ? 'w' : speck(x, y)));
+        // kleine Schrift oben
+        rect(g, 7, 4 + b, 12, 4 + b, (x) => (x % 2 ? 'v' : 'w'));
+        // Krallen-Streifen wie auf dem Foto: drei hellgraue, zackige Striche mit dunklem Rand,
+        // oben nach innen gebogen, der mittlere am längsten
+        const strokes = [
+          // [y, x0, x1] je Zeile
+          [[10, 5, 7], [11, 5, 6], [12, 5, 6], [13, 6, 7], [14, 6, 7], [15, 6, 6], [16, 6, 7], [17, 7, 7]],
+          [[10, 8, 11], [11, 9, 10], [12, 9, 10], [13, 9, 10], [14, 10, 11], [15, 9, 10], [16, 9, 10], [17, 10, 10], [18, 10, 10], [19, 10, 10]],
+          [[10, 12, 14], [11, 13, 14], [12, 13, 14], [13, 12, 13], [14, 12, 13], [15, 13, 13], [16, 13, 14], [17, 13, 13]],
+        ];
+        for (const st of strokes) {
+          for (const [y, x0, x1] of st) {
+            rect(g, x0, y + 1 + b, x1, y + 1 + b, 'G');
+            set(g, [[x0, y + 1 + b]], 'B'); // dunkle Kante links
+          }
+          const [ty, tx] = st[st.length - 1];
+          set(g, [[tx, ty + 1 + b]], 'B'); // dunkle Spitze
+        }
+        // Schriftzug: dunkle Zeile, darunter hellere
+        rect(g, 5, 22, 14, 22, (x) => (x % 3 === 2 ? 'W' : 'B'));
+        rect(g, 6, 24, 13, 24, (x) => (x % 2 ? 'v' : 'W'));
         // Boden
-        rect(g, 6, 20, 17, 20, 'v');
-        // eigenes Zeichen: grauer Blitz mit hellem Rand
-        const bolt = [[13, 12], [14, 12], [12, 13], [13, 13], [11, 14], [12, 14], [11, 15], [12, 15], [13, 15], [14, 15], [13, 16], [14, 16], [12, 17], [13, 17], [11, 18], [12, 18]];
-        set(g, bolt.map(([x, y]) => [x, y + b]), 'B');
-        set(g, [[15, 12], [14, 13], [13, 14], [15, 15], [15, 16], [14, 17], [13, 18]].map(([x, y]) => [x, y + b]), 'G');
-        // Schriftzug unten angedeutet
-        rect(g, 8, 19, 15, 19, (x) => (x % 2 ? 'G' : 'w'));
+        rect(g, 4, 26, 15, 26, 'v');
       },
-      face(g, o) { set(g, [[11, 10 + o.hy], [12, 10 + o.hy]], 'm'); },
-      anchors: { hat: [12, 1], glasses: [7, 6] },
+      face(g, o) { set(g, [[9, 9 + o.hy], [10, 9 + o.hy]], 'm'); },
+      anchors: {
+        hat: [10, 0], glasses: [5, 5], keyboard: [3, 21], tap: [10, 22], idea: [8, -8], lens: [17, 4],
+        mushroom: [-9, 22], snore: [15, 4], umbrella: [3, -12],
+      },
       mug: ['N', 'v'],
     },
   };

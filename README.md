@@ -7,7 +7,7 @@ Frosti (Pinguin, watschelt beim Tippen), Axo (Axolotl, Kiemen wackeln beim Tippe
 Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda),
 Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
-Monsti (Energydose, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
+Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
 ## Was sie kann
 - Sitzt unten rechts an der Taskleiste. Gedrückt halten und ziehen setzt sie um, der Platz wird gemerkt.
