@@ -9,6 +9,17 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
+## Version 1.34
+- Neues Einstellungsfenster im Windows-11-Stil (schwarz-weiß, folgt hell/dunkel): Figur, Zubehör mit Vorschau,
+  Verhalten, Rauchen, Feiertage & Wetter, Statistik, System & Updates. Das Tray-Menü ist jetzt klein:
+  Füttern, Ball, Erinnerung, Nicht stören, Einstellungen, Beenden.
+- Zubehör aufgeräumt. Neu am Kopf: Clean Cappy, Clean Beanie, Bandana, Kippa, Ski-Brille, Beanie mit Goldkette ✦,
+  schlichte Goldkrone ✦, goldener Heiligenschein ✦.
+- Neue Begleiter: Bubble-Tea, Mini-Bett, Mini-Teddy, Hantel, Stuhl, Sitzsack, Kamin, Mini-Kühlschrank, Hängematte,
+  Plüsch-Hase, Heizkörper, Thermoskanne mit Tee, Schneekugel (er sitzt drin), Goldbarren ✦.
+- Neue Effekte: Goldstaub, Glitzer-Funkeln, Schneeflocken, Warmer Atem, Kuschel-Schimmer, Sternenkreis, Lichtkugeln,
+  Frost-Glitzer, Goldener Schatten, Licht von oben, Gold-Umriss ✦, Diamant-Funkeln ✦, Polarlicht ✦, Kristall-Splitter ✦.
+
 ## Was sie kann
 - Menü „Rauchen“: raucht von selbst an/aus, wie oft (selten/normal/oft), Zigarette brennt ab an/aus,
   Joint & Bong-Effekt (rote Augen, Heißhunger) an/aus.

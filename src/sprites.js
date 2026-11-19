@@ -962,6 +962,35 @@
   // Joint-Krone (golden): drei kleine Joints auf einem Band
   const JOINTCROWN = small(['.+...+...+.', '.9...9...9.', '.9...9...9.', '.0...0...0.', '99999999999']);
 
+  // Neue Kopf-Teile und Begleiter (Version 1.34)
+  const ACCESSORIES2 = {
+    CAP: small(['..KKKKKK.....', '.KKKKKKKK....', 'KsKKKKKKKK...', 'KKKKKKKKKKKK.', '......666666.']),
+    BANDANA: small(['..dddddddd...', '.ddaddddadd..', 'dddddaddddddd', 'DDDDDDDDDDDdD', '..........d.d']),
+    BEANIE: small(['...KKKKK...', '.KKKKKKKKK.', 'KsKKKKKKKKK', 'KKKKKKKKKKK', '6K6K6K6K6K6']),
+    CHAINBEANIE: small(['...KKKKK...', '.KKKKKKKKK.', 'KsKKKKKKKKK', 'KKKKKKKKKKK', 'iIiiIiiIiiI']),
+    KIPPAH: small(['..SSSSS..', '.SSTSTSS.', 'STSSSSSTS']),
+    SKIGOGGLES: small(['...KKKKKKKKK...', 'KKKKypppbbbKKKK', '...KyyppbbbK...', '....KKKKKKK....']),
+    SIMPLECROWN: small(['i...i...i', 'ii.iIi.ii', 'iiiiiiiii', 'IIIIIIIII']),
+    GOLDHALO: ['.IiiiiiI.', 'i.......i', '.iiiiiii.'],
+  };
+  const BUBBLETEA = small(['.k....', '.k....', 'cccccc', 'nnnnnn', 'nnnnnn', 'nkknkn', 'kknkkn', '.nnnn.']);
+  const MINITEDDY = small(['u...u', 'uuuuu', 'ukuku', 'uuUuu', '.uuu.', 'uu.uu']);
+  const BUNNY = small(['.g.g.', '.g.g.', '.ggg.', 'gkgkg', 'ggpgg', '.ggg.', 'gg.gg']);
+  const DUMBBELL = small(['K.......K', 'KK66666KK', 'KK66666KK', 'K.......K']);
+  const FIREPLACE = small(['DDDDDDDDDDD', 'dDddDddDddD', 'dddDddDdddd', 'ddKKKKKKKdd', 'dDKKKKKKKDd', 'ddKKKKKKKdd', 'dDKKKKKKKDd', 'ddKKKKKKKdd', 'jjjjjjjjjjj']);
+  const FRIDGE = small(['aaaaaaa', 'aaaaaja', 'aaaaaja', 'jjjjjjj', 'aaaaaja', 'aaaaaja', 'aaaaaja', 'aaaaaaa', 'j.....j']);
+  const FRIDGE_OPEN = small(['aaaaaaa', 'aIIIIIa', 'aIbIiIa', 'jjjjjjj', 'aIIIIIa', 'aIdIIIa', 'aIIIIIa', 'aaaaaaa', 'j.....j']);
+  const GOLDBARS = small(['..iiiii..', '.iIiiIii.', 'iiiiiiiii', 'iIiiiIiii', 'IIIIIIIII']);
+  const RADIATOR = small(['a.a.a.a.a', 'aaaaaaaaa', 'ajajajaja', 'ajajajaja', 'ajajajaja', 'aaaaaaaaa', 'j.......j']);
+  const THERMOS = small(['.SS.', 'jjjj', 'SSSS', 'SaSS', 'SaSS', 'SSSS', 'SSSS', 'jjjj']);
+  const BEANBAG = small(['....bbbbbbbbbbbbbb....', '..bbbbbbbbbbbbbbbbbb..', '.bbbbbbbbbbbbbbbbbbbb.', 'bbbbbbbbbbbbbbbbbbbbbb', 'zbbbbbbbbbbbbbbbbbbbbz', 'zzbbbbbbbbbbbbbbbbbbzz', '.zzzzzzzzzzzzzzzzzzzz.']);
+  const CHAIR_BACK = small(['uuuuuuuuuuuuuuuuuuuuuuuuuuuu', 'uUUUUUUUUUUUUUUUUUUUUUUUUUUu', 'u..........................u', 'u..........................u', 'u..........................u', 'u..........................u', 'u..........................u', 'u..........................u', 'u..........................u', 'u..........................u', 'u..........................u', 'u..........................u', 'u..........................u', 'u..........................u']);
+  const CHAIR_SEAT = small(['uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu', 'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU', '.u............................u.', '.u............................u.', '.u............................u.']);
+  const BED = small(['aaaaaa......................................', 'naaaana.....................................', 'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS', 'uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu', 'u..........................................u']);
+  const BLANKET = small(['SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS', 'SaSSSaSSSaSSSaSSSaSSSaSSSaSSSaSS', 'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS', 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT']);
+  const HAMMOCK = small(['u..................................u', 'u..................................u', 'ub................................bu', 'u.bb............................bb.u', 'u...bbb......................bbb...u', 'u......bbbbbbbbbbbbbbbbbbbbbb......u', 'u..................................u']);
+  const GLOBEBASE = small(['..uuuuuuuuuuuuuuuuuuuuuuuuuu..', '.uUUUUUUUUUUUUUUUUUUUUUUUUUUu.', 'uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu']);
+
   // Aschenbecher (Glas), Kippe darin; Feuerzeug zum Anzünden
   const ASHTRAY = small(['4555555554', '5444444445', '.55555555.']);
   const BUTT = ['2113'];
@@ -1031,7 +1060,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER,
         CIGARILLO, ROLLIE, SLIM, FRUITVAPE, GRILLZ, SHISHA, BONG, ENERGYCAN, SNUSCAN, SNUSCAN_OPEN, CIGPACK, CIGPACK_OPEN, ZIPPO, ZIPPO_OPEN, JOINTCROWN, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },

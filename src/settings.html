@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+<title>Claude Buddy – Einstellungen</title>
+<style>
+/* Windows-11-Einstellungen in Schwarz-Weiß: links die Bereiche, rechts Karten mit Schaltern */
+:root {
+  --bg: #f3f3f3;
+  --card: #fbfbfb;
+  --card-hover: #f6f6f6;
+  --line: #e5e5e5;
+  --fg: #1b1b1b;
+  --muted: #5c5c5c;
+  --accent: #1b1b1b;
+  --on-accent: #ffffff;
+  --nav-hover: rgba(0, 0, 0, 0.04);
+  --nav-active: rgba(0, 0, 0, 0.06);
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #202020; --card: #2b2b2b; --card-hover: #323232; --line: #1d1d1d; --fg: #ffffff; --muted: #c8c8c8; --accent: #ffffff; --on-accent: #000000; --nav-hover: rgba(255, 255, 255, 0.05); --nav-active: rgba(255, 255, 255, 0.08); color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 var(--font); display: flex; overflow: hidden; user-select: none; }
+nav { width: 248px; flex: none; padding: 16px 8px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.me { display: flex; align-items: center; gap: 12px; padding: 4px 12px 16px; }
+.me canvas { width: 56px; height: 56px; image-rendering: pixelated; }
+.me b { display: block; font-size: 15px; font-weight: 600; }
+.me span { color: var(--muted); font-size: 12px; }
+nav button { font: inherit; display: flex; align-items: center; gap: 14px; width: 100%; padding: 9px 12px; border: 0; border-radius: 6px; background: transparent; color: var(--fg); text-align: left; cursor: pointer; position: relative; }
+nav button:hover { background: var(--nav-hover); }
+nav button[aria-current="page"] { background: var(--nav-active); font-weight: 600; }
+nav button[aria-current="page"]::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); }
+nav svg { width: 18px; height: 18px; flex: none; }
+main { flex: 1; min-width: 0; overflow-y: auto; padding: 24px 36px 40px 24px; }
+h1 { font: 600 28px/1.2 var(--font-display); margin: 4px 0 20px; }
+h2 { font: 600 14px/1.4 var(--font); margin: 22px 0 8px; }
+.group { display: flex; flex-direction: column; gap: 3px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; align-items: center; gap: 16px; min-height: 64px; }
+.card .txt { flex: 1; min-width: 0; }
+.card .txt b { display: block; font-weight: 400; }
+.card .txt small { display: block; color: var(--muted); font-size: 12px; }
+.card.col { flex-direction: column; align-items: stretch; }
+/* Schalter wie in Windows 11 */
+.sw { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.sw span { color: var(--muted); font-size: 13px; min-width: 24px; text-align: right; }
+.sw button { width: 40px; height: 20px; border-radius: 10px; border: 1px solid var(--muted); background: transparent; position: relative; cursor: pointer; padding: 0; }
+.sw button::after { content: ""; position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted); transition: left .12s ease, width .12s ease; }
+.sw button[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+.sw button[aria-checked="true"]::after { left: 23px; background: var(--on-accent); }
+.sw button:active::after { width: 15px; }
+select, input[type=text] { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-bottom-color: var(--muted); border-radius: 4px; padding: 5px 10px; min-width: 180px; min-height: 32px; }
+input[type=text]:focus { outline: none; border-bottom: 2px solid var(--accent); }
+input[type=range] { accent-color: var(--accent); width: 200px; }
+.btn { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 5px 14px; min-height: 32px; cursor: pointer; }
+.btn:hover { background: var(--card-hover); }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { font: inherit; border: 0; background: var(--card); color: var(--fg); padding: 5px 14px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.err { color: var(--fg); font-size: 12px; font-weight: 600; min-height: 1.2em; }
+/* Kachel-Raster für Figuren und Zubehör */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.tile { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 8px 6px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; text-align: center; }
+.tile:hover { background: var(--card-hover); }
+.tile[aria-pressed="true"] { border: 2px solid var(--accent); padding: 7px 5px 5px; }
+.tile canvas { width: 72px; height: 52px; image-rendering: pixelated; }
+.tile small { font-size: 12px; line-height: 1.25; }
+.tile.none { justify-content: center; min-height: 92px; color: var(--muted); }
+.preview { display: flex; justify-content: center; padding: 8px 0; }
+.preview canvas { width: 280px; max-width: 100%; height: auto; image-rendering: pixelated; }
+.muted { color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; }
+.stats .card { flex-direction: column; align-items: flex-start; gap: 2px; min-height: 0; }
+.stats b { font: 600 22px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.warn { border-color: var(--accent); }
+@media (max-width: 720px) { nav { width: 64px; } nav button span, .me div { display: none; } main { padding-left: 12px; } }
+@media (prefers-reduced-motion: reduce) { .sw button::after { transition: none; } }
+</style>
+</head>
+<body>
+<nav aria-label="Bereiche">
+  <div class="me"><canvas id="meFig" width="40" height="40" aria-hidden="true"></canvas><div><b id="meName">Claude Buddy</b><span id="meVer"></span></div></div>
+  <button data-page="figur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Figur</span></button>
+  <button data-page="aussehen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 15c0-4 3.6-7 8-7s8 3 8 7"/><path d="M2 15h17l3-2"/></svg><span>Zubehör</span></button>
+  <button data-page="verhalten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18l5-7 4 4 7-9"/></svg><span>Verhalten</span></button>
+  <button data-page="rauchen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 15h14v3H3z"/><path d="M19 15h2v3h-2"/><path d="M16 11c0-2 2-2 2-4s-2-2-2-4"/></svg><span>Rauchen</span></button>
+  <button data-page="extras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg><span>Feiertage &amp; Wetter</span></button>
+  <button data-page="statistik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Statistik</span></button>
+  <button data-page="system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span>System &amp; Updates</span></button>
+</nav>
+<main id="main" tabindex="-1"></main>
+<script src="sprites.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

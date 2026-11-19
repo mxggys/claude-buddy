@@ -1,5 +1,5 @@
 const {
-  app, BrowserWindow, Tray, Menu, ipcMain, screen, shell, nativeImage, session, safeStorage, powerMonitor,
+  app, BrowserWindow, Tray, Menu, ipcMain, screen, shell, nativeImage, session, safeStorage, powerMonitor, nativeTheme,
 } = require('electron');
 const fs = require('fs');
 const os = require('os');
@@ -740,26 +740,30 @@ function playMenu() {
 const SLOTS = { kopf: 'zubehoer', mund: 'zubehoerMund', begleiter: 'zubehoerBegleiter', effekt: 'zubehoerEffekt' };
 const SLOT_NAMES = { kopf: 'Kopf', mund: 'Mund (Klick auf die Figur benutzt es)', begleiter: 'Begleiter', effekt: 'Effekt' };
 const ITEMS = [
-  ['CROWN', 'Krone', 'kopf'], ['WIZARD', 'Zauberhut', 'kopf'], ['TOPHAT', 'Zylinder', 'kopf'], ['HALO', 'Heiligenschein', 'kopf'],
-  ['HORNS', 'Teufelshörner', 'kopf'], ['PIRATE', 'Piratenhut', 'kopf'], ['COWBOY', 'Cowboyhut', 'kopf'], ['VIKING', 'Wikingerhelm', 'kopf'],
-  ['PROPELLER', 'Propellermütze', 'kopf'], ['CATEARS', 'Katzenohren', 'kopf'], ['STARBAND', 'Sternen-Haarreif', 'kopf'],
-  ['NINJA', 'Ninja-Stirnband', 'kopf'], ['DRAGON', 'Drachenhörner', 'kopf'], ['UNICORN', 'Einhorn-Horn', 'kopf'],
-  ['WITCH', 'Hexenhut', 'kopf'], ['MOHAWK', 'Punk-Iro', 'kopf'], ['SAMURAI', 'Samurai-Helm', 'kopf'],
-  ['SNAPBACK', 'Buddy-Snapback', 'kopf'], ['BUCKETHAT', 'Fischerhut', 'kopf'],
+  // Kopf
+  ['CAP', 'Clean Cappy', 'kopf'], ['BEANIE', 'Clean Beanie', 'kopf'], ['BANDANA', 'Bandana', 'kopf'], ['KIPPAH', 'Kippa', 'kopf'],
+  ['SKIGOGGLES', 'Ski-Brille', 'kopf'], ['CROWN', 'Krone', 'kopf'],
+  // Mund
   ['CIGARETTE', 'Zigarette', 'mund'], ['JOINT', 'Joint', 'mund'], ['CIGAR', 'Zigarre', 'mund'], ['PIPE', 'Pfeife', 'mund'], ['VAPE', 'Vape', 'mund'],
-  ['TOOTHPICK', 'Zahnstocher', 'mund'],
-  ['CIGARILLO', 'Zigarillo', 'mund'], ['ROLLIE', 'Selbstgedrehte', 'mund'], ['SLIM', 'Slim-Zigarette', 'mund'],
+  ['TOOTHPICK', 'Zahnstocher', 'mund'], ['CIGARILLO', 'Zigarillo', 'mund'], ['ROLLIE', 'Selbstgedrehte', 'mund'], ['SLIM', 'Slim-Zigarette', 'mund'],
   ['FRUITVAPE', 'Bunte Einweg-Vape', 'mund'], ['CHEW', 'Kautabak', 'mund'], ['GRILLZ', 'Grillz (Goldzähne)', 'mund'],
-  ['SHISHA', 'Mini-Shisha', 'begleiter'], ['BONG', 'Mini-Bong', 'begleiter'], ['ENERGYCAN', 'Energydose', 'begleiter'],
+  // Begleiter
+  ['BUBBLETEA', 'Bubble-Tea', 'begleiter'], ['BED', 'Mini-Bett', 'begleiter'], ['MINITEDDY', 'Mini-Teddy', 'begleiter'], ['DUMBBELL', 'Hantel', 'begleiter'],
+  ['CHAIR', 'Stuhl', 'begleiter'], ['BEANBAG', 'Sitzsack', 'begleiter'], ['FIREPLACE', 'Kamin', 'begleiter'], ['FRIDGE', 'Mini-Kühlschrank', 'begleiter'],
+  ['HAMMOCK', 'Hängematte', 'begleiter'], ['BUNNY', 'Plüsch-Hase', 'begleiter'], ['RADIATOR', 'Heizkörper', 'begleiter'], ['THERMOS', 'Thermoskanne mit Tee', 'begleiter'],
+  ['SNOWGLOBE', 'Schneekugel', 'begleiter'],
+  ['ASHTRAY', 'Aschenbecher', 'begleiter'], ['SHISHA', 'Mini-Shisha', 'begleiter'], ['BONG', 'Mini-Bong', 'begleiter'], ['ENERGYCAN', 'Energydose', 'begleiter'],
   ['SNUSCAN', 'Snus-Dose', 'begleiter'], ['CIGPACK', 'Kippenschachtel', 'begleiter'], ['ZIPPO', 'Sturmfeuerzeug', 'begleiter'],
-  ['RINGPRO', 'Rauchring-Profi', 'effekt'],
-  ['PILLOW', 'Kuschelkissen', 'begleiter'], ['SKATEBOARD', 'Skateboard', 'begleiter'], ['TEDDY', 'Teddy', 'begleiter'], ['ASHTRAY', 'Aschenbecher', 'begleiter'],
-  ['CAPE', 'Heldenumhang', 'effekt'],
-  ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['TIARA', 'Diamant-Diadem ✦', 'kopf', true],
-  ['WINGS', 'Engelsflügel ✦', 'effekt', true], ['RAINBOW', 'Regenbogen-Glitzer ✦', 'effekt', true],
-  ['FIREAURA', 'Flammen-Aura ✦', 'effekt', true], ['SMOKEAURA', 'Rauch-Aura ✦', 'effekt', true],
-  ['JOINTCROWN', 'Joint-Krone ✦', 'kopf', true], ['LIGHTNING', 'Blitz-Aura ✦', 'effekt', true],
-  ['NEONVAPE', 'Neon-Vape ✦', 'mund', true],
+  // Effekte
+  ['GOLDDUST', 'Goldstaub', 'effekt'], ['GLITTER', 'Glitzer-Funkeln', 'effekt'], ['SNOWAROUND', 'Schneeflocken', 'effekt'], ['BREATH', 'Warmer Atem', 'effekt'],
+  ['COZYGLOW', 'Kuschel-Schimmer', 'effekt'], ['STARCIRCLE', 'Sternenkreis', 'effekt'], ['BOKEH', 'Lichtkugeln', 'effekt'], ['FROSTFLOOR', 'Frost-Glitzer', 'effekt'],
+  ['GOLDSHADOW', 'Goldener Schatten', 'effekt'], ['TOPLIGHT', 'Licht von oben', 'effekt'], ['RINGPRO', 'Rauchring-Profi', 'effekt'],
+  // selten (goldenes Päckchen)
+  ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['SIMPLECROWN', 'Schlichte Goldkrone ✦', 'kopf', true], ['CHAINBEANIE', 'Beanie mit Goldkette ✦', 'kopf', true],
+  ['GOLDHALO', 'Goldener Heiligenschein ✦', 'kopf', true], ['JOINTCROWN', 'Joint-Krone ✦', 'kopf', true],
+  ['NEONVAPE', 'Neon-Vape ✦', 'mund', true], ['GOLDBARS', 'Goldbarren ✦', 'begleiter', true],
+  ['FIREAURA', 'Flammen-Aura ✦', 'effekt', true], ['SMOKEAURA', 'Rauch-Aura ✦', 'effekt', true], ['GOLDOUTLINE', 'Gold-Umriss ✦', 'effekt', true],
+  ['DIAMOND', 'Diamant-Funkeln ✦', 'effekt', true], ['AURORA', 'Polarlicht ✦', 'effekt', true], ['CRYSTALS', 'Kristall-Splitter ✦', 'effekt', true],
 ];
 // alte Teile (Standard-Mützen, Brillen, Kleidung): fliegen aus der Sammlung
 const REMOVED_ITEMS = ['CAP', 'BEANIE', 'BOW', 'FLOWER', 'CHEF', 'ANTENNA', 'SHADES', 'PIXELSHADES', 'WINTERJACKET', 'HOODIE', 'LEATHER', 'SWEATER',
@@ -1195,9 +1199,10 @@ function buildMenu() {
   const until = (ms) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
   // Aufgeräumt: oben das, was man oft braucht, darunter Aussehen / Verhalten / System in Untermenüs
+  // Klein und aufgeräumt: alles Weitere steht im Einstellungsfenster
   tray.setContextMenu(Menu.buildFromTemplate([
     ...(warning ? [{ label: `⚠ ${warning}`, click: askToken }, { type: 'separator' }] : []),
-    { label: settings.launeAn ? `${name} · ${moodWord(settings.laune)} (${Math.round(settings.laune)} %)` : name, enabled: false },
+    { label: settings.launeAn ? `${name} · ${moodWord(settings.laune)}` : name, enabled: false },
     { type: 'separator' },
     { label: 'Füttern', click: () => sendAll('command', { type: 'feed' }) },
     { label: ballOn ? 'Ball wegräumen' : 'Ball zum Spielen', click: () => win && win.webContents.send('command', { type: 'ball' }) },
@@ -1210,111 +1215,12 @@ function buildMenu() {
       click: () => setDnd(dnd ? 0 : 60),
     },
     { type: 'separator' },
-    ...counterMenu(),
-    { label: `Spielzeit: ${formatDuration(settings.laufzeitMin)}`, submenu: playMenu() },
+    { label: 'Einstellungen …', click: openSettings },
+    ...(updateStatus.ready ? [{ label: 'Neue Version installieren', click: () => updater.installNow() }] : []),
     { type: 'separator' },
-    {
-      label: 'Aussehen',
-      submenu: [
-        {
-          label: `Figur: ${figureName}`,
-          submenu: ORDER.map((id) => ({
-            label: CHARACTERS[id].name, type: 'radio', checked: settings.figur === id, click: () => setFigur(id),
-          })),
-        },
-        {
-          label: settings.zweiteFigur ? `Zweite Figur: ${CHARACTERS[settings.zweiteFigur].name}` : 'Zweite Figur: aus',
-          submenu: [
-            { label: 'Aus', type: 'radio', checked: !settings.zweiteFigur, click: () => setSecondPet(null) },
-            { type: 'separator' },
-            ...ORDER.map((id) => ({ label: CHARACTERS[id].name, type: 'radio', checked: settings.zweiteFigur === id, click: () => setSecondPet(id) })),
-          ],
-        },
-        { label: settings.name ? `Name: ${settings.name} – ändern …` : 'Name geben …', click: () => askName(false) },
-        ...(settings.zweiteFigur ? [{ label: settings.name2 ? `Name der zweiten Figur: ${settings.name2} – ändern …` : 'Zweiter Figur einen Namen geben …', click: () => askName(true) }] : []),
-        {
-          label: `Zubehör (${settings.sammlung.length} von ${ITEMS.length})`,
-          submenu: accessoryMenu(),
-        },
-        { label: `Farbe: ${COLORS.find(([k]) => k === settings.farbe)?.[1] || 'Original'}`, submenu: colorMenu(false) },
-        ...(settings.zweiteFigur ? [{ label: `Farbe der zweiten Figur: ${COLORS.find(([k]) => k === settings.farbe2)?.[1] || 'Original'}`, submenu: colorMenu(true) }] : []),
-        {
-          label: `Größe: ${pct(settings.groesse)}`,
-          submenu: [
-            ...SIZE_PRESETS.map((v) => ({
-              label: pct(v), type: 'radio', checked: Math.abs(v - settings.groesse) < 0.001, click: () => setSize(v),
-            })),
-            { type: 'separator' },
-            { label: isPreset ? 'Eigene Größe …' : `Eigene Größe … (${pct(settings.groesse)})`, click: askSize },
-            { label: 'Tipp: Strg + Mausrad auf der Figur', enabled: false },
-          ],
-        },
-        { label: 'Feiertage und Wetter', submenu: extrasMenu() },
-      ],
-    },
-    {
-      label: 'Verhalten',
-      submenu: [
-        toggle('Läuft herum', 'laufen'),
-        toggle('Schwerkraft (fällt nach unten)', 'schwerkraft'),
-        { type: 'separator' },
-        toggle('Auf Fenster setzen (an den Rand ziehen)', 'aufFenstern'),
-        toggle('Springt auf das aktive Fenster', 'fensterSpringen'),
-        { type: 'separator' },
-        toggle('Tippt mit, wenn ich tippe', 'tastatur'),
-        toggle(settings.energiesparen === 3 ? 'Mund bewegt sich mit Mikrofon (im Modus Hart aus)' : 'Mund bewegt sich mit Mikrofon', 'mikrofon'),
-        { type: 'separator' },
-        toggle('Pausen-Erinnerung (nach 60 Min. Tippen)', 'pausen'),
-        toggle('Laune (Füttern, Streicheln, Spielen)', 'launeAn'),
-      ],
-    },
-    {
-      label: 'Rauchen',
-      submenu: [
-        smokeToggle('Raucht von selbst (sonst nur per Klick)', 'selbst'),
-        {
-          label: `Wie oft: ${{ selten: 'Selten', normal: 'Normal', oft: 'Oft' }[settings.rauchen.oft] || 'Normal'}`,
-          submenu: [['selten', 'Selten'], ['normal', 'Normal'], ['oft', 'Oft']].map(([k, label]) => ({
-            label, type: 'radio', checked: settings.rauchen.oft === k, click: () => setSmoke('oft', k),
-          })),
-        },
-        { type: 'separator' },
-        smokeToggle('Zigarette brennt ab und wird neu angezündet', 'abbrennen'),
-        smokeToggle('Joint & Bong: rote Augen und Heißhunger', 'effekt'),
-      ],
-    },
-    {
-      label: 'System',
-      submenu: [
-        {
-          label: `Energiesparmodus: ${energy().name}`,
-          submenu: ENERGY.map((level, i) => ({
-            label: `${level.name} – ${level.info}`, type: 'radio', checked: settings.energiesparen === i,
-            click: () => { settings.energiesparen = i; saveSettings(); sendSettings(); applyEnergyMode(); buildMenu(); },
-          })),
-        },
-        toggle('Im Vollbild anzeigen (Spiele, Videos)', 'imVollbild'), // greift bei der nächsten Abfrage
-        {
-          label: 'Mit Windows starten', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin,
-          click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
-        },
-        { type: 'separator' },
-        { label: 'Figur zurückholen (Doppelklick aufs Symbol)', click: resetPet },
-        { label: 'Fehler-Log öffnen', click: () => { log('log geöffnet'); shell.openPath(logPath()); } },
-      ],
-    },
-    {
-      label: updateStatus.ready ? 'Updates – neue Version bereit' : 'Updates',
-      submenu: [
-        { label: updateStatus.text, enabled: false },
-        { label: 'Neu starten und installieren', visible: updateStatus.ready, click: () => updater.installNow() },
-        { label: 'Jetzt nach Updates suchen', click: () => updater.check() },
-        { label: getToken() ? 'Update-Schlüssel ändern …' : 'Update-Schlüssel eingeben …', click: askToken },
-      ],
-    },
-    { type: 'separator' },
-    { label: `Beenden (Version ${app.getVersion()})`, click: () => app.quit() },
+    { label: 'Beenden', click: () => app.quit() },
   ]));
+  pushSettingsState();
 }
 
 function resetPet() {
@@ -1342,6 +1248,116 @@ function buildTray() {
     resetPet();
   });
   buildMenu();
+}
+
+// ---------- Einstellungsfenster (im Windows-11-Stil, schwarz-weiß) ----------
+let settingsWin = null;
+function openSettings() {
+  if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
+  settingsWin = new BrowserWindow({
+    width: 900, height: 640, minWidth: 640, minHeight: 480,
+    title: 'Claude Buddy – Einstellungen',
+    icon: path.join(__dirname, '..', 'assets', 'icon.png'),
+    autoHideMenuBar: true, show: false,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#202020' : '#f3f3f3',
+    webPreferences: { preload: path.join(__dirname, 'preload-settings.js'), spellcheck: false },
+  });
+  settingsWin.setMenu(null);
+  settingsWin.loadFile(path.join(__dirname, 'settings.html'));
+  settingsWin.once('ready-to-show', () => settingsWin.show());
+  settingsWin.on('closed', () => { settingsWin = null; });
+}
+function settingsState() {
+  const z = settings.zaehler;
+  const owned = new Set(settings.sammlung);
+  const e = settings.extras;
+  return {
+    figur: settings.figur, zweiteFigur: settings.zweiteFigur, name: settings.name, name2: settings.name2,
+    groesse: settings.groesse, farbe: settings.farbe, farbe2: settings.farbe2,
+    slots: Object.fromEntries(Object.entries(SLOTS).map(([slot, key]) => [slot, settings[key] || null])),
+    items: ITEMS.map(([key, name, slot, golden]) => ({ key, name, slot, golden: Boolean(golden), owned: owned.has(key) })),
+    figures: ORDER.map((id) => ({ id, name: CHARACTERS[id].name })),
+    colors: COLORS.map(([key, label]) => ({ key, label })),
+    toggles: Object.fromEntries(BOOL_KEYS.map((k) => [k, Boolean(settings[k])])),
+    rauchen: settings.rauchen,
+    energiesparen: settings.energiesparen, energy: ENERGY.map((l) => `${l.name} – ${l.info}`),
+    autostart: app.getLoginItemSettings().openAtLogin,
+    extras: { ...e, ort: e.ort ? e.ort.name : '' },
+    weather: weather && e.wetter && e.ort ? `${Math.round(weather.temp)} °C, ${weatherApi.describe(weather)}` : (weatherProblem || ''),
+    stats: {
+      heute: z.tag === dayKey() ? z.heute : 0, gesamt: z.gesamt, rekord: z.rekord,
+      zeit: formatDuration(settings.laufzeitMin),
+      spiel: Object.entries(PLAY_STATS).map(([k, st]) => ({ label: st.label, n: settings.spielzeit[k] || 0 })),
+    },
+    version: app.getVersion(), update: updateStatus.text, updateReady: Boolean(updateStatus.ready), hasToken: Boolean(getToken()),
+    warning: tokenWarning() || '',
+  };
+}
+function pushSettingsState() {
+  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('cfg:state', settingsState());
+}
+const BOOL_KEYS = ['laufen', 'schwerkraft', 'aufFenstern', 'fensterSpringen', 'tastatur', 'mikrofon', 'pausen', 'launeAn', 'imVollbild'];
+const EXTRA_BOOLS = ['weihnachten', 'silvester', 'ostern', 'halloween', 'winterschnee', 'geburtstag', 'wetter', 'temperatur'];
+async function setFromSettings(key, value) {
+  if (key === 'figur') setFigur(String(value));
+  else if (key === 'zweiteFigur') setSecondPet(value || null);
+  else if (key === 'name' || key === 'name2') {
+    settings[key] = String(value || '').trim().slice(0, 24);
+    saveSettings(); sendSettings(); sendAll('command', { type: 'name' }); buildMenu();
+  } else if (key === 'groesse') setSize(Number(value) || 1);
+  else if (key === 'farbe' || key === 'farbe2') { if (COLORS.some(([k]) => k === value)) setColor(value, key === 'farbe2'); }
+  else if (key.startsWith('slot:')) {
+    const slot = key.slice(5);
+    if (!SLOTS[slot]) return;
+    if (value && (!itemOf(value) || itemOf(value)[2] !== slot || !settings.sammlung.includes(value))) return;
+    setAccessory(SLOTS[slot], value || null);
+  } else if (BOOL_KEYS.includes(key)) { settings[key] = Boolean(value); saveSettings(); sendSettings(); buildMenu(); }
+  else if (key.startsWith('rauchen:')) {
+    const k = key.slice(8);
+    if (!['selbst', 'oft', 'abbrennen', 'effekt'].includes(k)) return;
+    settings.rauchen = { ...settings.rauchen, [k]: value }; saveSettings(); sendSettings(); buildMenu();
+  } else if (key === 'energiesparen') {
+    const i = Number(value);
+    if (!ENERGY[i]) return;
+    settings.energiesparen = i; saveSettings(); sendSettings(); applyEnergyMode(); buildMenu();
+  } else if (key === 'autostart') { app.setLoginItemSettings({ openAtLogin: Boolean(value) }); buildMenu(); }
+  else if (key.startsWith('extra:')) { const k = key.slice(6); if (EXTRA_BOOLS.includes(k)) setExtra(k, Boolean(value)); }
+  else if (key === 'geburtstagDatum') {
+    const m = String(value || '').trim().match(/^(\d{1,2})\.(\d{1,2})\.?$/);
+    if (!m || +m[1] < 1 || +m[1] > 31 || +m[2] < 1 || +m[2] > 12) return 'Bitte als Tag.Monat eingeben, z. B. 17.03.';
+    settings.extras.geburtstag = true;
+    setExtra('geburtstagDatum', `${m[1].padStart(2, '0')}.${m[2].padStart(2, '0')}.`);
+  } else if (key === 'ort') {
+    const q = String(value || '').trim();
+    if (!q) return 'Bitte einen Ort eingeben.';
+    try {
+      const place = await weatherApi.findPlace(q);
+      if (!place) return `„${q}“ nicht gefunden.`;
+      settings.extras.ort = place; settings.extras.wetter = true; weatherProblem = '';
+      saveSettings(); sendSettings(); refreshWeather(); buildMenu();
+    } catch (err) { log('wetter', err.message); return 'Wetter gerade nicht erreichbar.'; }
+  }
+  return null;
+}
+function settingsAction(name) {
+  if (name === 'update-check') updater.check();
+  if (name === 'update-install') updater.installNow();
+  if (name === 'token') askToken();
+  if (name === 'reset') resetPet();
+  if (name === 'log') { log('log geöffnet'); shell.openPath(logPath()); }
+  if (name === 'preview-extras') sendAll('command', 'preview-extras');
+  if (name === 'weather') refreshWeather();
+  if (name === 'recap') showRecap();
+}
+function setupSettingsIpc() {
+  const fromSettings = (e) => settingsWin && !settingsWin.isDestroyed() && e.sender === settingsWin.webContents;
+  ipcMain.handle('cfg:get', (e) => (fromSettings(e) ? settingsState() : null));
+  ipcMain.handle('cfg:set', async (e, key, value) => {
+    if (!fromSettings(e) || typeof key !== 'string') return { error: null, state: null };
+    const error = await setFromSettings(key, value);
+    return { error, state: settingsState() };
+  });
+  ipcMain.on('cfg:action', (e, name) => { if (fromSettings(e)) settingsAction(String(name)); });
 }
 
 // ---------- Start ----------
@@ -1389,12 +1405,23 @@ if (!app.requestSingleInstanceLock()) {
         }
         const mb = app.getAppMetrics().reduce((sum, m) => sum + m.memory.workingSetSize, 0) / 1024;
         log('selbsttest', JSON.stringify(win.getBounds()), `speicher ${mb.toFixed(0)} MB`, `prozesse ${app.getAppMetrics().length}`);
+        if (process.env.DUCK_SELFTEST_SETTINGS) {
+          // zusätzlich: jede Seite des Einstellungsfensters als Bild
+          openSettings();
+          await new Promise((r) => setTimeout(r, 1500));
+          for (const name of ['figur', 'aussehen', 'verhalten', 'rauchen', 'extras', 'statistik', 'system']) {
+            await settingsWin.webContents.executeJavaScript(`document.querySelector('[data-page=${name}]').click()`);
+            await new Promise((r) => setTimeout(r, 300));
+            fs.writeFileSync(path.join(process.env.DUCK_SELFTEST_SETTINGS, `${name}.png`), (await settingsWin.webContents.capturePage()).toPNG());
+          }
+        }
         app.quit();
       }, 3000);
     }
   });
 
   ipcMain.handle('get-settings', () => petSettings());
+  setupSettingsIpc();
   ipcMain.on('get-area', (e) => { e.returnValue = workArea(); });
   ipcMain.on('get-config', (e) => {
     const second = isSecond(e.sender);
