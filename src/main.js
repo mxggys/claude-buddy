@@ -1237,18 +1237,9 @@ function buildTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.png')).resize({ width: 16, height: 16 });
   tray = new Tray(icon);
   tray.setToolTip('Claude Buddy');
-  // Linksklick: Menü (kurz warten, ob es ein Doppelklick wird). Doppelklick: Figur zurückholen.
-  let clickTimer = null;
-  // Linksklick: Einstellungsfenster (Start-Seite). Rechtsklick: kleines Menü.
-  tray.on('click', () => {
-    clearTimeout(clickTimer);
-    clickTimer = setTimeout(() => openSettings('start'), 250);
-  });
-  tray.on('right-click', () => { clearTimeout(clickTimer); openMenu(); });
-  tray.on('double-click', () => {
-    clearTimeout(clickTimer);
-    resetPet();
-  });
+  // Linksklick: sofort das Einstellungsfenster (Start-Seite). Rechtsklick: kleines Menü.
+  tray.on('click', () => openSettings('start'));
+  tray.on('right-click', openMenu);
   buildMenu();
 }
 
@@ -1567,7 +1558,7 @@ if (!app.requestSingleInstanceLock()) {
     clearTimeout(sizeTimer);
     sizeTimer = setTimeout(() => { saveSettings(); buildMenu(); }, 400);
   });
-  ipcMain.on('open-menu', openMenu);
+  ipcMain.on('open-menu', () => openSettings('start')); // Rechtsklick auf die Figur
   ipcMain.on('move-window', (e, x, y) => {
     const w = BrowserWindow.fromWebContents(e.sender);
     if (!w) return;
