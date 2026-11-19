@@ -688,7 +688,7 @@ function updateParticles(dt) {
     if (p.type === 'dust') { p.vy *= 0.9; p.vx *= 0.94; }
     if (p.type === 'food') updateFood(p, dt);
     if (p.type === 'crumb') { p.vy += 380 * dt; p.vx *= 0.97; }
-    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4, smoke: 0.5, wisp: 0.7, fizz: 2.4, bubble: 2.2, gold: 0.6, glint: 1.8, diamond: 1.1, crystal: 0.5, bokeh: 0.35, ring: 0.55, cloud: 0.4 }[p.type] || 2.2);
+    p.life -= dt * ({ heart: 0.8, dust: 1.6, star: 0.9, bang: 1.1, confetti: 0.35, note: 0.7, rain: 0.3, snow: 0.2, bat: 0.33, steam: 0.7, crumb: 1.4, rainbow: 1.1, flame: 1.6, spark: 4, peel: 0.2, smoke: 0.5, wisp: 0.7, fizz: 2.4, bubble: 2.2, gold: 0.6, glint: 1.8, diamond: 1.1, crystal: 0.5, bokeh: 0.35, ring: 0.55, cloud: 0.4 }[p.type] || 2.2);
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
@@ -818,9 +818,19 @@ function drawParticles() {
       ctx.fillRect(Math.round(p.x + Math.sin(p.life * 9) * 2), Math.round(p.y), s, s);
     } else if (p.type === 'food') {
       // dreht sich im Flug ein wenig (abwechselnd gespiegelt) und wirft einen kleinen Glanz
+      // doppelt so groß, mit hellem Schein dahinter, damit man es gut sieht
       const rows = CHAR.props[p.food];
+      const fp = px * 2;
+      const w = rows[0].length * fp, h = rows.length * fp;
+      const g = ctx.createRadialGradient(p.x, p.y - h / 2, 0, p.x, p.y - h / 2, Math.max(w, h));
+      g.addColorStop(0, 'rgba(255, 250, 220, 0.45)');
+      g.addColorStop(1, 'rgba(255, 250, 220, 0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(p.x - w, p.y - h * 1.5, w * 2, h * 2);
       const flipRows = Math.floor(p.spin) % 2 ? rows.map((r) => [...r].reverse().join('')) : rows;
-      drawSmall(flipRows, p.x - (rows[0].length * px) / 2, p.y - rows.length * px, px);
+      drawSmall(flipRows, p.x - w / 2, p.y - h, fp);
+    } else if (p.type === 'peel') {
+      drawSmall(CHAR.props.PEEL, p.x, p.y, px * 2);
     } else if (p.type === 'crumb') {
       ctx.fillStyle = p.color;
       ctx.globalAlpha = Math.max(0, p.life);
@@ -2691,8 +2701,23 @@ function ring() {
 // Der Snack ploppt mit Funkeln über ihr auf und segelt im Bogen herunter. Sie schaut hoch, macht den Mund auf
 // und schnappt ihn mit einem kleinen Hüpfer. Dann drei Bissen (der Snack wird kleiner, Krümel fliegen),
 // zum Schluss zufrieden mit Herzen.
-const FAVORITE_FOOD = { frosti: 'FISH', hopsi: 'CARROT', pando: 'BAMBOO' };
-const FOOD_COLOR = { APPLE: '#e2463d', COOKIE: '#c9954f', FISH: '#9fd0ff', CARROT: '#f08a24', BAMBOO: '#7bbf4a' };
+// Lieblingsessen je Figur (kommt öfter und freut sie besonders)
+const FAVORITE_FOOD = { claude: 'PIZZA', boo: 'DONUT', frosti: 'FISH', axo: 'MELON', hopsi: 'CARROT', pando: 'BAMBOO', kuschel: 'PANCAKES', mokka: 'CROISSANT', monsti: 'POPCORN' };
+const FOODS = ['DOENER', 'PIZZA', 'BURGER', 'FRIES', 'TACO', 'PRETZEL', 'PASTA', 'DONUT', 'ICECREAM', 'CROISSANT', 'PANCAKES', 'CHOCOLATE', 'MUFFIN', 'MELON', 'BANANA', 'POPCORN', 'APPLE', 'COOKIE'];
+const FOOD_COLOR = {
+  APPLE: '#e2463d', COOKIE: '#c9954f', FISH: '#9fd0ff', CARROT: '#f08a24', BAMBOO: '#7bbf4a',
+  DOENER: '#c9954f', PIZZA: '#f2cf63', BURGER: '#b8913f', FRIES: '#f2cf63', TACO: '#efd27c', PRETZEL: '#8a5a30',
+  PASTA: '#e2463d', DONUT: '#f6a3bd', ICECREAM: '#f6a3bd', CROISSANT: '#d9a35a', PANCAKES: '#efd27c',
+  CHOCOLATE: '#5a3418', MUFFIN: '#5a3418', MELON: '#e2463d', BANANA: '#f2cf63', POPCORN: '#ffffff',
+};
+let lastFood = null;
+function pickFood() {
+  const fav = FAVORITE_FOOD[CHAR.id];
+  if (fav && Math.random() < 0.35) return fav;
+  let f;
+  do { f = FOODS[Math.floor(Math.random() * FOODS.length)]; } while (f === lastFood);
+  return f;
+}
 let meal = null; // { food, bites, nextBite } während sie isst
 function mouthPoint() {
   if (CHAR.front) return { x: duck.x + DW / 2, y: duck.y + DH * 0.55 };
@@ -2705,7 +2730,8 @@ function feed() {
   wake();
   if (duck.state === 'sleep') { duck.state = 'idle'; duck.until = t + 6000; }
   stopWalk();
-  const food = FAVORITE_FOOD[CHAR.id] || (Math.random() < 0.5 ? 'APPLE' : 'COOKIE');
+  const food = pickFood();
+  lastFood = food;
   const m = mouthPoint();
   const side = Math.random() < 0.5 ? -1 : 1;
   const k = Math.max(0.6, SIZE);
@@ -2723,7 +2749,7 @@ function feed() {
 function updateFood(p, dt) {
   p.vy += p.g * dt;
   p.life = 1;
-  p.spin += dt * 9;
+  p.spin += dt * 5; // dreht sich langsamer, man erkennt das Essen besser
   const m = mouthPoint();
   const t = now();
   // schaut dem Snack nach, Mund geht auf, kurz vorher ein kleiner Schnapp-Hüpfer
@@ -2758,16 +2784,27 @@ function updateMeal(t) {
   const color = FOOD_COLOR[meal.food] || '#e9dcc6';
   // Bissen: Backen blähen sich, Krümel fliegen in der Farbe des Snacks
   squash(1.08, 0.94, 130);
-  for (let i = 0; i < 5; i++) particles.push({ type: 'crumb', x: m.x + rand(-4, 4), y: m.y, vx: rand(-70, 70), vy: rand(-110, -40), life: 1, color });
+  const n = meal.food === 'POPCORN' ? 10 : 5;
+  for (let i = 0; i < n; i++) particles.push({ type: 'crumb', x: m.x + rand(-4, 4), y: m.y, vx: rand(-70, 70), vy: rand(-110, -40), life: 1, color: meal.food === 'POPCORN' && i % 3 === 0 ? '#f2cf63' : color });
   if (meal.bites <= 0) {
+    const food = meal.food;
+    const favorite = FAVORITE_FOOD[CHAR.id] === food;
     meal = null;
     duck.action = null;
-    duck.happyUntil = t + 1800;
-    // zufrieden: Herzen nacheinander, kleines Funkeln
-    [0, 220, 440].forEach((ms) => setTimeout(() => spawn('heart', duck.x + DW * rand(0.25, 0.75), duck.y + DH * 0.1), ms));
-    sparkle(3);
+    duck.happyUntil = t + 2600;
+    // richtig zufrieden: viele Herzen, Funkeln, ein kleiner Freudentanz (beim Lieblingsessen auch Konfetti)
+    [0, 180, 360, 540, 720].forEach((ms) => setTimeout(() => spawn('heart', duck.x + DW * rand(0.15, 0.85), duck.y + DH * 0.1), ms));
+    sparkle(favorite ? 8 : 5);
+    if (favorite) for (let i = 0; i < 16; i++) spawn('confetti', duck.x + DW * rand(0, 1), duck.y - rand(0, 30));
+    setTimeout(() => { if (duck.onGround && !duck.dragging && !acting(now())) startAction(CHAR.front ? 'dance' : 'bounce', now()); }, 500);
+    // Extras: Kerne spucken, Bananenschale bleibt kurz liegen
+    if (food === 'MELON') {
+      const dir = isFlipped() ? -1 : 1;
+      [300, 500, 700].forEach((ms) => setTimeout(() => { const mm = mouthPoint(); particles.push({ type: 'crumb', x: mm.x, y: mm.y, vx: dir * rand(80, 130), vy: rand(-140, -90), life: 1.6, color: '#1c1416' }); }, ms));
+    }
+    if (food === 'BANANA') particles.push({ type: 'peel', x: duck.x + DW * (isFlipped() ? -0.25 : 1.05), y: groundY() + DH - 3 * fxPx() * 2, vx: 0, vy: 0, life: 1 });
     lastAttention = t;
-    moodPing('feed', 12);
+    moodPing('feed', favorite ? 20 : 15);
     stat('gefuettert');
   }
   kick();

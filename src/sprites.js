@@ -1038,6 +1038,25 @@
   // Kaffeebecher: cremefarben, dunkler Kaffee, Henkel rechts
   const MUG = small(['=%%%%=..', '======##', '=====#.#', '=====#.#', '=====###', '.####...']);
 
+  // Essen zum Füttern (Version 1.35)
+  const DOENER = small(['..UUUUUU..', '.UuuuuuuU.', 'UV[d[V[dVU', 'Ua(a(a(a(U', 'U[([([([(U', '.UUUUUUUU.']);
+  const PIZZA = small(['uuuuuuuuu', 'UiiiiiiiU', '.iidiidi.', '.iiiiiii.', '..idiii..', '..iiii...', '...ii....', '...i.....']);
+  const BURGER = small(['..uuuuu..', '.uUuUuUu.', 'uuuuuuuuu', 'VVVVVVVVV', 'iiiiiiiii', ')))))))))', 'uuuuuuuuu', '.uuuuuuu.']);
+  const FRIES = small(['.i.i.i.', 'iiiIiii', 'iiIiiIi', 'ddddddd', 'ddaddad', '.ddddd.', '.ddddd.']);
+  const TACO = small(['..VdViVd..', '.U((V((iU.', 'UuU(((U(uU', 'UuuuuuuuuU', '.UUUUUUUU.']);
+  const PRETZEL = small(['.uuuu.uuuu.', 'uUaUuuUaUUu', 'uU..uUu..Uu', 'uU.uU.Uu.Uu', '.uuU...Uuu.', '..uU...Uu..', '.uu.....uu.']);
+  const PASTA = small(['..dIdIdd..', '.IdiIdIdI.', 'iIiIidIiIi', 'jaaaaaaaaj', '.jjjjjjjj.']);
+  const DONUT = small(['..ggggg..', '.gbgigdg.', 'ggg...ggg', 'gig...gbg', 'uuggdgguu', '.uuuuuuu.']);
+  const ICECREAM = small(['..ggg..', '.gggga.', '.aaaaa.', 'aaaaaaa', 'uUuUuUu', '.UuUuU.', '..uUu..', '...u...']);
+  const CROISSANT = small(['...uUUUUu...', '.uUuUuUuUUu.', 'UuU.uUuU.uUU', 'Uu........uU', 'u..........u']);
+  const PANCAKES = small(['...ii....', '.UUUUUUU.', 'U((((U(UU', 'uUUUUUUUu', 'uuu(uuuuu', 'UUUUUUUUU', 'jaaaaaaaj']);
+  const CHOCOLATE = small([')()()()', '(((((((', ')()()()', 'ddddddd', 'daaaaad', 'ddddddd']);
+  const MUFFIN = small(['..))))..', '.)K)))K)', ')))K))))', 'pgpgpgpg', '.pgpgpg.', '.pgpgpg.']);
+  const MELON = small(['dddddddddd', 'ddKddKdddd', '.dddKddKd.', '..aaaaaa..', '...VVVV...']);
+  const BANANA = small(['u.........', 'ii........', '.ii.....iu', '..iiiiiii.', '...IiiiI..']);
+  const POPCORN = small(['.aanaan.', 'anaanaan', 'adadadad', 'adadadad', '.adadad.', '.adadad.']);
+  const PEEL = small(['i...i', '.iii.', 'uiiiu']);
+
   const IDEA = small(['.iii.', 'iIiii', 'iiiii', '.iii.', '.jjj.', '..j..']);
   const LENS = small(['.jjjj.', 'jJJJJj', 'jJJJJj', 'jJJJJj', '.jjjj.', '....jj', '.....j']);
 
@@ -1060,7 +1079,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER,
         CIGARILLO, ROLLIE, SLIM, FRUITVAPE, GRILLZ, SHISHA, BONG, ENERGYCAN, SNUSCAN, SNUSCAN_OPEN, CIGPACK, CIGPACK_OPEN, ZIPPO, ZIPPO_OPEN, JOINTCROWN, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },

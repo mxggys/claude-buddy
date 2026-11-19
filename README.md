@@ -9,6 +9,12 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
+## Version 1.35
+- Füttern: 16 neue Essen (Döner, Pizza, Burger, Pommes, Taco, Brezel, Nudeln, Donut, Eis, Croissant, Pfannkuchen,
+  Schokolade, Muffin, Wassermelone, Banane, Popcorn), doppelt so groß mit hellem Schein. Danach Freudentanz, viele
+  Herzen und Funkeln. Jede Figur hat ein Lieblingsessen (kommt öfter, mit Konfetti). Melone: spuckt Kerne,
+  Banane: Schale bleibt kurz liegen, Popcorn: fliegt beim Essen herum.
+
 ## Version 1.34
 - Neues Einstellungsfenster im Windows-11-Stil (schwarz-weiß, folgt hell/dunkel): Figur, Zubehör mit Vorschau,
   Verhalten, Rauchen, Feiertage & Wetter, Statistik, System & Updates. Das Tray-Menü ist jetzt klein:
