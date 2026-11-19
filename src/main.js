@@ -1239,10 +1239,12 @@ function buildTray() {
   tray.setToolTip('Claude Buddy');
   // Linksklick: Menü (kurz warten, ob es ein Doppelklick wird). Doppelklick: Figur zurückholen.
   let clickTimer = null;
+  // Linksklick: Einstellungsfenster (Start-Seite). Rechtsklick: kleines Menü.
   tray.on('click', () => {
     clearTimeout(clickTimer);
-    clickTimer = setTimeout(openMenu, 250);
+    clickTimer = setTimeout(() => openSettings('start'), 250);
   });
+  tray.on('right-click', () => { clearTimeout(clickTimer); openMenu(); });
   tray.on('double-click', () => {
     clearTimeout(clickTimer);
     resetPet();
@@ -1252,8 +1254,13 @@ function buildTray() {
 
 // ---------- Einstellungsfenster (im Windows-11-Stil, schwarz-weiß) ----------
 let settingsWin = null;
-function openSettings() {
-  if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
+function openSettings(page) {
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    if (settingsWin.isMinimized()) settingsWin.restore();
+    settingsWin.show(); settingsWin.focus();
+    if (typeof page === 'string') settingsWin.webContents.send('cfg:goto', page);
+    return;
+  }
   settingsWin = new BrowserWindow({
     width: 900, height: 640, minWidth: 640, minHeight: 480,
     title: 'Claude Buddy – Einstellungen',
@@ -1264,7 +1271,10 @@ function openSettings() {
   });
   settingsWin.setMenu(null);
   settingsWin.loadFile(path.join(__dirname, 'settings.html'));
-  settingsWin.once('ready-to-show', () => settingsWin.show());
+  settingsWin.once('ready-to-show', () => {
+    if (typeof page === 'string') settingsWin.webContents.send('cfg:goto', page);
+    settingsWin.show();
+  });
   settingsWin.on('closed', () => { settingsWin = null; });
 }
 function settingsState() {
@@ -1291,6 +1301,10 @@ function settingsState() {
     },
     version: app.getVersion(), update: updateStatus.text, updateReady: Boolean(updateStatus.ready), hasToken: Boolean(getToken()),
     warning: tokenWarning() || '',
+    mood: settings.launeAn ? `${moodWord(settings.laune)} (${Math.round(settings.laune)} %)` : '',
+    ballOn,
+    dndUntil: settings.nichtStoerenBis > Date.now() ? clock(settings.nichtStoerenBis) : '',
+    timers: timers.map((tm) => ({ id: tm.id, at: clock(tm.at), label: tm.label.replace(' sind um', '') })),
   };
 }
 function pushSettingsState() {
@@ -1327,7 +1341,19 @@ async function setFromSettings(key, value) {
     if (!m || +m[1] < 1 || +m[1] > 31 || +m[2] < 1 || +m[2] > 12) return 'Bitte als Tag.Monat eingeben, z. B. 17.03.';
     settings.extras.geburtstag = true;
     setExtra('geburtstagDatum', `${m[1].padStart(2, '0')}.${m[2].padStart(2, '0')}.`);
-  } else if (key === 'ort') {
+  } else if (key === 'timer') {
+    const m = parseFloat(String(value || '').replace(',', '.'));
+    if (!Number.isFinite(m) || m <= 0 || m > 24 * 60) return 'Bitte Minuten zwischen 1 und 1440 eingeben.';
+    addTimer(Date.now() + m * 60000, `${minutesText(Math.round(m * 10) / 10)} sind um`);
+  } else if (key === 'alarm') {
+    const match = String(value || '').trim().match(/^(\d{1,2})(?:[:.](\d{2}))?$/);
+    if (!match || Number(match[1]) > 23 || Number(match[2] || 0) > 59) return 'Bitte eine Uhrzeit wie 7:30 eingeben.';
+    const at = new Date();
+    at.setHours(Number(match[1]), Number(match[2] || 0), 0, 0);
+    if (at <= new Date()) at.setDate(at.getDate() + 1);
+    addTimer(at.getTime(), `Wecker: ${clock(at.getTime())}`);
+  } else if (key === 'timerCancel') cancelTimer(Number(value));
+  else if (key === 'ort') {
     const q = String(value || '').trim();
     if (!q) return 'Bitte einen Ort eingeben.';
     try {
@@ -1340,6 +1366,11 @@ async function setFromSettings(key, value) {
   return null;
 }
 function settingsAction(name) {
+  if (name === 'feed') sendAll('command', { type: 'feed' });
+  if (name === 'ball' && win) win.webContents.send('command', { type: 'ball' });
+  if (name === 'dnd') setDnd(settings.nichtStoerenBis > Date.now() ? 0 : 60);
+  if (name === 'ring' && win) win.webContents.send('command', { type: 'alarm' });
+  if (name === 'quit') app.quit();
   if (name === 'update-check') updater.check();
   if (name === 'update-install') updater.installNow();
   if (name === 'token') askToken();
@@ -1409,7 +1440,7 @@ if (!app.requestSingleInstanceLock()) {
           // zusätzlich: jede Seite des Einstellungsfensters als Bild
           openSettings();
           await new Promise((r) => setTimeout(r, 1500));
-          for (const name of ['figur', 'aussehen', 'verhalten', 'rauchen', 'extras', 'statistik', 'system']) {
+          for (const name of ['start', 'figur', 'aussehen', 'verhalten', 'rauchen', 'extras', 'statistik', 'system']) {
             await settingsWin.webContents.executeJavaScript(`document.querySelector('[data-page=${name}]').click()`);
             await new Promise((r) => setTimeout(r, 300));
             fs.writeFileSync(path.join(process.env.DUCK_SELFTEST_SETTINGS, `${name}.png`), (await settingsWin.webContents.capturePage()).toPNG());

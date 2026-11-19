@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('buddySettings', {
   set: (key, value) => ipcRenderer.invoke('cfg:set', key, value),
   action: (name) => ipcRenderer.send('cfg:action', name),
   onState: (cb) => ipcRenderer.on('cfg:state', (_e, state) => cb(state)),
+  onGoto: (cb) => ipcRenderer.on('cfg:goto', (_e, page) => cb(page)),
 });

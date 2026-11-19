@@ -2,8 +2,8 @@
 const api = window.buddySettings;
 const S = window.DuckSprites;
 let state = null;
-let page = 'figur';
-try { page = localStorage.getItem('buddy-settings-page') || 'figur'; } catch (e) { /* egal */ }
+let page = 'start';
+try { page = localStorage.getItem('buddy-settings-page') || 'start'; } catch (e) { /* egal */ }
 
 const SLOT_NAMES = { kopf: 'Kopf', mund: 'Mund', begleiter: 'Begleiter', effekt: 'Effekt' };
 const SLOT_HINT = {
@@ -107,7 +107,46 @@ function drawItem(canvas, key, slot) {
 }
 
 // ---------- Seiten ----------
+const ICON = {
+  feed: '<path d="M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 0-3 3-3 6s1 3 3 3v9"/>',
+  ball: '<circle cx="12" cy="12" r="8"/><path d="M4.5 9.5c5 1 10 1 15 0M4.5 14.5c5-1 10-1 15 0"/>',
+  dnd: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+};
+const icon = (name) => { const sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); sv.setAttribute('viewBox', '0 0 24 24'); sv.setAttribute('fill', 'none'); sv.setAttribute('stroke', 'currentColor'); sv.setAttribute('stroke-width', '1.6'); sv.setAttribute('aria-hidden', 'true'); sv.innerHTML = ICON[name]; return sv; };
+const quick = (name, title, sub, onclick, on) => el('button', { type: 'button', class: on ? 'qbtn on' : 'qbtn', onclick, 'aria-pressed': on === undefined ? null : String(Boolean(on)) }, icon(name), el('div', {}, el('b', {}, title), sub ? el('small', {}, sub) : null));
+function actionInput(placeholder, label, key, btn) {
+  const input = el('input', { type: 'text', placeholder, 'aria-label': label });
+  const err = el('div', { class: 'err', 'aria-live': 'polite' });
+  const go = async () => { err.textContent = ''; const e = await set(key, input.value); if (e) err.textContent = e; else input.value = ''; };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  return el('div', {}, el('div', { class: 'row' }, input, el('button', { type: 'button', class: 'btn', onclick: go }, btn)), err);
+}
+
 const PAGES = {
+  start() {
+    const fig = state.figures.find((f) => f.id === state.figur);
+    const prev = el('canvas', { role: 'img', 'aria-label': 'Deine Figur' });
+    drawFigure(prev, state.figur, state.slots, 4);
+    const timers = state.timers.map((tm) => card(tm.label, `klingelt um ${tm.at}`, el('button', { type: 'button', class: 'btn', onclick: () => set('timerCancel', tm.id) }, 'Abbrechen')));
+    return [
+      el('h1', {}, 'Start'),
+      el('div', { class: 'card hero' }, prev, el('div', {}, el('b', {}, state.name || (fig ? fig.name.replace(/ \(.*\)$/, '') : 'Claude Buddy')), el('span', { class: 'muted' }, state.mood ? `Laune: ${state.mood}` : 'Laune ist aus'))),
+      el('h2', {}, 'Schnell'),
+      el('div', { class: 'quick' },
+        quick('feed', 'Füttern', 'Ein Snack, je Figur ihr Lieblingsessen.', () => api.action('feed')),
+        quick('ball', state.ballOn ? 'Ball wegräumen' : 'Ball zum Spielen', state.ballOn ? 'Der Ball liegt gerade draußen.' : 'Kicken, werfen, jonglieren.', () => api.action('ball'), state.ballOn),
+        quick('dnd', state.dndUntil ? 'Nicht stören aufheben' : 'Nicht stören', state.dndUntil ? `Ruhig bis ${state.dndUntil}.` : 'Eine Stunde Ruhe.', () => api.action('dnd'), Boolean(state.dndUntil))),
+      el('h2', {}, 'Erinnerung und Wecker'),
+      el('div', { class: 'group' },
+        el('div', { class: 'card col' }, txt('Erinnern in', 'Die Figur klingelt, wenn die Zeit um ist.'),
+          el('div', { class: 'chips' }, ...[5, 10, 15, 30, 60].map((m) => el('button', { type: 'button', class: 'btn', onclick: () => set('timer', m) }, `${m} Min.`))),
+          actionInput('Eigene Minuten, z. B. 25', 'Eigene Minuten', 'timer', 'Starten')),
+        el('div', { class: 'card col' }, txt('Wecker', 'Uhrzeit, zum Beispiel 7:30. Klingelt beim nächsten Mal.'), actionInput('7:30', 'Weckzeit', 'alarm', 'Stellen')),
+        ...timers,
+        card('Klingeln kurz zeigen', null, el('button', { type: 'button', class: 'btn', onclick: () => api.action('ring') }, 'Zeigen'))),
+    ];
+  },
   figur() {
     const figs = el('div', { class: 'tiles' });
     for (const f of state.figures) {
@@ -268,4 +307,6 @@ api.onState((s) => {
   if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text') return;
   render();
 });
-api.get().then((s) => { state = s; render(); });
+api.onGoto((p) => { if (PAGES[p]) { page = p; document.getElementById('main').scrollTop = 0; render(); } });
+document.querySelector('[data-quit]').addEventListener('click', () => api.action('quit'));
+api.get().then((s) => { state = s; if (!PAGES[page]) page = 'start'; render(); });

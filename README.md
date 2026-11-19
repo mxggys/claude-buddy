@@ -13,6 +13,8 @@ Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schn
 - Neues Einstellungsfenster im Windows-11-Stil (schwarz-weiß, folgt hell/dunkel): Figur, Zubehör mit Vorschau,
   Verhalten, Rauchen, Feiertage & Wetter, Statistik, System & Updates. Das Tray-Menü ist jetzt klein:
   Füttern, Ball, Erinnerung, Nicht stören, Einstellungen, Beenden.
+- Linksklick aufs Symbol öffnet das Fenster auf der Start-Seite (Füttern, Ball, Nicht stören, Erinnerung und
+  Wecker, Beenden). Rechtsklick zeigt weiter das kleine Menü.
 - Zubehör aufgeräumt. Neu am Kopf: Clean Cappy, Clean Beanie, Bandana, Kippa, Ski-Brille, Beanie mit Goldkette ✦,
   schlichte Goldkrone ✦, goldener Heiligenschein ✦.
 - Neue Begleiter: Bubble-Tea, Mini-Bett, Mini-Teddy, Hantel, Stuhl, Sitzsack, Kamin, Mini-Kühlschrank, Hängematte,
