@@ -1,4 +1,4 @@
-# Claude Buddy
+# Claude Desktop Buddy
 
 Kleiner Pixel-Begleiter für Windows 11, der unten an der Taskleiste sitzt.
 
@@ -8,6 +8,9 @@ Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda),
 Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
+
+## Version 1.37
+- Neuer Name: Claude Desktop Buddy. Einstellungen, Sammlung und Autostart bleiben erhalten.
 
 ## Version 1.36
 - Neue Mund-Teile: Sherlock-Pfeife, XXL-Vape (doppelte Wolke), Nasenspray (an die Nase, große Augen, Schütteln,

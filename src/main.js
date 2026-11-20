@@ -26,16 +26,20 @@ app.commandLine.appendSwitch('enable-features', 'NetworkServiceInProcess2');
 
 // Früher hieß die App „Desktop Ente“. Deren Datenordner weiter nutzen, damit Einstellungen,
 // Tippzähler und Update-Schlüssel (der Schlüssel dazu liegt in „Local State“) erhalten bleiben.
-const OLD_DATA = path.join(app.getPath('appData'), 'Desktop Ente');
-if (fs.existsSync(OLD_DATA)) app.setPath('userData', OLD_DATA);
+// Danach hieß sie „Claude Buddy“, jetzt „Claude Desktop Buddy“: den ältesten vorhandenen Ordner weiter nutzen.
+const OLD_DATA = ['Desktop Ente', 'Claude Buddy'].map((n) => path.join(app.getPath('appData'), n)).find((d) => fs.existsSync(d));
+if (OLD_DATA) app.setPath('userData', OLD_DATA);
 
 // Autostart-Eintrag der alten „Desktop Ente.exe“ auf die neue Datei umstellen
 function moveOldAutostart() {
   if (process.platform !== 'win32' || !app.isPackaged) return;
-  const old = { name: 'electron.app.Desktop Ente', path: path.join(path.dirname(process.execPath), 'Desktop Ente.exe') };
-  if (!app.getLoginItemSettings(old).openAtLogin) return;
-  app.setLoginItemSettings({ ...old, openAtLogin: false });
-  app.setLoginItemSettings({ openAtLogin: true });
+  // „Desktop Ente.exe“ und „Claude Buddy.exe“ (alte Namen) auf die neue Datei umstellen
+  for (const oldName of ['Desktop Ente', 'Claude Buddy']) {
+    const old = { name: `electron.app.${oldName}`, path: path.join(path.dirname(process.execPath), `${oldName}.exe`) };
+    if (!app.getLoginItemSettings(old).openAtLogin) continue;
+    app.setLoginItemSettings({ ...old, openAtLogin: false });
+    app.setLoginItemSettings({ openAtLogin: true });
+  }
 }
 
 // Grundgröße des Figuren-Fensters: Figur unten mittig, darüber Platz für Effekte
@@ -65,7 +69,7 @@ const DEFAULT_SETTINGS = {
   abzeichen: {}, // erreichte Tasten-Meilensteine: { 10000: '2026-10-18' }
   spielzeit: { gefuettert: 0, gestreichelt: 0, ball: 0, abgeklatscht: 0, geworfen: 0 },
   spielAbzeichen: {}, // { 'ball:100': '2026-10-18' }
-  laufzeitMin: 0, // wie lange Claude Buddy insgesamt lief (Minuten)
+  laufzeitMin: 0, // wie lange Claude Desktop Buddy insgesamt lief (Minuten)
   laufzeitHeute: { tag: '', min: 0 },
   ersterStart: '', // Tag des ersten Starts
   tage: {}, // Tageswerte für den Wochenrückblick: { '2026-10-25': { min, gefuettert, gestreichelt, ball } }
@@ -347,7 +351,7 @@ function updateFullscreen(fullscreen) {
 // Mini-Claude merkt, wenn ein Claude-Fenster vorne ist (Desktop-App oder claude.ai im Browser)
 let claudeActive = false;
 function updateClaude(title) {
-  const active = /\bClaude\b/.test(title || '') && !/Claude Buddy|Desktop Ente/.test(title);
+  const active = /\bClaude\b/.test(title || '') && !/Claude (Desktop )?Buddy|Desktop Ente/.test(title);
   if (active === claudeActive) return;
   claudeActive = active;
   sendAll('claude', active);
@@ -521,7 +525,7 @@ function startWatchers() {
       if (win32 && cursorMoved && settings.energiesparen < 3 && Date.now() - lastWinPoll >= 100) {
         lastWinPoll = Date.now();
         const fg = win32.foreground();
-        if (fg && !/Claude Buddy/.test(fg.title) && !IGNORED_WINDOW_CLASSES.has(fg.cls) && !fg.maximized) {
+        if (fg && !/Claude (Desktop )?Buddy/.test(fg.title) && !IGNORED_WINDOW_CLASSES.has(fg.cls) && !fg.maximized) {
           const key = `${fg.hwnd}:${fg.x},${fg.y},${fg.width},${fg.height}`;
           if (lastRect && key !== lastRect && lastRect.split(':')[0] === String(fg.hwnd)) {
             const r = screen.screenToDipRect(null, { x: fg.x, y: fg.y, width: fg.width, height: fg.height });
@@ -679,7 +683,7 @@ function checkRecap() {
   showRecap();
 }
 
-// Laufzeit: jede Minute, die Claude Buddy läuft, zählt mit (auch über Updates hinweg)
+// Laufzeit: jede Minute, die Claude Desktop Buddy läuft, zählt mit (auch über Updates hinweg)
 const TIME_BADGES = [1, 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]; // Stunden
 function formatDuration(min) {
   const h = Math.floor(min / 60);
@@ -1101,7 +1105,7 @@ function fireTimer(id) {
   timers.splice(timers.indexOf(tm), 1);
   if (win) win.webContents.send('command', { type: 'alarm' });
   if (win2) win2.webContents.send('command', { type: 'alarm' });
-  if (tray && process.platform === 'win32') tray.displayBalloon({ title: 'Claude Buddy', content: tm.label, iconType: 'info' });
+  if (tray && process.platform === 'win32') tray.displayBalloon({ title: 'Claude Desktop Buddy', content: tm.label, iconType: 'info' });
   log('erinnerung', tm.label);
   buildMenu();
 }
@@ -1196,9 +1200,9 @@ function buildMenu() {
   const dnd = settings.nichtStoerenBis > Date.now();
   const warning = tokenWarning();
 
-  const figureName = CHARACTERS[settings.figur] ? CHARACTERS[settings.figur].name : 'Claude Buddy';
+  const figureName = CHARACTERS[settings.figur] ? CHARACTERS[settings.figur].name : 'Claude Desktop Buddy';
   const name = settings.name ? `${settings.name} (${figureName.replace(/ \(.*\)$/, '')})` : figureName;
-  tray.setToolTip(settings.name ? `${settings.name} · Claude Buddy` : 'Claude Buddy');
+  tray.setToolTip(settings.name ? `${settings.name} · Claude Desktop Buddy` : 'Claude Desktop Buddy');
   const until = (ms) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
   // Aufgeräumt: oben das, was man oft braucht, darunter Aussehen / Verhalten / System in Untermenüs
@@ -1239,7 +1243,7 @@ function openMenu() {
 function buildTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.png')).resize({ width: 16, height: 16 });
   tray = new Tray(icon);
-  tray.setToolTip('Claude Buddy');
+  tray.setToolTip('Claude Desktop Buddy');
   // Linksklick: sofort das Einstellungsfenster (Start-Seite). Rechtsklick: kleines Menü.
   tray.on('click', () => openSettings('start'));
   tray.on('right-click', openMenu);
@@ -1257,7 +1261,7 @@ function openSettings(page) {
   }
   settingsWin = new BrowserWindow({
     width: 900, height: 640, minWidth: 640, minHeight: 480,
-    title: 'Claude Buddy – Einstellungen',
+    title: 'Claude Desktop Buddy – Einstellungen',
     icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     autoHideMenuBar: true, show: false,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#202020' : '#f3f3f3',
@@ -1530,7 +1534,7 @@ if (!app.requestSingleInstanceLock()) {
     const win32 = loadWin32();
     if (!win32 || !settings.fensterSpringen) return null;
     const fg = win32.foreground();
-    if (!fg || fg.maximized || /Claude Buddy/.test(fg.title) || IGNORED_WINDOW_CLASSES.has(fg.cls)) return null;
+    if (!fg || fg.maximized || /Claude (Desktop )?Buddy/.test(fg.title) || IGNORED_WINDOW_CLASSES.has(fg.cls)) return null;
     const a = workArea();
     const pa = screen.dipToScreenPoint({ x: a.x, y: a.y });
     // Mitte der Oberkante muss frei sein (nicht von einem anderen Fenster verdeckt)

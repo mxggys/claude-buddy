@@ -132,7 +132,7 @@ const PAGES = {
     const timers = state.timers.map((tm) => card(tm.label, `klingelt um ${tm.at}`, el('button', { type: 'button', class: 'btn', onclick: () => set('timerCancel', tm.id) }, 'Abbrechen')));
     return [
       el('h1', {}, 'Start'),
-      el('div', { class: 'card hero' }, prev, el('div', {}, el('b', {}, state.name || (fig ? fig.name.replace(/ \(.*\)$/, '') : 'Claude Buddy')), el('span', { class: 'muted' }, state.mood ? `Laune: ${state.mood}` : 'Laune ist aus'))),
+      el('div', { class: 'card hero' }, prev, el('div', {}, el('b', {}, state.name || (fig ? fig.name.replace(/ \(.*\)$/, '') : 'Claude Desktop Buddy')), el('span', { class: 'muted' }, state.mood ? `Laune: ${state.mood}` : 'Laune ist aus'))),
       el('h2', {}, 'Schnell'),
       el('div', { class: 'quick' },
         quick('feed', 'Füttern', 'Ein Snack, je Figur ihr Lieblingsessen.', () => api.action('feed')),
@@ -264,7 +264,7 @@ const PAGES = {
       el('h1', {}, 'System & Updates'),
       ...(state.warning ? [el('div', { class: 'card warn' }, txt(state.warning), el('button', { type: 'button', class: 'btn primary', onclick: () => api.action('token') }, 'Beheben'))] : []),
       el('div', { class: 'group' },
-        card(`Claude Buddy ${state.version}`, state.update,
+        card(`Claude Desktop Buddy ${state.version}`, state.update,
           el('div', { class: 'row' },
             state.updateReady ? el('button', { type: 'button', class: 'btn primary', onclick: () => api.action('update-install') }, 'Neu starten und installieren') : null,
             el('button', { type: 'button', class: 'btn', onclick: () => api.action('update-check') }, 'Nach Updates suchen'))),
@@ -288,7 +288,7 @@ function render() {
     if (b.dataset.page === page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
   const fig = state.figures.find((f) => f.id === state.figur);
-  document.getElementById('meName').textContent = state.name || (fig ? fig.name.replace(/ \(.*\)$/, '') : 'Claude Buddy');
+  document.getElementById('meName').textContent = state.name || (fig ? fig.name.replace(/ \(.*\)$/, '') : 'Claude Desktop Buddy');
   document.getElementById('meVer').textContent = `Version ${state.version}`;
   drawFigure(document.getElementById('meFig'), state.figur, state.slots, 1);
   const main = document.getElementById('main');
