@@ -9,6 +9,12 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
+## Version 1.36
+- Neue Mund-Teile: Sherlock-Pfeife, XXL-Vape (doppelte Wolke), Nasenspray (an die Nase, große Augen, Schütteln,
+  blauer Glitzer), Shisha-Schlauch (hängt bis zum Boden, dicke Wolke). Selten ✦: XXL-Joint, Joint mit Goldpapier
+  (goldener Rauch), Zigarre mit Goldring, Zigarre XXL (raucht wie ein Schornstein), Diamant-Zigarette (funkelnder
+  Rauch), Goldener Zahnstocher.
+
 ## Version 1.35
 - Füttern: 16 neue Essen (Döner, Pizza, Burger, Pommes, Taco, Brezel, Nudeln, Donut, Eis, Croissant, Pfannkuchen,
   Schokolade, Muffin, Wassermelone, Banane, Popcorn), doppelt so groß mit hellem Schein. Danach Freudentanz, viele

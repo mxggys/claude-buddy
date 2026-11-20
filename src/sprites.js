@@ -991,6 +991,17 @@
   const HAMMOCK = small(['u..................................u', 'u..................................u', 'ub................................bu', 'u.bb............................bb.u', 'u...bbb......................bbb...u', 'u......bbbbbbbbbbbbbbbbbbbbbb......u', 'u..................................u']);
   const GLOBEBASE = small(['..uuuuuuuuuuuuuuuuuuuuuuuuuu..', '.uUUUUUUUUUUUUUUUUUUUUUUUUUUu.', 'uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu']);
 
+  // Mund-Teile (Version 1.36)
+  const JOINTXXL = small(['00..........', '9900........', '.99900......', '..999900....', '...9999900..', '....99999-+-', '.....9999-++', '......99-+++', '........-++-']);
+  const SHERLOCK = small(['..............<<<<.', '.............<7767<', '.............<^<<<<', '.............<^<<<.', '{{{.........<<<<<..', '}}{{{{.....<<<<....', '...}}{{{{{{<<......']);
+  const VAPEXXL = small(['**????????????????', '**@@@@@@@@@@@@@@@b', '**$$$$$$$$$$$$$$$b', '**$$$$$$$$$$$$$$$b', '..$$$$$$$$$$$$$$$.']);
+  const GOLDPICK = small(['iIiIii']);
+  const CIGARXXL = small(['[[[[[[[[iIi[[[[[[[[[[[4557', '((((((((iIi(((((((((((5567', '((((((((iIi(((((((((((5567', '))))))))iIi)))))))))))5576']);
+  const GOLDRINGCIGAR = small(['[[[[[[iIi[[[[[[[4557', '((((((iIi(((((((5567', '))))))iIi)))))))5576']);
+  const NOSESPRAY = small(['.a.', '.a.', 'bbb', 'bab', 'bbb', 'bbb']);
+  const GOLDJOINT = JOINT.map((r) => r.replace(/9/g, 'i').replace(/0/g, 'I'));
+  const DIAMONDCIG = CIG_STAGES[9].map((r, y) => (y === 1 || y === 2 ? [...r].map((c, x) => (c === '3' && x % 3 === y % 3 ? 'C' : c)).join('') : r));
+
   // Aschenbecher (Glas), Kippe darin; Feuerzeug zum Anzünden
   const ASHTRAY = small(['4555555554', '5444444445', '.55555555.']);
   const BUTT = ['2113'];
@@ -1079,7 +1090,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, JOINTXXL, SHERLOCK, VAPEXXL, GOLDPICK, CIGARXXL, GOLDRINGCIGAR, NOSESPRAY, GOLDJOINT, DIAMONDCIG,
         CIGARILLO, ROLLIE, SLIM, FRUITVAPE, GRILLZ, SHISHA, BONG, ENERGYCAN, SNUSCAN, SNUSCAN_OPEN, CIGPACK, CIGPACK_OPEN, ZIPPO, ZIPPO_OPEN, JOINTCROWN, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },

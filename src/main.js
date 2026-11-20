@@ -747,6 +747,7 @@ const ITEMS = [
   ['CIGARETTE', 'Zigarette', 'mund'], ['JOINT', 'Joint', 'mund'], ['CIGAR', 'Zigarre', 'mund'], ['PIPE', 'Pfeife', 'mund'], ['VAPE', 'Vape', 'mund'],
   ['TOOTHPICK', 'Zahnstocher', 'mund'], ['CIGARILLO', 'Zigarillo', 'mund'], ['ROLLIE', 'Selbstgedrehte', 'mund'], ['SLIM', 'Slim-Zigarette', 'mund'],
   ['FRUITVAPE', 'Bunte Einweg-Vape', 'mund'], ['CHEW', 'Kautabak', 'mund'], ['GRILLZ', 'Grillz (Goldzähne)', 'mund'],
+  ['SHERLOCK', 'Sherlock-Pfeife', 'mund'], ['VAPEXXL', 'XXL-Vape', 'mund'], ['NOSESPRAY', 'Nasenspray', 'mund'], ['HOSE', 'Shisha-Schlauch', 'mund'],
   // Begleiter
   ['BUBBLETEA', 'Bubble-Tea', 'begleiter'], ['BED', 'Mini-Bett', 'begleiter'], ['MINITEDDY', 'Mini-Teddy', 'begleiter'], ['DUMBBELL', 'Hantel', 'begleiter'],
   ['CHAIR', 'Stuhl', 'begleiter'], ['BEANBAG', 'Sitzsack', 'begleiter'], ['FIREPLACE', 'Kamin', 'begleiter'], ['FRIDGE', 'Mini-Kühlschrank', 'begleiter'],
@@ -761,7 +762,9 @@ const ITEMS = [
   // selten (goldenes Päckchen)
   ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['SIMPLECROWN', 'Schlichte Goldkrone ✦', 'kopf', true], ['CHAINBEANIE', 'Beanie mit Goldkette ✦', 'kopf', true],
   ['GOLDHALO', 'Goldener Heiligenschein ✦', 'kopf', true], ['JOINTCROWN', 'Joint-Krone ✦', 'kopf', true],
-  ['NEONVAPE', 'Neon-Vape ✦', 'mund', true], ['GOLDBARS', 'Goldbarren ✦', 'begleiter', true],
+  ['NEONVAPE', 'Neon-Vape ✦', 'mund', true], ['JOINTXXL', 'XXL-Joint ✦', 'mund', true], ['GOLDJOINT', 'Joint mit Goldpapier ✦', 'mund', true],
+  ['GOLDRINGCIGAR', 'Zigarre mit Goldring ✦', 'mund', true], ['CIGARXXL', 'Zigarre XXL ✦', 'mund', true], ['DIAMONDCIG', 'Diamant-Zigarette ✦', 'mund', true],
+  ['GOLDPICK', 'Goldener Zahnstocher ✦', 'mund', true], ['GOLDBARS', 'Goldbarren ✦', 'begleiter', true],
   ['FIREAURA', 'Flammen-Aura ✦', 'effekt', true], ['SMOKEAURA', 'Rauch-Aura ✦', 'effekt', true], ['GOLDOUTLINE', 'Gold-Umriss ✦', 'effekt', true],
   ['DIAMOND', 'Diamant-Funkeln ✦', 'effekt', true], ['AURORA', 'Polarlicht ✦', 'effekt', true], ['CRYSTALS', 'Kristall-Splitter ✦', 'effekt', true],
 ];

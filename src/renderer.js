@@ -726,7 +726,7 @@ function drawParticles() {
       // einzelne graue Pixel, aufs Raster gesetzt: wirkt wie gezeichnet
       const q = Math.max(2, Math.round(p.px));
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.6));
-      ctx.fillStyle = '#949494';
+      ctx.fillStyle = p.color || '#949494';
       ctx.fillRect(Math.round(p.x / q) * q, Math.round(p.y / q) * q, q, q);
     } else if (p.type === 'smoke') {
       // weiche, runde Rauchwölkchen: werden größer und lösen sich sanft auf
@@ -1911,17 +1911,18 @@ function updateAura(dt) {
 
 // ---------- Mund-Zubehör: zeichnen und benutzen ----------
 // Klick auf die Figur (oder ab und zu von selbst): Zug nehmen, Rauchringe, Vape-Wolke, Blasen, Tröte …
-const SMOKES = new Set(['CIGARETTE', 'CIGAR', 'PIPE', 'JOINT', 'CIGARILLO', 'ROLLIE', 'SLIM']);
-const VAPES = new Set(['VAPE', 'NEONVAPE', 'FRUITVAPE']);
-const MOUTH_ART = { CIGARILLO: 'CIGARILLO', ROLLIE: 'ROLLIE', SLIM: 'SLIM', FRUITVAPE: 'FRUITVAPE', GRILLZ: 'GRILLZ', CHEW: 'CHEW', JOINT: 'JOINT', CIGARETTE: 'CIGARETTE', CIGAR: 'CIGAR', PIPE: 'PIPE', VAPE: 'VAPE', NEONVAPE: 'VAPE', TOOTHPICK: 'TOOTHPICK' };
+const SMOKES = new Set(['CIGARETTE', 'CIGAR', 'PIPE', 'JOINT', 'CIGARILLO', 'ROLLIE', 'SLIM', 'JOINTXXL', 'GOLDJOINT', 'GOLDRINGCIGAR', 'CIGARXXL', 'SHERLOCK', 'DIAMONDCIG']);
+const JOINTS = new Set(['JOINT', 'JOINTXXL', 'GOLDJOINT']);
+const VAPES = new Set(['VAPE', 'NEONVAPE', 'FRUITVAPE', 'VAPEXXL']);
+const MOUTH_ART = { JOINTXXL: 'JOINTXXL', GOLDJOINT: 'GOLDJOINT', GOLDRINGCIGAR: 'GOLDRINGCIGAR', CIGARXXL: 'CIGARXXL', SHERLOCK: 'SHERLOCK', DIAMONDCIG: 'DIAMONDCIG', VAPEXXL: 'VAPEXXL', GOLDPICK: 'GOLDPICK', NOSESPRAY: 'NOSESPRAY', HOSE: 'HOSE', CIGARILLO: 'CIGARILLO', ROLLIE: 'ROLLIE', SLIM: 'SLIM', FRUITVAPE: 'FRUITVAPE', GRILLZ: 'GRILLZ', CHEW: 'CHEW', JOINT: 'JOINT', CIGARETTE: 'CIGARETTE', CIGAR: 'CIGAR', PIPE: 'PIPE', VAPE: 'VAPE', NEONVAPE: 'VAPE', TOOTHPICK: 'TOOTHPICK' };
 const LED_COLORS = ['b', 'p', 'V', 'i', 'C'];
 const FRUIT_TINTS = ['255, 150, 205', '130, 215, 255', '160, 245, 160', '255, 220, 140'];
 let mouthUse = null; // { item, start, done }
 const mouthUsing = (t) => mouthUse && t < mouthUse.done;
 // Zigarette, Zigarre, Pfeife und Vape hält sie in der Hand; zum Ziehen führt sie die Hand zum Mund
-const HELD = new Set(['CIGARETTE', 'CIGAR', 'PIPE', 'JOINT', 'VAPE', 'NEONVAPE', 'CIGARILLO', 'ROLLIE', 'SLIM', 'FRUITVAPE']);
+const HELD = new Set(['CIGARETTE', 'CIGAR', 'PIPE', 'JOINT', 'VAPE', 'NEONVAPE', 'CIGARILLO', 'ROLLIE', 'SLIM', 'FRUITVAPE', 'JOINTXXL', 'GOLDJOINT', 'GOLDRINGCIGAR', 'CIGARXXL', 'SHERLOCK', 'DIAMONDCIG', 'VAPEXXL', 'NOSESPRAY']);
 // Glut beim Ziehen: heller (je Teil eigene Farben)
-const EMBER_HOT = { CIGARETTE: { 7: '8', 6: '7' }, SLIM: { 7: '8', 6: '7' }, ROLLIE: { 7: '8', 6: '7' }, CIGARILLO: { 7: '8', 6: '7' }, JOINT: { '+': '7', '-': '+' } };
+const EMBER_HOT = { CIGAR: { 7: '8', 6: '7' }, GOLDRINGCIGAR: { 7: '8', 6: '7' }, CIGARXXL: { 7: '8', 6: '7' }, SHERLOCK: { 7: '8', 6: '7' }, DIAMONDCIG: { 7: '8', 6: '7' }, JOINTXXL: { '+': '7', '-': '+' }, GOLDJOINT: { '+': '7', '-': '+' }, CIGARETTE: { 7: '8', 6: '7' }, SLIM: { 7: '8', 6: '7' }, ROLLIE: { 7: '8', 6: '7' }, CIGARILLO: { 7: '8', 6: '7' }, JOINT: { '+': '7', '-': '+' } };
 const EMBER_KEYS = ['7', '+', 'R', 'b'];
 // Wo im Bild die Glut sitzt (einmal je Bild berechnet)
 const emberCache = new Map();
@@ -1937,6 +1938,7 @@ const AT_MOUTH_MS = [250, 1150]; // so lange ist die Hand am Mund
 function itemAnchor(t) {
   const using = mouthUsing(t) ? t - mouthUse.start : -1;
   const atMouth = !ANCHORS.hand || !HELD.has(mouthItem) || (using >= AT_MOUTH_MS[0] && using < AT_MOUTH_MS[1]);
+  if (atMouth && mouthItem === 'NOSESPRAY') return { pos: [ANCHORS.mouth[0] - 3, ANCHORS.mouth[1] - 5], atMouth: true }; // an die Nase
   return atMouth ? { pos: ANCHORS.mouth, atMouth: true } : { pos: ANCHORS.hand, atMouth: false };
 }
 // Bild des Mund-Teils; die Zigarette wird mit der Zeit kürzer
@@ -1969,10 +1971,22 @@ function drawMouthExtras(t, frame, offY, flip) {
     paint(['('], mx, my + offY, flip);
   }
   if (snusUntil > t) paint(['hhhh', 'wwww'], mx - 3, my - 2 + offY, flip); // Beutel unter der Lippe
+  if (mouthItem === 'HOSE') {
+    // Shisha-Schlauch: Mundstück im Mund, der Schlauch hängt bis zum Boden neben ihm
+    paint(['jj'], mx, my - 1 + offY, flip);
+    const ex = WIDTH + 4;
+    const ey = HEIGHT;
+    for (let i = 0; i <= 26; i++) {
+      const k = i / 26;
+      const x = Math.round(mx + 2 + (ex - mx - 2) * k);
+      const y = Math.round(my - 1 + offY + (ey - my) * k + Math.sin(k * Math.PI) * 4);
+      paint(['k'], x, y, flip);
+    }
+  }
 }
 function drawMouthItem(t, offY, flip) {
   const art = MOUTH_ART[mouthItem];
-  if (art === 'GRILLZ' || art === 'CHEW') return;
+  if (art === 'GRILLZ' || art === 'CHEW' || art === 'HOSE') return;
   if (!art || !ANCHORS.mouth || duck.action === 'eat' || duck.state === 'sleep') return;
   const using = mouthUsing(t) ? t - mouthUse.start : -1;
   const { pos, atMouth } = itemAnchor(t);
@@ -2012,7 +2026,7 @@ function drawMouthItem(t, offY, flip) {
     const led = mouthItem === 'NEONVAPE' ? LED_COLORS[Math.floor(t / 250) % LED_COLORS.length] : mouthItem === 'FRUITVAPE' ? (pulling ? 'a' : 'g') : (pulling ? 'a' : 'b');
     map = { b: pulling ? 'a' : led };
   }
-  if (mouthItem === 'TOOTHPICK') dy = (using >= 0 ? Math.floor(t / 90) : Math.floor(t / 1400)) % 2; // wippt
+  if (mouthItem === 'TOOTHPICK' || mouthItem === 'GOLDPICK') dy = (using >= 0 ? Math.floor(t / 90) : Math.floor(t / 1400)) % 2; // wippt
   // in der Hand: ohne Kopf-Wippen; am Mund: wippt mit dem Kopf
   paint(rows, pos[0], pos[1] + (atMouth ? offY : 0) - 1 + dy, flip, map);
 }
@@ -2031,7 +2045,7 @@ function useMouthItem(t) {
       const dir = CHAR.front ? (Math.random() < 0.5 ? -1 : 1) : (isFlipped() ? -1 : 1);
       exhale = { until: now() + 850, dir, acc: 0 };
       if (effectItem === 'RINGPRO') blowRings(dir);
-      if (mouthUse && mouthUse.item === 'JOINT' && smokeCfg.high) {
+      if (mouthUse && JOINTS.has(mouthUse.item) && smokeCfg.high) {
         // danach: rote, müde Augen und kurz darauf Heißhunger
         stonedUntil = now() + 120000;
         if (munchiesUntil < now()) setTimeout(() => { munchiesUntil = now() + 30000; kick(); }, 7000);
@@ -2049,9 +2063,10 @@ function useMouthItem(t) {
       duck.beakUntil = now() + 700;
       const m = mouthPoint();
       const k = Math.max(0.6, SIZE);
-      for (let i = 0; i < 14; i++) {
+      const big = mouthItem === 'VAPEXXL' ? 1.7 : 1; // XXL-Vape: doppelt so viel, viel größer
+      for (let i = 0; i < 14 * (big > 1 ? 2 : 1); i++) {
         const tint = mouthItem === 'FRUITVAPE' ? FRUIT_TINTS[i % FRUIT_TINTS.length] : null;
-        particles.push({ type: 'cloud', x: m.x + rand(-6, 6), y: m.y + rand(-4, 4), vx: rand(-55, 55) * k, vy: rand(-45, -5) * k, life: 1, r: rand(3, 6) * k, grow: rand(10, 18) * k, tint });
+        particles.push({ type: 'cloud', x: m.x + rand(-6, 6), y: m.y + rand(-4, 4), vx: rand(-55, 55) * k * big, vy: rand(-45, -5) * k * big, life: 1, r: rand(3, 6) * k * big, grow: rand(10, 18) * k * big, tint });
       }
       if (Math.random() < 0.18) {
         setTimeout(() => { react('startle', now()); for (let i = 0; i < 4; i++) particles.push({ type: 'cloud', x: m.x, y: m.y, vx: rand(-80, 80), vy: rand(-40, 10), life: 0.7, r: 2, grow: 8 }); }, 700);
@@ -2072,6 +2087,34 @@ function useMouthItem(t) {
     const m = mouthPoint();
     const dir = isFlipped() ? -1 : 1;
     setTimeout(() => particles.push({ type: 'crumb', x: m.x, y: m.y, vx: dir * rand(70, 110), vy: rand(-120, -80), life: 1.6, color: '#4a2c12' }), 200);
+  } else if (mouthItem === 'NOSESPRAY') {
+    // an die Nase, sprühen: große Augen, schütteln, blauer Glitzer
+    startAction('drag', t);
+    setTimeout(() => {
+      react('startle', now());
+      const m = mouthPoint();
+      for (let i = 0; i < 10; i++) particles.push({ type: 'glint', x: m.x + rand(-14, 14), y: m.y - rand(4, 22), vx: 0, vy: 0, life: 1, color: i % 2 ? '#7fd3ff' : '#ffffff' });
+      squash(1.08, 0.92, 120);
+      setTimeout(() => squash(0.94, 1.06, 120), 140);
+      setTimeout(() => squash(1.05, 0.95, 120), 280);
+      kick();
+    }, 700);
+  } else if (mouthItem === 'HOSE') {
+    // am Schlauch ziehen, dann eine dicke Wolke
+    mouthUse.done = t + 2400;
+    startAction('shisha', t);
+    setTimeout(() => {
+      duck.beakUntil = now() + 900;
+      const m = mouthPoint();
+      const k = Math.max(0.6, SIZE);
+      for (let i = 0; i < 16; i++) particles.push({ type: 'cloud', x: m.x + rand(-6, 6), y: m.y + rand(-4, 4), vx: rand(-60, 60) * k, vy: rand(-50, -5) * k, life: 1, r: rand(3, 7) * k, grow: rand(12, 20) * k });
+      kick();
+    }, 1650);
+  } else if (mouthItem === 'GOLDPICK') {
+    mouthUse.done = t + 1100;
+    duck.happyUntil = t + 1100;
+    const m = mouthPoint();
+    for (let i = 0; i < 3; i++) setTimeout(() => spawn('star', m.x + rand(0, 14), m.y + rand(-4, 2)), i * 200);
   } else if (mouthItem === 'TOOTHPICK') {
     mouthUse.done = t + 1100; // wippt schnell hin und her
     duck.happyUntil = t + 1100;
@@ -2119,17 +2162,24 @@ function updateExhale(dt, t) {
 // Rauchfäden: zwei dünne, verschnörkelte Pixel-Linien steigen aus der Glut auf
 // Jedes Pixel bewegt sich nach derselben Regel, so ergibt die Reihe eine Wellenlinie, die nach oben fließt.
 const wisp = { acc: 0, n: 0 };
+const WISP_COLOR = { GOLDJOINT: '#f2cf63', DIAMONDCIG: '#e8f8ff' };
 function emitWisps(dt) {
   const p = mouthTip();
   const px = fxPx();
+  const color = WISP_COLOR[mouthItem] || null;
+  // Zigarre XXL: raucht wie ein Schornstein (mehr und breitere Fäden)
+  const lines = mouthItem === 'CIGARXXL' ? [0, 1, 0, 1] : [0, 1];
+  if (mouthItem === 'DIAMONDCIG' && Math.random() < dt * 3) particles.push({ type: 'glint', x: p.x + rand(-6, 6), y: p.y - rand(4, 20), vx: 0, vy: 0, life: 1, color: '#ffffff' });
+  if (mouthItem === 'GOLDJOINT' && Math.random() < dt * 2) particles.push({ type: 'gold', x: p.x + rand(-4, 4), y: p.y - rand(2, 12), vx: 0, vy: -8, life: 1, seed: rand(0, 6) });
   wisp.acc += dt * 18;
   const count = Math.floor(wisp.acc);
   wisp.acc -= count;
   for (let i = 0; i < count; i++) {
     const age = (i / Math.max(1, count)) * dt; // bei wenigen Bildern/s gleichmäßig verteilen
-    for (const line of [0, 1]) {
-      particles.push({ type: 'wisp', x0: p.x + (line ? px * 1.5 : -px * 0.5), y0: p.y - px, age, line, life: 1 - age * 0.7, px });
-    }
+    lines.forEach((line, n) => {
+      const spread = n >= 2 ? (line ? px * 3 : -px * 2) : 0;
+      particles.push({ type: 'wisp', x0: p.x + (line ? px * 1.5 : -px * 0.5) + spread, y0: p.y - px, age, line, life: 1 - age * 0.7, px, color });
+    });
   }
 }
 
@@ -2408,6 +2458,7 @@ function updateAccessoryFx(dt, t) {
     for (let i = 0; i < 4; i++) particles.push({ type: 'smoke', x: m.x + dir * 3, y: m.y, vx: dir * rand(8, 16), vy: rand(-6, -2), life: 0.8, seed: rand(0, 6), big: 1.2 });
   }
   if (effectItem === 'BOKEH' && chance(1)) { const p = around(); particles.push({ type: 'bokeh', x: p.x, y: p.y, vx: rand(-3, 3), vy: rand(-6, -2), life: 1, r: rand(3, 7) * Math.max(0.7, SIZE), hue: [45, 200, 320][Math.floor(rand(0, 3))] }); }
+  if (mouthItem === 'GOLDPICK' && chance(0.5)) { const m = mouthPoint(); spawn('star', m.x + rand(0, 12), m.y + rand(-4, 2)); }
   if (['GOLDCROWN', 'SIMPLECROWN', 'CHAINBEANIE', 'GOLDHALO'].includes(accessory) && chance(0.7)) {
     spawn('star', duck.x + DW / 2 + rand(-DW * 0.25, DW * 0.25), duck.y + rand(-4, DH * 0.15));
   }

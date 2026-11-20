@@ -14,7 +14,7 @@ const SLOT_HINT = {
 };
 // diese Begleiter haben kein eigenes Bild in der Vorschau (sie passen sich der Figur an)
 const SIZED = new Set(['BED', 'CHAIR', 'BEANBAG', 'HAMMOCK', 'SNOWGLOBE']);
-const HELD = new Set(['CIGARETTE', 'JOINT', 'CIGAR', 'PIPE', 'VAPE', 'NEONVAPE', 'CIGARILLO', 'ROLLIE', 'SLIM', 'FRUITVAPE']);
+const HELD = new Set(['CIGARETTE', 'JOINT', 'CIGAR', 'PIPE', 'VAPE', 'NEONVAPE', 'CIGARILLO', 'ROLLIE', 'SLIM', 'FRUITVAPE', 'JOINTXXL', 'GOLDJOINT', 'GOLDRINGCIGAR', 'CIGARXXL', 'SHERLOCK', 'DIAMONDCIG', 'VAPEXXL', 'NOSESPRAY']);
 
 // ---------- kleine Bausteine ----------
 const el = (tag, attrs = {}, ...kids) => {
@@ -93,7 +93,8 @@ function drawFigure(canvas, id, equip, px) {
   if (e.mund === 'GRILLZ') paint(P.GRILLZ, A.mouth[0] - 3, A.mouth[1]);
   else if (e.mund === 'CHEW') { paint(['hh', 'WW', 'ww'], A.mouth[0] + 2, A.mouth[1] - 2); paint(['('], A.mouth[0], A.mouth[1]); }
   else if (e.mund && HELD.has(e.mund)) { const pos = A.hand || A.mouth; paint(P[e.mund === 'NEONVAPE' ? 'VAPE' : e.mund], pos[0], pos[1] - 1); }
-  else if (e.mund === 'TOOTHPICK') paint(P.TOOTHPICK, A.mouth[0], A.mouth[1] - 1);
+  else if (e.mund === 'TOOTHPICK' || e.mund === 'GOLDPICK') paint(P[e.mund], A.mouth[0], A.mouth[1] - 1);
+  else if (e.mund === 'HOSE') { paint(['jj'], A.mouth[0], A.mouth[1] - 1); for (let i = 0; i <= 20; i++) { const k = i / 20; paint(['k'], Math.round(A.mouth[0] + 2 + (W + 4 - A.mouth[0] - 2) * k), Math.round(A.mouth[1] - 1 + (H - A.mouth[1]) * k + Math.sin(k * Math.PI) * 4), null); } }
   if (e.begleiter && P[e.begleiter] && !SIZED.has(e.begleiter)) {
     const rows = P[e.begleiter === 'ZIPPO' ? 'ZIPPO_OPEN' : e.begleiter];
     paint(rows, W + 1, H - rows.length + 1);
