@@ -60,6 +60,7 @@ const DEFAULT_SETTINGS = {
   aufFenstern: false, // Figur kann auf die Oberkante von Fenstern gesetzt werden
   laufen: false, // läuft ab und zu ein Stück an der Taskleiste entlang
   fangen: false, // rennt dem Mauszeiger hinterher (Fangen spielen)
+  schnick: { du: 0, buddy: 0, gleich: 0 }, // Schere, Stein, Papier: Spielstand
   fensterSpringen: false, // springt ab und zu auf das Fenster, in dem du gerade arbeitest
   pausen: true, // nach 60 Minuten Tippen am Stück an eine Pause erinnern
   zweiteFigur: null, // zweite Figur daneben (Name der Figur) oder aus
@@ -144,6 +145,7 @@ function loadSettings() {
     ...saved,
     extras: { ...DEFAULT_SETTINGS.extras, ...saved.extras },
     rauchen: { ...DEFAULT_SETTINGS.rauchen, ...saved.rauchen },
+    schnick: { ...DEFAULT_SETTINGS.schnick, ...saved.schnick },
     zaehler: { ...DEFAULT_SETTINGS.zaehler, ...saved.zaehler },
     spielzeit: { ...DEFAULT_SETTINGS.spielzeit, ...saved.spielzeit },
     abzeichen: { ...saved.abzeichen },
@@ -618,6 +620,7 @@ const PLAY_STATS = {
   ball: { label: 'Ballkontakte', steps: [25, 100, 500, 2000] },
   abgeklatscht: { label: 'Abgeklatscht', steps: [10, 50, 200] },
   geworfen: { label: 'Geworfen', steps: [10, 50, 200] },
+  koerbe: { label: 'Körbe getroffen', steps: [5, 25, 100, 500] },
 };
 let statSaveTimer = null;
 function countStat(key) {
@@ -1310,6 +1313,7 @@ function settingsState() {
     ballOn,
     dndUntil: settings.nichtStoerenBis > Date.now() ? clock(settings.nichtStoerenBis) : '',
     timers: timers.map((tm) => ({ id: tm.id, at: clock(tm.at), label: tm.label.replace(' sind um', '') })),
+    schnick: settings.schnick, schnickLast,
   };
 }
 function pushSettingsState() {
@@ -1358,6 +1362,20 @@ async function setFromSettings(key, value) {
     if (at <= new Date()) at.setDate(at.getDate() + 1);
     addTimer(at.getTime(), `Wecker: ${clock(at.getTime())}`);
   } else if (key === 'timerCancel') cancelTimer(Number(value));
+  else if (key === 'rps') {
+    // Schere, Stein, Papier: die Figur wählt zufällig, das Ergebnis zeigt sie über dem Kopf
+    const picks = ['schere', 'stein', 'papier'];
+    if (!picks.includes(value)) return null;
+    const pet = picks[Math.floor(Math.random() * 3)];
+    const beats = { schere: 'papier', stein: 'schere', papier: 'stein' };
+    const result = value === pet ? 'gleich' : beats[value] === pet ? 'you' : 'pet';
+    settings.schnick[result === 'you' ? 'du' : result === 'pet' ? 'buddy' : 'gleich']++;
+    saveSettings();
+    const name = { schere: 'Schere', stein: 'Stein', papier: 'Papier' };
+    schnickLast = `Du: ${name[value]} · ${settings.name || 'Buddy'}: ${name[pet]} – ${result === 'you' ? 'Du gewinnst!' : result === 'pet' ? 'Verloren!' : 'Unentschieden'}`;
+    if (win) win.webContents.send('command', { type: 'rps', you: value, pet, result });
+    if (result !== 'pet') changeMood(2);
+  }
   else if (key === 'ort') {
     const q = String(value || '').trim();
     if (!q) return 'Bitte einen Ort eingeben.';
@@ -1370,7 +1388,9 @@ async function setFromSettings(key, value) {
   }
   return null;
 }
+let schnickLast = '';
 function settingsAction(name) {
+  if (name === 'hoop' && win) win.webContents.send('command', { type: 'hoop' });
   if (name === 'feed') sendAll('command', { type: 'feed' });
   if (name === 'ball' && win) win.webContents.send('command', { type: 'ball' });
   if (name === 'dnd') setDnd(settings.nichtStoerenBis > Date.now() ? 0 : 60);

@@ -614,7 +614,9 @@ function draw(t) {
   drawTemperature();
   drawPauseSign(t);
   drawNameTag(t);
+  drawHoop(t);
   drawBall();
+  drawRps(t);
   if (duck.action === 'dizzy' && acting(t)) drawDizzyStars(t);
   drawParticles();
 }
@@ -1319,6 +1321,62 @@ function checkTickle(x, y) {
   }
 }
 
+// Schere, Stein, Papier: „Schnick, Schnack, Schnuck“, dann zeigt sie ihre Wahl in einer Blase
+let rps = null; // { you, pet, result, start }
+function playRps(cmd) {
+  if (duck.state === 'sleep') { duck.state = 'idle'; duck.until = now() + 6000; }
+  stopWalk();
+  rps = { you: cmd.you, pet: cmd.pet, result: cmd.result, start: now() };
+  ACTIONS.rps = ACTIONS.rps || { frames: ['shake1', 'shake2'], step: 220, ms: 1400 };
+  startAction('rps', now());
+  setTimeout(() => {
+    if (!rps) return;
+    const t = now();
+    if (rps.result === 'pet') { react('cheer', t); }
+    else if (rps.result === 'you') { startAction('sad', t); duck.actionUntil = t + 1800; }
+    else { startAction('wink', t); }
+    kick();
+  }, 1450);
+  setTimeout(() => { rps = null; kick(); }, 4200);
+  kick();
+}
+function drawRps(t) {
+  if (!rps) return;
+  const since = t - rps.start;
+  const px = fxPx() * 1.5;
+  const cx = duck.x + DW / 2;
+  const top = duck.y - 14 * px;
+  // Blase
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.strokeStyle = '#2a2c33';
+  ctx.lineWidth = Math.max(1, px / 2);
+  const bw = 34 * px, bh = 12 * px;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(cx - bw / 2, top, bw, bh, 4 * px) : ctx.rect(cx - bw / 2, top, bw, bh);
+  ctx.fill(); ctx.stroke();
+  const sign = { stein: 'RPS_STEIN', papier: 'RPS_PAPIER', schere: 'RPS_SCHERE' };
+  if (since < 1400) {
+    // Schnick, Schnack, Schnuck: Faust wippt
+    const bob = Math.floor(since / 220) % 2 ? 0 : px * 2;
+    drawSmall(CHAR.props.RPS_STEIN, cx - 3.5 * px, top + 2.5 * px - bob, px);
+    ctx.fillStyle = '#2a2c33';
+    ctx.font = `bold ${Math.round(4 * px)}px "Segoe UI", system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(['Schnick', 'Schnack', 'Schnuck'][Math.min(2, Math.floor(since / 470))], cx, top - 2 * px);
+    ctx.textAlign = 'start';
+    return;
+  }
+  // Du (links) gegen Figur (rechts)
+  drawSmall(CHAR.props[sign[rps.you]], cx - 15 * px, top + 2.5 * px, px);
+  drawSmall(CHAR.props[sign[rps.pet]], cx + 8 * px, top + 2.5 * px, px);
+  ctx.fillStyle = '#2a2c33';
+  ctx.font = `bold ${Math.round(4 * px)}px "Segoe UI", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('vs', cx, top + 7.5 * px);
+  ctx.fillText(rps.result === 'you' ? 'Du gewinnst!' : rps.result === 'pet' ? 'Ich gewinne!' : 'Unentschieden', cx, top - 2 * px);
+  ctx.textAlign = 'start';
+}
+
 function pickState(t) {
   const m = mood();
   if (m === 'sleep') {
@@ -1585,7 +1643,23 @@ function updatePounce(dt, t) {
 }
 
 // ---------- Ball zum Spielen ----------
-const ball = { on: false, x: 0, y: 0, vx: 0, vy: 0, carried: false, held: false, lastTouch: 0, kickCool: 0, juggles: 0 };
+const ball = { on: false, x: 0, y: 0, vx: 0, vy: 0, carried: false, held: false, lastTouch: 0, kickCool: 0, juggles: 0, lastBy: 'user' };
+// Korbwerfen: Korb am Rand, Spielstand Du : Figur
+const hoop = { on: false, side: 1, you: 0, pet: 0, flashUntil: 0, flashText: '' };
+function hoopPos() {
+  const k = Math.max(0.6, SIZE);
+  const x = hoop.side > 0 ? W - 90 * k : 90 * k;
+  const y = Math.max(ballCeil() + 70 * k, ballFloor() - 230 * k);
+  return { x, y, half: 26 * k, k };
+}
+function startHoop() {
+  if (!ball.on) toggleBall();
+  hoop.on = true;
+  hoop.you = 0; hoop.pet = 0;
+  hoop.side = duck.x + DW / 2 < W / 2 ? 1 : -1; // Korb auf der freien Seite
+  ball.lastTouch = now();
+  kick();
+}
 const ballR = () => Math.max(7, Math.round(11 * Math.max(0.6, SIZE)));
 // sichtbarer Bereich: der Ball bleibt im Fenster-Streifen
 const ballCeil = () => (FOLLOW ? view.y : 0) + ballR();
@@ -1605,6 +1679,7 @@ function toggleBall() {
 }
 function stopBall() {
   ball.on = false;
+  hoop.on = false;
   ball.carried = false;
   ball.held = false;
   if (bridge && bridge.setWide) bridge.setWide(false);
@@ -1618,6 +1693,7 @@ function overBall(x, y) {
 // Klick auf den Ball: hochspielen (in der Luft weiter hochhalten zählt mit)
 function bounceBallFrom(x) {
   stat('ball');
+  ball.lastBy = 'user';
   const inAir = ball.y < ballFloor() - 3;
   ball.juggles = inAir ? ball.juggles + 1 : 1;
   ball.vx = (ball.x - x) * 6 + rand(-60, 60);
@@ -1653,6 +1729,7 @@ function moveHeldBall(x, y) {
 }
 function releaseBall(x) {
   ball.held = false;
+  ball.lastBy = 'user';
   hoverSince = 0;
   if (!ball.grab.moved) { bounceBallFrom(x); return; }
   const first = ballTrail[0];
@@ -1690,8 +1767,10 @@ function updateBall(dt, t) {
     return;
   }
   ball.vy += 1500 * dt;
+  const prevY = ball.y;
   ball.x += ball.vx * dt;
   ball.y += ball.vy * dt;
+  if (hoop.on) checkHoop(prevY, r, t);
   if (ball.y > floor) {
     ball.y = floor;
     ball.vy = ball.vy > 140 ? -ball.vy * 0.55 : 0;
@@ -1715,7 +1794,7 @@ function updateBall(dt, t) {
     moodPing('ball', 2, 15000);
     return;
   }
-  if (t - ball.lastTouch > 60000) { stopBall(); return; } // keiner spielt mehr
+  if (t - ball.lastTouch > (hoop.on ? 180000 : 60000)) { stopBall(); return; } // keiner spielt mehr
   // die Figur jagt den Ball
   if (duck.dragging || duck.state === 'sleep' || dnd() || !duck.onGround || (acting(t) && ACTIONS[duck.action].priority)) return;
   const d = ball.x - (duck.x + DW / 2);
@@ -1726,7 +1805,19 @@ function updateBall(dt, t) {
     if (Math.random() < 0.25 && homeX !== null && Math.abs(duck.x - homeX) > 150) {
       ball.carried = true; // zurückbringen
       walkTo(homeX);
+    } else if (hoop.on && Math.random() < 0.55) {
+      // auf den Korb werfen: Wurfbahn ausrechnen, mit etwas Ungenauigkeit
+      const h = hoopPos();
+      const T = rand(0.85, 1.1);
+      const tx = h.x + rand(-1, 1) * h.half * 0.9;
+      const ty = h.y - ballR() * 1.5;
+      ball.vx = (tx - ball.x) / T;
+      ball.vy = (ty - ball.y - 0.5 * 1500 * T * T) / T;
+      ball.lastBy = 'pet';
+      squash(0.88, 1.14, 140);
+      stat('ball');
     } else {
+      ball.lastBy = 'pet';
       ball.vx = Math.sign(d || (Math.random() - 0.5)) * rand(260, 520) * Math.max(0.7, SIZE);
       ball.vy = -rand(250, 520);
       squash(0.9, 1.1, 120);
@@ -1737,6 +1828,78 @@ function updateBall(dt, t) {
     return;
   }
   if (Math.abs(d) > DW * 0.4 && Math.abs(ball.vx) < 900) walkTo(ball.x - DW / 2, 'run');
+}
+function checkHoop(prevY, r, t) {
+  const h = hoopPos();
+  // Treffer: von oben durch den Ring
+  if (ball.vy > 0 && prevY < h.y && ball.y >= h.y && Math.abs(ball.x - h.x) < h.half - r * 0.5) {
+    const by = ball.lastBy;
+    if (by === 'pet') hoop.pet++; else { hoop.you++; stat('koerbe'); }
+    hoop.flashUntil = t + 1400;
+    hoop.flashText = by === 'pet' ? 'Korb für Buddy!' : 'Korb!';
+    ball.vx *= 0.3;
+    for (let i = 0; i < 18; i++) spawn('confetti', h.x + rand(-20, 20), h.y - rand(0, 20));
+    if (by === 'pet') { react('cheer', t); } else { duck.happyUntil = t + 1500; sparkle(4); moodPing('korb', 4, 8000); }
+    ball.lastTouch = t;
+    return;
+  }
+  // Ring-Enden: abprallen
+  for (const ex of [h.x - h.half, h.x + h.half]) {
+    const dx = ball.x - ex, dy = ball.y - h.y;
+    const d = Math.hypot(dx, dy);
+    if (d < r && d > 0) {
+      ball.x = ex + (dx / d) * r;
+      ball.y = h.y + (dy / d) * r;
+      const dot = ball.vx * (dx / d) + ball.vy * (dy / d);
+      if (dot < 0) { ball.vx -= 1.6 * dot * (dx / d); ball.vy -= 1.6 * dot * (dy / d); }
+    }
+  }
+  // Brett hinter dem Korb
+  const bx = h.x + hoop.side * (h.half + 4 * h.k);
+  if (ball.y > h.y - 60 * h.k && ball.y < h.y + 6 * h.k && Math.abs(ball.x - bx) < r && Math.sign(ball.vx) === hoop.side) {
+    ball.vx = -ball.vx * 0.6;
+    ball.x = bx - hoop.side * r;
+  }
+}
+function drawHoop(t) {
+  if (!hoop.on || !ball.on) return;
+  const h = hoopPos();
+  const k = h.k;
+  // Brett
+  const bx = h.x + hoop.side * (h.half + 4 * k);
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fillRect(Math.round(bx - (hoop.side > 0 ? 0 : 5 * k)), Math.round(h.y - 62 * k), Math.round(5 * k), Math.round(70 * k));
+  ctx.strokeStyle = '#2a2c33';
+  ctx.lineWidth = Math.max(1, k);
+  ctx.strokeRect(Math.round(bx - (hoop.side > 0 ? 0 : 5 * k)), Math.round(h.y - 62 * k), Math.round(5 * k), Math.round(70 * k));
+  // Netz
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = Math.max(1, k * 0.8);
+  for (let i = 0; i <= 4; i++) {
+    const x0 = h.x - h.half + (i * h.half * 2) / 4;
+    const x1 = h.x - h.half * 0.6 + (i * h.half * 1.2) / 4;
+    ctx.beginPath(); ctx.moveTo(x0, h.y); ctx.lineTo(x1, h.y + 26 * k); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(h.x - h.half * 0.8, h.y + 13 * k); ctx.lineTo(h.x + h.half * 0.8, h.y + 13 * k); ctx.stroke();
+  // Ring
+  ctx.strokeStyle = '#f06a1a';
+  ctx.lineWidth = Math.max(2, 3 * k);
+  ctx.beginPath(); ctx.moveTo(h.x - h.half, h.y); ctx.lineTo(h.x + h.half, h.y); ctx.stroke();
+  // Spielstand
+  ctx.font = `bold ${Math.round(13 * k)}px "Segoe UI", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  const label = `Du ${hoop.you} : ${hoop.pet} ${petName || 'Buddy'}`;
+  ctx.fillStyle = 'rgba(20,20,26,0.75)';
+  const tw = ctx.measureText(label).width + 14 * k;
+  ctx.fillRect(Math.round(h.x - tw / 2), Math.round(h.y - 88 * k), Math.round(tw), Math.round(20 * k));
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(label, h.x, h.y - 73 * k);
+  if (hoop.flashUntil > t) {
+    ctx.fillStyle = '#ffd04a';
+    ctx.font = `bold ${Math.round(16 * k)}px "Segoe UI", system-ui, sans-serif`;
+    ctx.fillText(hoop.flashText, h.x, h.y - 100 * k - (1 - (hoop.flashUntil - t) / 1400) * 14 * k);
+  }
+  ctx.textAlign = 'start';
 }
 function drawBall() {
   if (!ball.on) return;
@@ -3555,6 +3718,8 @@ if (bridge) {
     if (cmd && cmd.type === 'name') nameUntil = now() + 3000;
     if (cmd === 'record') celebrateRecord();
     if (cmd === 'greet') greet();
+    if (cmd && cmd.type === 'hoop') { if (hoop.on) stopBall(); else startHoop(); }
+    if (cmd && cmd.type === 'rps') playRps(cmd);
     if (cmd === 'sleep') { duck.state = 'sleep'; duck.until = now() + 60000; lastActivity = -Infinity; }
     if (cmd === 'preview-extras') { previewExtrasUntil = now() + PREVIEW_MS; nextConfetti = 0; kick(); }
     if (cmd === 'reset') {
@@ -3585,6 +3750,7 @@ if (bridge) {
     setMood(v) { moodValue = v; }, pounceNow() { pounceCooldown = 0; },
     desktopFile, snow, openGift,
     setGift(on, gold = false) { giftReady = on; giftGold = gold; giftX = null; }, setAccessory(a) { accessory = a; }, setEffect(a) { effectItem = a; },
+    startHoop, hoop, playRps,
     setMouth(a) { mouthItem = a; }, setBuddy(a) { buddyItem = a; }, setEffect(a) { effectItem = a; }, setHat(a) { accessory = a; }, useBuddy: () => useBuddy(performance.now()), cig, useMouth: () => useMouthItem(performance.now()),
     setName(n) { petName = n; nameUntil = performance.now() + 3000; }, glow() { glowUntil = performance.now() + 3000; },
     setColor(v) { CONFIG.farbe = v; applyCharacter(CHAR.id); },
