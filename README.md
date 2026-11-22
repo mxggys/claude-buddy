@@ -15,7 +15,7 @@ Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schn
   Spielstand Du : Buddy, Konfetti bei Treffern).
 
 ## Version 1.38
-- Neue Figur: Orangi (silberne Orangen-Dose, eigenes Design, sprudelt beim Tippen).
+- Neue Figur: Orangi (schlanke silberne Orangen-Dose mit Banderole, Punkte-Raster und Metallglanz, eigenes Zeichen, sprudelt beim Tippen).
 - Legendäre Begleiter ✦: Orangen-Dose und Limetten-Dose (trinkt daraus, danach hyper). Neu: Mini-Weihnachtsbaum (blinkt).
 - Neuer Platz „Hand“: Geldbeutel (ab und zu aufmachen und Geld zählen).
 - Interaktion: Kitzeln (Maus schnell über der Figur hin und her), Fangen spielen (an/aus unter Verhalten),

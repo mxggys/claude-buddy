@@ -486,6 +486,74 @@
   ];
 
   const FUN_ACTIONS = ['pushups', 'moonwalk', 'breakdance', 'handstand', 'roll', 'boxing', 'selfie', 'phone', 'newspaper', 'fart'];
+  const ORANGI = [
+    '........................',
+    '.....NNNNNNNNNNNNNN.....',
+    '.....vwwwBBqBBwwwwv.....',
+    '....vwwwwwwwwwwwwwwv....',
+    '....NNNNNNNNNNNNNNNN....',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...AAAAAAAAAAWWWwwvNN...',
+    '...AAAAAAAAAAWWWwwvNN...',
+    '...AFFAFFAFFAWWWwwvNN...',
+    '...AAAAAAAAAAWWWwwvNN...',
+    '...AAFFAFFAFAWWWwwvNN...',
+    '...AAAAAAAAAAWWWwwvNN...',
+    '...AAFAFAAAAAWWWwwvNN...',
+    '...OOOOOOOOOOWWWwwvNN...',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...NNvwwhhWWWWWWGGvNN...',
+    '...NNvwwhhWWWWWGGGGNN...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWGWWwwvNG...',
+    '...NNvwwhhWWWGWWwwvNG...',
+    '...NNvwwhhWWWGWWwwvNG...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWWWGGGGNN...',
+    '...NNvwwhhWWWWWWGGvNN...',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...NNvwwhhWWWWWWGGvNN...',
+    '...NNvwwhhWWWWWGGGGNN...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWGWWwwvNG...',
+    '...NNvwwhhWWWGWWwwvNG...',
+    '...NNvwwhhWWWGWWwwvNG...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWWWGGGGNN...',
+    '...NNvwwhhWWWWWWGGvNN...',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...NNvwwhhWWWWWWGGvNN...',
+    '...NNvwwhhWWWWWGGGGNN...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWWGWwwvGN...',
+    '...NNvwwhhWWWGWWwwvNG...',
+    '...NNvwwhhWWWGWWwwvNG...',
+    '...NNvwwhhWWWGWWwwvNG...',
+    '...ANvAwhhWWWWGWwwvGN...',
+    '...NNAwwAhWWWWGWwwvGN...',
+    '...NAvwAhhWWWWWGGGGNN...',
+    '...ANvAwhAWWWWWWGGvNN...',
+    '...NNAwwAhWAWWWWwwvNN...',
+    '...NAvwAhhAWWWWWwwvNN...',
+    '...ANvAwhAWWWWWWwwvNN...',
+    '...NNAwwAhWAWWWWwwvNN...',
+    '...NAvwAhhAWWWWWwwvNN...',
+    '...ANvAwhAWWWWWWwwvNN...',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...NNvwwhhWWWWWWwwvNN...',
+    '...vwwwwwwwwwwwwwwwwv...',
+    '....vwwwwwwwwwwwwwwv....',
+    '.....NNNNNNNNNNNNNN.....',
+  ];
+
   const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin', ...FUN_ACTIONS];
   const critterDefs = {
     boo: {
@@ -663,42 +731,34 @@
       noCoffee: true, // ist selbst eine Tasse
     },
     orangi: {
-      // eigene silberne Orangen-Dose (Zero): Banderole oben, Orangenscheibe als Zeichen, Gesicht wie Mini-Claude
+      // schlanke silberne Orangen-Dose nach Foto-Vorlage (Farben, Form, Banderole, Punkte-Raster), eigenes Zeichen statt Schriftzug
       name: 'Orangi (Orangen-Dose)',
       palette: {
-        W: '#eceef2', w: '#c9cdd5', v: '#9ba1ac', h: '#ffffff', N: '#b9bec9', B: '#4b505c', G: '#7d8391',
-        A: '#f39a2b', O: '#d4731a', F: '#ffd38a',
-        X: '#2a2c33', x: '#5d616c', E: '#15161b', e: '#15161b', P: '#ffb0a0', m: '#3a1a10', t: '#ff8a6a',
+        N: '#8e9592', v: '#a9b0ad', w: '#c7cdca', h: '#ffffff', W: '#e4e8e6', B: '#4a4f4d', q: '#d6dcda', G: '#d2d8d5',
+        A: '#e8962a', O: '#c26a10', F: '#fbe3bf',
+        X: '#3a3d3c', x: '#6d7371', E: '#15161b', e: '#15161b', P: '#ffb0a0', m: '#3a1a10', t: '#ff8a6a',
       },
+      eyeBg: 'W',
       fizzy: true, // sprudelt beim schnellen Tippen
-      eyes: { xs: [8, 14], y: 9, w: 2, h: 2 },
-      pattern: ['HE', 'EE'],
-      cheeks: [7, 16],
-      mouth: [11, 12],
-      arms: [3, 19, 11, 2, 3],
-      feet: [[8, 2], [14, 2]],
-      shape(g, o) {
-        const b = o.by;
-        // Deckel
-        rect(g, 7, 0 + b, 16, 0 + b, 'v');
-        rect(g, 6, 1 + b, 17, 1 + b, (x) => (x === 6 || x === 17 ? 'v' : 'N'));
-        set(g, [[10, 1 + b], [11, 1 + b], [12, 1 + b]], 'B');
-        rect(g, 5, 2 + b, 18, 2 + b, 'v');
-        // Dose: silber gebürstet, links Schatten, rechts Glanz
-        rect(g, 5, 3 + b, 18, 19, (x) => (x === 5 ? 'v' : x === 6 ? 'w' : x === 18 ? 'w' : x === 17 ? 'h' : 'W'));
-        // orange Banderole oben mit hellem Schriftzug angedeutet
-        rect(g, 5, 4 + b, 18, 7 + b, (x, y) => (y === 7 + b ? 'O' : x === 17 ? 'F' : 'A'));
-        rect(g, 8, 5 + b, 15, 5 + b, (x) => (x % 2 ? 'F' : 'A'));
-        // Orangenscheibe als eigenes Zeichen
-        ellipse(g, 12, 16.5 + b, 3.2, 2.8, (nx, ny) => (nx * nx + ny * ny > 0.6 ? 'O' : 'A'));
-        set(g, [[12, 15 + b], [11, 16 + b], [13, 16 + b], [12, 17 + b], [12, 16 + b]], 'F');
-        // „ZERO“ angedeutet
-        rect(g, 9, 19, 14, 19, (x) => (x % 2 ? 'G' : 'w'));
-        // Boden
-        rect(g, 6, 20, 17, 20, 'v');
+      w: 24, h: 66, scale: 1.5,
+      eyes: { xs: [6, 13], y: 18, w: 3, h: 3 },
+      pattern: ['HEE', 'EEE', 'EEE'],
+      cheeks: [6, 14],
+      mouth: [10, 23],
+      arms: [0, 22, 28, 2, 5],
+      shape(g) { ORANGI.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.') g[y][x] = ch; })); },
+      face(g, o) {
+        // wie Mini-Claude: fröhlich = flache Augen mit Glanzpunkt und Bäckchen
+        [6, 13].forEach((x) => {
+          const y = 18 + o.hy;
+          if (o.eye === 'happy') { rect(g, x, y, x + 2, y, 'W'); rect(g, x, y + 1, x + 2, y + 2, 'e'); set(g, [[x, y + 1]], 'H'); rect(g, x, y + 4, x + 2, y + 4, 'P'); }
+          if (o.eye === 'sleepy') { rect(g, x, y, x + 2, y, 'W'); rect(g, x, y + 1, x + 2, y + 2, 'e'); }
+        });
       },
-      face(g, o) { set(g, [[11, 12 + o.hy], [12, 12 + o.hy]], 'm'); },
-      anchors: { hat: [12, 1], glasses: [7, 8] },
+      anchors: {
+        hat: [12, 1], glasses: [5, 17], keyboard: [5, 52], tap: [12, 54], idea: [10, -8], lens: [22, 14],
+        mushroom: [-9, 55], snore: [20, 10], umbrella: [5, -12], fizz: [11, 1],
+      },
       mug: ['A', 'O'],
     },
     monsti: {
@@ -1052,8 +1112,8 @@
   const WALLET = small(['((((((', '()))))', '(()(((', '((((((']);
   const WALLET_OPEN = small(['.VVVV.', 'VZVVZV', '((((((', '(i)(((', '((((((']);
   const XMASTREE = small(['...i...', '...V...', '..VVV..', '..VdV..', '.VVVVV.', '.VbVVd.', 'VVVVVVV', 'VdVVbVV', '...u...', '..uuu..']);
-  const ORANGECAN = small(['.jjjj.', 'aaaaaa', 'yyyyyy', 'yaaaya', 'QQQQQQ', 'aaaaaa', 'aayyaa', 'aaaaaa', '.jjjj.']);
-  const LIMECAN = small(['.jjjj.', 'aaaaaa', 'MMMMMM', 'MaaaMa', 'ZZZZZZ', 'aaaaaa', 'aaMMaa', 'aaaaaa', '.jjjj.']);
+  const ORANGECAN = small(['..NNNNNN..', '.NNNNNNNN.', '.NwhWWWwN.', '.AAAAWWwN.', '.AFFAWWwN.', '.OOOOWWwN.', '.NwhWWWwN.', '.NwhWWWwW.', '.NwhWWWwN.', '.NwhWWWwW.', '.NwhWWWWN.', '.NwhWWWWN.', '.NwhWWWwN.', '.NwhWWWwW.', '.NwhWWWWN.', '.NwhWWWWN.', '.NwhWWWwW.', '.NwhWWWwN.', '.NwAWWWwW.', '.NwAWWWwN.', '.NwAWWWwN.', '.NwhWWWwN.', '.NwhWWWwN.', '..NNNNNN..']);
+  const LIMECAN = small(['..NNNNNN..', '.NNNNNNNN.', '.NwhWWWwN.', '.MMMMWWwN.', '.MLLMWWwN.', '.ZZZZWWwN.', '.NwhWWWwN.', '.NwhWWWwW.', '.NwhWWWwN.', '.NwhWWWwW.', '.NwhWWWWN.', '.NwhWWWWN.', '.NwhWWWwN.', '.NwhWWWwW.', '.NwhWWWWN.', '.NwhWWWWN.', '.NwhWWWwW.', '.NwhWWWwN.', '.NwMWWWwW.', '.NwMWWWwN.', '.NwMWWWwN.', '.NwhWWWwN.', '.NwhWWWwN.', '..NNNNNN..']);
 
   // Schere, Stein, Papier: Handzeichen für die Sprechblase
   const RPS_STEIN = small(['.nnnn.', 'nnnnnn', 'njnjnn', 'nnnnnn', '.nnnn.']);
