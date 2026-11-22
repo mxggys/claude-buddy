@@ -50,6 +50,8 @@ let accessory = null;             // getragenes Zubehör: Kopf
 let effectItem = null;            // Effekt (Flügel, Umhang, Aura …)
 let mouthItem = null;             // Mund: Zigarette, Zigarre, Pfeife, Vape, Tröte … (Klick benutzt es)
 let smokeCfg = { self: true, rate: 1, burn: true, high: true }; // Menü „Rauchen“
+let handItem = null;               // Hand: Geldbeutel
+let catchGame = false;             // Fangen spielen (Einstellung)
 let buddyItem = null;             // Begleiter: Kissen, Skateboard, Teddy
 let giftReady = false;            // heutiges Geschenk liegt bereit
 let giftGold = false;             // heute ist es ein seltenes goldenes Päckchen
@@ -160,6 +162,14 @@ const duck = {
 };
 
 // Geist: beim Erschrecken und beim Verblassen halb durchsichtig
+// Verstecken: sinkt hinter die Taskleiste, nur der Kopf guckt raus
+function peekOffset(t) {
+  if (duck.action !== 'peek' || !acting(t)) return 0;
+  const since = t - (duck.actionUntil - ACTIONS.peek.ms);
+  const left = duck.actionUntil - t;
+  const k = Math.min(1, since / 400, left / 400);
+  return DH * 0.62 * Math.max(0, k);
+}
 function figureAlpha(t) {
   if (duck.fadeUntil > t) return 0.35;
   if (duck.action === 'vanish' && acting(t)) {
@@ -316,6 +326,22 @@ const ACTIONS = {
   boba: { frames: ['coffee', 'sip', 'sip', 'sip', 'coffee', 'happy'], step: 380, ms: 2280 }, // Bubble-Tea schlürfen
   lift: { frames: ['cheer1', 'idle', 'cheer1', 'idle', 'cheer2', 'idle', 'happy'], step: 380, ms: 2660 }, // Hantel stemmen
   fridge: { frames: ['idle', 'happy', 'happy'], step: 400, ms: 1200 }, // Kühlschrank auf
+  // neue Leerlauf-Animationen
+  pushups: { frames: ['pushdown', 'idle'], step: 380, ms: 3040 },
+  moonwalk: { frames: ['step1', 'step2'], step: 170, ms: 2600 },
+  breakdance: { frames: ['dance1', 'dance2'], step: 120, ms: 2600 },
+  handstand: { frames: ['cheer2'], ms: 2600 },
+  roll: { frames: ['happy'], ms: 900 },
+  boxing: { frames: ['punchL', 'idle', 'punchR', 'idle'], step: 140, ms: 2240 },
+  selfie: { frames: ['wave1', 'wave1', 'wink', 'happy'], step: 450, ms: 1800 },
+  phone: { frames: ['idle'], ms: 4800 },
+  newspaper: { frames: ['idle'], ms: 5200 },
+  fart: { frames: ['idle', 'wink', 'wink', 'idle'], step: 380, ms: 1520 },
+  burp: { frames: ['quack', 'happy'], step: 300, ms: 900 },
+  tickle: { frames: ['cheer1', 'happy', 'cheer2', 'happy'], step: 110, ms: 1700, priority: true }, // gekitzelt: lacht und zappelt
+  peek: { frames: ['idle'], ms: 6500 },              // versteckt sich hinter der Taskleiste und guckt raus
+  greet: { frames: ['wave1', 'wave2'], step: 220, ms: 2200 },
+  wallet: { frames: ['coffee', 'happy', 'coffee', 'happy'], step: 400, ms: 1600 }, // Geldbeutel auf, Geld zählen
   coffee: { frames: ['coffee', 'coffee', 'coffee', 'sip', 'sip', 'coffee', 'coffee', 'sip', 'coffee'], step: 600, ms: 5400 }, // Kaffeepause
   // Reaktionen haben Vorrang vor allem anderen
   startle: { frames: ['startle'], ms: 900, priority: true },
@@ -379,6 +405,9 @@ function lookOffset(t, flip) {
   if (hardSave()) return { dx: 0, dy: 0 };                    // Hart: Augen folgen nicht
   if (duck.action === 'look' && acting(t)) return { dx: Math.floor(t / 500) % 2 ? 1 : -1, dy: 0 };
   if (duck.action === 'mushroom' && acting(t)) return { dx: 1, dy: 1 }; // guckt auf den Pilz
+  if ((duck.action === 'phone' || duck.action === 'wallet') && acting(t)) return { dx: CHAR.front ? -1 : 0, dy: 1 }; // guckt aufs Handy
+  if (duck.action === 'newspaper' && acting(t)) return { dx: Math.floor(t / 700) % 2 ? 1 : -1, dy: 1 };
+  if (duck.action === 'peek' && acting(t)) return { dx: Math.floor(t / 1100) % 2 ? 1 : -1, dy: -1 };
   let target = duck.lookTarget && duck.lookTarget.until > t ? duck.lookTarget : cursor;
   if (target === cursor && friendNear(t) && t - lastCursorMove > 4000) target = { x: friend.x + friend.w / 2, y: friend.y + friend.h / 2 };
   if (target.x < 0) return { dx: 0, dy: 0 };
@@ -462,6 +491,7 @@ function paintFigure(t) {
   }
   if (duck.action === 'mushroom' && acting(t) && ANCHORS.mushroom) paint(CHAR.props.MUSHROOM, ...ANCHORS.mushroom, flip);
   if (duck.action === 'coffee' && acting(t) && ANCHORS.mug) drawCoffee(t, frame, flip);
+  drawActionProps(t, frame, flip);
   if (duck.action === 'lift' && acting(t)) {
     // Hantel über dem Kopf stemmen (hoch und runter)
     const up = frame === FRAMES.cheer1 || frame === FRAMES.cheer2;
@@ -469,7 +499,8 @@ function paintFigure(t) {
     paint(rows, Math.round(WIDTH / 2 - rows[0].length / 2), up ? -6 : -2, flip);
   }
   if ((duck.action === 'bong' || duck.action === 'energy' || duck.action === 'boba') && acting(t) && ANCHORS.mug) {
-    const rows = CHAR.props[{ bong: 'BONG', energy: 'ENERGYCAN', boba: 'BUBBLETEA' }[duck.action]];
+    const can = buddyItem === 'ORANGECAN' || buddyItem === 'LIMECAN' ? buddyItem : 'ENERGYCAN';
+    const rows = CHAR.props[{ bong: 'BONG', energy: can, boba: 'BUBBLETEA' }[duck.action]];
     const [mx, my] = ANCHORS.mug;
     const lift = frame === FRAMES.sip ? 3 : 0;
     const hot = duck.action === 'bong' && frame === FRAMES.sip;
@@ -547,10 +578,17 @@ function draw(t) {
   const w = sprite.width * SCALE * sx;
   const h = sprite.height * SCALE * sy;
   const footX = duck.x + DW / 2;
-  const footY = duck.y + DH - floatLift(t);
+  const footY = duck.y + DH - floatLift(t) + peekOffset(t);
   ctx.globalAlpha = figureAlpha(t);
   const roll = t - duck.rollStart;
-  if (roll >= 0 && roll < 900) {
+  if (duck.flipUntil > t) {
+    // Handstand: kopfüber, leicht wackelnd
+    ctx.save();
+    ctx.translate(footX, footY - DH / 2);
+    ctx.rotate(Math.PI + Math.sin(t / 160) * 0.06);
+    ctx.drawImage(sprite, Math.round(-w / 2), Math.round(DH / 2 - (HEIGHT + PAD) * SCALE * sy), Math.round(w), Math.round(h));
+    ctx.restore();
+  } else if (roll >= 0 && roll < 900) {
     // einmal um sich selbst kugeln (Drehpunkt in der Mitte der Figur)
     ctx.save();
     ctx.translate(footX, footY - DH / 2);
@@ -561,6 +599,15 @@ function draw(t) {
     ctx.drawImage(sprite, Math.round(footX - w / 2), Math.round(footY - (HEIGHT + PAD) * SCALE * sy), Math.round(w), Math.round(h));
   }
   ctx.globalAlpha = 1;
+  if (flashUntil > t) {
+    // Selfie-Blitz
+    const k = (flashUntil - t) / 260;
+    const g = ctx.createRadialGradient(duck.x + DW, duck.y, 0, duck.x + DW, duck.y, DW * 1.4);
+    g.addColorStop(0, `rgba(255,255,255,${0.85 * k})`);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(duck.x - DW, duck.y - DH, DW * 3, DH * 2.5);
+  }
   if (duck.state === 'sleep' || (duck.action === 'nap' && acting(t))) { drawZzz(t); drawSnore(t); }
   if (claudeActive && CHAR.thinks && duck.state !== 'sleep' && !isTyping(t)) drawThinking(t);
   drawMeal();
@@ -1148,6 +1195,33 @@ function startAction(name, t) {
   if (name === 'binky') { duck.onGround = false; duck.vy = -560; squash(0.85, 1.18, 180); sparkle(3); }
   if (name === 'melt') squash(1.45, 0.5, ACTIONS.melt.ms);
   if (name === 'spin') duck.rollStart = t;
+  if (name === 'roll') { duck.rollStart = t; duck.rollDir = Math.random() < 0.5 ? -1 : 1; }
+  if (name === 'breakdance') setTimeout(() => { if (duck.action === 'breakdance') duck.rollStart = now(); }, 1000);
+  if (name === 'handstand') duck.flipUntil = t + ACTIONS.handstand.ms;
+  if (name === 'moonwalk') duck.moonDir = isFlipped() ? 1 : -1; // rückwärts gleiten
+  if (name === 'pushups') {
+    for (let i = 1; i <= 4; i++) setTimeout(() => { if (duck.action !== 'pushups') return; squash(1.08, 0.9, 160); if (i === 4) { const m = gridPoint(WIDTH * 0.75, 2); particles.push({ type: 'rain', x: m.x, y: m.y, vx: 20, vy: -20, life: 0.6 }); } }, i * 760);
+  }
+  if (name === 'boxing') {
+    for (let i = 0; i < 8; i++) setTimeout(() => { if (duck.action !== 'boxing') return; const side = i % 2 ? 1.1 : -0.1; particles.push({ type: 'dust', x: duck.x + DW * side, y: duck.y + DH * 0.35, vx: (side > 0.5 ? 1 : -1) * 40, vy: -10, life: 0.5 }); }, 140 + i * 280);
+  }
+  if (name === 'selfie') setTimeout(() => { if (duck.action === 'selfie') { flashUntil = now() + 260; kick(); } }, 900);
+  if (name === 'fart') {
+    setTimeout(() => {
+      if (duck.action !== 'fart') return;
+      // grüne Wolke hinten unten, er guckt unschuldig zur Seite
+      const back = isFlipped() ? duck.x + DW * 0.9 : duck.x + DW * 0.1;
+      for (let i = 0; i < 7; i++) particles.push({ type: 'cloud', x: back + rand(-4, 4), y: duck.y + DH * 0.85, vx: (isFlipped() ? 1 : -1) * rand(10, 30), vy: rand(-18, -4), life: 1, r: rand(2, 4) * Math.max(0.6, SIZE), grow: rand(6, 12), tint: '150, 205, 90' });
+      squash(1.06, 0.95, 120);
+      duck.lookTarget = { x: duck.x + DW * 3, y: duck.y - 40, until: now() + 900 };
+      kick();
+    }, 350);
+  }
+  if (name === 'burp') {
+    const m = mouthPoint();
+    for (let i = 0; i < 3; i++) particles.push({ type: 'cloud', x: m.x, y: m.y, vx: rand(-20, 20), vy: rand(-20, -8), life: 0.7, r: 2, grow: 6 });
+    squash(1.1, 0.9, 140);
+  }
   if (name === 'sneeze') {
     setTimeout(() => {
       if (duck.action !== 'sneeze') return;
@@ -1176,6 +1250,72 @@ function react(name, t) {
     duck.vy = -380;
     squash(0.88, 1.15, 180);
     for (let i = 0; i < 8; i++) spawn('star', duck.x + rand(0, DW), duck.y + rand(0, DH * 0.4));
+  }
+}
+
+// Bewegung bei Moonwalk und Purzelbaum, Fangen spielen, Begrüßung und Feierabend
+function updateFun(dt, t) {
+  const k = Math.max(0.6, SIZE);
+  if (duck.action === 'moonwalk' && acting(t) && duck.onGround) duck.x = Math.min(Math.max(duck.x + duck.moonDir * 34 * k * dt, 0), W - DW);
+  if (duck.action === 'roll' && acting(t) && duck.onGround) duck.x = Math.min(Math.max(duck.x + duck.rollDir * 110 * k * dt, 0), W - DW);
+  updateCatch(dt, t);
+  updateDayMoments(t);
+}
+let catchCool = 0;
+function updateCatch(dt, t) {
+  if (!catchGame || hardSave() || dnd() || duck.state !== 'idle' || !duck.onGround || perch || ball.on || duck.dragging || cursor.x < 0) return;
+  if (acting(t) && duck.action !== 'catch') return;
+  const near = cursor.y > duck.y - 160 && cursor.y < duck.y + DH + 40;
+  const moving = t - lastCursorMove < 400;
+  if (overDuck(cursor.x, cursor.y) && t > catchCool && (duck.walkTo !== null && duck.walkTo !== undefined)) {
+    // erwischt!
+    stopWalk();
+    catchCool = t + 3000;
+    react('cheer', t);
+    moodPing('catch', 4, 15000);
+    return;
+  }
+  if (near && moving && t > catchCool && Math.abs(cursor.x - (duck.x + DW / 2)) > DW * 0.4) walkTo(cursor.x - DW / 2, 'run');
+}
+const dayDone = {};
+function updateDayMoments(t) {
+  if (SECOND || hardSave() || dnd() || duck.state !== 'idle' || acting(t) || !duck.onGround) return;
+  const h = hour();
+  const day = new Date().toDateString();
+  // Feierabend: abends einmal strecken, gähnen und winken
+  if (h >= 17 && h < 20 && dayDone.evening !== day && t - duck.lastKeyAt > 60000) {
+    dayDone.evening = day;
+    startAction('stretch', t);
+    setTimeout(() => { if (!acting(now())) startAction('yawn', now()); }, ACTIONS.stretch.ms + 100);
+    setTimeout(() => { if (!acting(now())) { startAction('greet', now()); nameUntil = now() + 2500; } }, ACTIONS.stretch.ms + ACTIONS.yawn.ms + 300);
+  }
+}
+function greet() {
+  if (SECOND || dnd() || duck.state === 'sleep') return;
+  const t = now();
+  startAction('greet', t);
+  nameUntil = t + 2500;
+  for (let i = 0; i < 3; i++) setTimeout(() => spawn('heart', duck.x + DW * rand(0.2, 0.8), duck.y), i * 200);
+  kick();
+}
+// Kitzeln: Zeiger schnell über der Figur hin und her
+const tickle = { dir: 0, flips: [], lastX: -1 };
+function checkTickle(x, y) {
+  if (duck.dragging || dnd() || !overDuck(x, y)) { tickle.flips.length = 0; tickle.lastX = x; return; }
+  const dx = x - tickle.lastX;
+  tickle.lastX = x;
+  if (Math.abs(dx) < 3) return;
+  const dir = Math.sign(dx);
+  const t = now();
+  if (dir !== tickle.dir) { tickle.dir = dir; tickle.flips.push(t); }
+  while (tickle.flips.length && tickle.flips[0] < t - 900) tickle.flips.shift();
+  if (tickle.flips.length >= 6 && !(duck.action === 'tickle' && acting(t))) {
+    tickle.flips.length = 0;
+    react('tickle', t);
+    for (let i = 0; i < 5; i++) setTimeout(() => { squash(i % 2 ? 1.1 : 0.92, i % 2 ? 0.92 : 1.1, 100); spawn(i % 2 ? 'heart' : 'star', duck.x + DW * rand(0.1, 0.9), duck.y + DH * rand(0, 0.4)); }, i * 180);
+    if (CHAR.rolls || Math.random() < 0.4) setTimeout(() => { duck.rollStart = now(); }, 600); // kugelt sich vor Lachen
+    moodPing('tickle', 5, 20000);
+    stat('gestreichelt');
   }
 }
 
@@ -1208,6 +1348,8 @@ function pickState(t) {
   else if (twoPets && r < 0.62 && r > 0.5 && greetFriend(t)) { /* winkt der anderen Figur */ }
   else if (!hardSave() && maybeJumpToWindow(t, r)) { /* springt aufs Fenster */ }
   else if (!hardSave() && maybeWalk(t, r)) { /* läuft los */ }
+  else if (r > 0.94 && !hardSave() && !perch && !hanging()) startAction('peek', t); // versteckt sich kurz
+  else if (handItem === 'WALLET' && r > 0.9 && !hardSave()) { startAction('wallet', t); setTimeout(() => sparkle(3), 500); }
   else if (r < 0.5 && !hardSave()) startAction(list[Math.floor(Math.random() * list.length)], t);
 }
 
@@ -1251,6 +1393,7 @@ function update(dt, t) {
   updateReturnHome(t);
   updatePause(t);
   updateWalk(dt, t);
+  updateFun(dt, t);
   if (duck.sliding) { updateSlide(dt, t); return; }
 
   if (!duck.onGround) {
@@ -1699,7 +1842,7 @@ function drawCoffee(t, frame, flip) {
 }
 
 // ---------- Begleiter neben ihr: Shisha, Bong, Energydose, Snus, Kippenschachtel, Sturmfeuerzeug ----------
-const SIDE_BUDDIES = new Set(['ASHTRAY', 'SHISHA', 'BONG', 'ENERGYCAN', 'SNUSCAN', 'CIGPACK', 'ZIPPO', 'BUBBLETEA', 'MINITEDDY', 'BUNNY', 'DUMBBELL', 'FIREPLACE', 'FRIDGE', 'GOLDBARS', 'RADIATOR', 'THERMOS']);
+const SIDE_BUDDIES = new Set(['XMASTREE', 'ORANGECAN', 'LIMECAN', 'ASHTRAY', 'SHISHA', 'BONG', 'ENERGYCAN', 'SNUSCAN', 'CIGPACK', 'ZIPPO', 'BUBBLETEA', 'MINITEDDY', 'BUNNY', 'DUMBBELL', 'FIREPLACE', 'FRIDGE', 'GOLDBARS', 'RADIATOR', 'THERMOS']);
 let zippoOpenUntil = 0;
 let nextBuddyUse = 0;
 const actionSince = (t) => t - (duck.actionUntil - ACTIONS[duck.action].ms);
@@ -1725,6 +1868,12 @@ function drawSideBuddy(t, frame, flip) {
   }
   if (buddyItem === 'BONG' && !doing('bong')) at(CHAR.props.BONG);
   if (buddyItem === 'BUBBLETEA' && !doing('boba')) at(CHAR.props.BUBBLETEA);
+  if (buddyItem === 'XMASTREE') {
+    // Lichterkette blinkt abwechselnd
+    const ph = Math.floor(t / 500) % 3;
+    at(CHAR.props.XMASTREE, ph === 0 ? { d: 'i', b: 'd' } : ph === 1 ? { b: 'i', d: 'b' } : null);
+  }
+  if ((buddyItem === 'ORANGECAN' || buddyItem === 'LIMECAN') && !doing('energy')) at(CHAR.props[buddyItem]);
   if (buddyItem === 'THERMOS') at(CHAR.props.THERMOS);
   if (buddyItem === 'MINITEDDY') at(CHAR.props.MINITEDDY);
   if (buddyItem === 'BUNNY') at(CHAR.props.BUNNY);
@@ -1828,6 +1977,31 @@ function drawUnderFigure(t, frame, flip) {
     sctx.restore();
   }
 }
+// Handy, Zeitung, Selfie, Geldbeutel in der Hand
+function drawActionProps(t, frame, flip) {
+  const doing = (a) => duck.action === a && acting(t);
+  const mug = ANCHORS.mug || [-9, Math.round(HEIGHT * 0.45)];
+  if (doing('phone')) {
+    paint(CHAR.props.PHONE, mug[0] + 3, mug[1] + 1, flip, Math.floor(t / 300) % 3 ? null : { c: 'a' });
+  }
+  if (doing('selfie')) {
+    // Handy hoch in der rechten Hand, Bildschirm zu ihm
+    paint(CHAR.props.PHONE, WIDTH - 2, -4, flip, flashUntil > t ? { b: 'a', c: 'a' } : null);
+  }
+  if (doing('newspaper')) {
+    const rows = CHAR.props.NEWSPAPER;
+    const since = t - (duck.actionUntil - ACTIONS.newspaper.ms);
+    const low = since > 2600 && since < 3600 ? 3 : 0; // kurz drüber gucken
+    paint(rows, Math.round(WIDTH / 2 - rows[0].length / 2), Math.round(HEIGHT * 0.42) + low, flip);
+  }
+  if (handItem === 'WALLET' && duck.state !== 'sleep') {
+    const open = doing('wallet');
+    const rows = CHAR.props[open ? 'WALLET_OPEN' : 'WALLET'];
+    const lift = open ? 3 : 0;
+    paint(rows, mug[0] + 2, mug[1] + 3 - lift, flip);
+  }
+}
+let flashUntil = 0;
 // Screen-Punkt zu einer Raster-Stelle der Figur
 function gridPoint(col, row) {
   return { x: duck.x + (isFlipped() ? WIDTH - col : col) * SCALE, y: duck.y + row * SCALE };
@@ -1857,7 +2031,7 @@ function useBuddy(t) {
     kick();
     return true;
   }
-  const action = { SHISHA: 'shisha', BONG: 'bong', ENERGYCAN: 'energy', SNUSCAN: 'snus', BUBBLETEA: 'boba', DUMBBELL: 'lift' }[buddyItem];
+  const action = { ORANGECAN: 'energy', LIMECAN: 'energy', SHISHA: 'shisha', BONG: 'bong', ENERGYCAN: 'energy', SNUSCAN: 'snus', BUBBLETEA: 'boba', DUMBBELL: 'lift' }[buddyItem];
   if (!action) return false;
   startAction(action, t);
   if (action === 'lift') setTimeout(() => { const m = gridPoint(WIDTH * 0.8, 4); for (let i = 0; i < 2; i++) particles.push({ type: 'rain', x: m.x + rand(-4, 4), y: m.y, vx: rand(10, 30), vy: rand(-30, -10), life: 0.6 }); }, 1400);
@@ -1894,7 +2068,7 @@ function useBuddy(t) {
 }
 function updateBuddy(dt, t) {
   if (!buddyItem || !smokeCfg.self || hardSave() || duck.state !== 'idle' || acting(t) || isTyping(t) || !duck.onGround) return;
-  const every = { SHISHA: 60, BONG: 90, ENERGYCAN: 100, SNUSCAN: 150, ZIPPO: 30, BUBBLETEA: 80, THERMOS: 120, DUMBBELL: 70, FRIDGE: 140, MINITEDDY: 60, BUNNY: 60 }[buddyItem];
+  const every = { ORANGECAN: 90, LIMECAN: 90, SHISHA: 60, BONG: 90, ENERGYCAN: 100, SNUSCAN: 150, ZIPPO: 30, BUBBLETEA: 80, THERMOS: 120, DUMBBELL: 70, FRIDGE: 140, MINITEDDY: 60, BUNNY: 60 }[buddyItem];
   if (!every) return;
   if (!nextBuddyUse) nextBuddyUse = t + (every * 1000 / smokeCfg.rate) * rand(0.3, 1);
   if (t < nextBuddyUse) return;
@@ -2535,6 +2709,7 @@ function onGift({ item, golden, slot }) {
     react('cheer', now());
     giftX = null;
     if (slot === 'mund') mouthItem = item;
+    else if (slot === 'hand') handItem = item;
     else if (slot === 'begleiter') buddyItem = item;
     else if (slot === 'effekt' || SPECIAL_ACCESSORIES.has(item)) effectItem = item;
     else if (item) accessory = item;
@@ -2854,6 +3029,7 @@ function updateMeal(t) {
       [300, 500, 700].forEach((ms) => setTimeout(() => { const mm = mouthPoint(); particles.push({ type: 'crumb', x: mm.x, y: mm.y, vx: dir * rand(80, 130), vy: rand(-140, -90), life: 1.6, color: '#1c1416' }); }, ms));
     }
     if (food === 'BANANA') particles.push({ type: 'peel', x: duck.x + DW * (isFlipped() ? -0.25 : 1.05), y: groundY() + DH - 3 * fxPx() * 2, vx: 0, vy: 0, life: 1 });
+    if (Math.random() < 0.35) setTimeout(() => { if (!duck.dragging) startAction('burp', now()); }, 3200); // Bäuerchen
     lastAttention = t;
     moodPing('feed', favorite ? 20 : 15);
     stat('gefuettert');
@@ -2924,6 +3100,8 @@ function applyAppSettings(s) {
   effectItem = s.zubehoerEffekt || null;
   mouthItem = s.zubehoerMund || null;
   buddyItem = s.zubehoerBegleiter || null;
+  handItem = s.zubehoerHand || null;
+  catchGame = Boolean(s.fangen) && !SECOND;
   const r = s.rauchen || {};
   smokeCfg = { self: r.selbst !== false, rate: { selten: 0.4, normal: 1, oft: 2.2 }[r.oft] || 1, burn: r.abbrennen !== false, high: r.effekt !== false };
   giftReady = Boolean(s.geschenk) && !SECOND;
@@ -3018,6 +3196,7 @@ function rubPet(dist) {
 
 function moveCursor(x, y) {
   trackCircle(x, y);
+  checkTickle(x, y);
   if (rightHeld && !dnd() && overDuck(x, y) && cursor.x >= 0) rubPet(Math.abs(x - cursor.x) + Math.abs(y - cursor.y));
   // Streicheln: Maus über der Figur hin und her bewegen
   if (!duck.dragging && !dnd() && overDuck(x, y) && cursor.x >= 0) {
@@ -3153,6 +3332,12 @@ window.addEventListener('mouseup', (e) => {
       stat('abgeklatscht');
       react('cheer', t);
       for (let i = 0; i < 4; i++) spawn('heart', duck.x + rand(0, DW), duck.y + rand(0, DH * 0.3));
+      return;
+    }
+    // beim Verstecken erwischt: erschrickt und lacht
+    if (duck.action === 'peek' && acting(t)) {
+      react('startle', t);
+      setTimeout(() => { duck.happyUntil = now() + 1500; sparkle(4); }, 700);
       return;
     }
     // Figuren mit Armen: Klick auf einen Arm → winkt mit genau diesem Arm
@@ -3369,6 +3554,7 @@ if (bridge) {
     if (cmd && cmd.type === 'gift') onGift(cmd);
     if (cmd && cmd.type === 'name') nameUntil = now() + 3000;
     if (cmd === 'record') celebrateRecord();
+    if (cmd === 'greet') greet();
     if (cmd === 'sleep') { duck.state = 'sleep'; duck.until = now() + 60000; lastActivity = -Infinity; }
     if (cmd === 'preview-extras') { previewExtrasUntil = now() + PREVIEW_MS; nextConfetti = 0; kick(); }
     if (cmd === 'reset') {

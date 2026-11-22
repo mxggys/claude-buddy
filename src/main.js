@@ -59,6 +59,7 @@ const DEFAULT_SETTINGS = {
   imVollbild: false, // auch über Spielen / Videos im Vollbild anzeigen
   aufFenstern: false, // Figur kann auf die Oberkante von Fenstern gesetzt werden
   laufen: false, // läuft ab und zu ein Stück an der Taskleiste entlang
+  fangen: false, // rennt dem Mauszeiger hinterher (Fangen spielen)
   fensterSpringen: false, // springt ab und zu auf das Fenster, in dem du gerade arbeitest
   pausen: true, // nach 60 Minuten Tippen am Stück an eine Pause erinnern
   zweiteFigur: null, // zweite Figur daneben (Name der Figur) oder aus
@@ -87,6 +88,7 @@ const DEFAULT_SETTINGS = {
   zubehoerMund: null, // Zigarette, Lolli, Kaugummi
   zubehoerKleidung: null, // Jacken und Pullis, passen sich der Figur an
   zubehoerBegleiter: null, // Kissen, Skateboard, Teddy
+  zubehoerHand: null, // etwas in der linken Hand (Geldbeutel)
   geschenkTag: '', // an welchem Tag das letzte Geschenk geöffnet wurde
   mikrofon: false,
   tastatur: true,
@@ -595,6 +597,8 @@ const petSettings = () => ({
   zubehoerMund: settings.zubehoerMund,
   zubehoerKleidung: settings.zubehoerKleidung,
   zubehoerBegleiter: settings.zubehoerBegleiter,
+  zubehoerHand: settings.zubehoerHand,
+  fangen: settings.fangen,
   geschenk: settings.geschenkTag !== dayKey(),
   geschenkGold: settings.geschenkTag !== dayKey() && goldenToday(),
   name: settings.name,
@@ -741,8 +745,8 @@ function playMenu() {
 
 // ---------- Tägliches Geschenk: jeden Tag ein Päckchen mit einem Zubehör ----------
 // Drei Plätze, die sich kombinieren lassen: Kopf, Brille, Effekt. ✦ = selten (goldenes Päckchen).
-const SLOTS = { kopf: 'zubehoer', mund: 'zubehoerMund', begleiter: 'zubehoerBegleiter', effekt: 'zubehoerEffekt' };
-const SLOT_NAMES = { kopf: 'Kopf', mund: 'Mund (Klick auf die Figur benutzt es)', begleiter: 'Begleiter', effekt: 'Effekt' };
+const SLOTS = { kopf: 'zubehoer', mund: 'zubehoerMund', hand: 'zubehoerHand', begleiter: 'zubehoerBegleiter', effekt: 'zubehoerEffekt' };
+const SLOT_NAMES = { kopf: 'Kopf', mund: 'Mund (Klick auf die Figur benutzt es)', hand: 'Hand', begleiter: 'Begleiter', effekt: 'Effekt' };
 const ITEMS = [
   // Kopf
   ['CAP', 'Clean Cappy', 'kopf'], ['BEANIE', 'Clean Beanie', 'kopf'], ['BANDANA', 'Bandana', 'kopf'], ['KIPPAH', 'Kippa', 'kopf'],
@@ -756,7 +760,9 @@ const ITEMS = [
   ['BUBBLETEA', 'Bubble-Tea', 'begleiter'], ['BED', 'Mini-Bett', 'begleiter'], ['MINITEDDY', 'Mini-Teddy', 'begleiter'], ['DUMBBELL', 'Hantel', 'begleiter'],
   ['CHAIR', 'Stuhl', 'begleiter'], ['BEANBAG', 'Sitzsack', 'begleiter'], ['FIREPLACE', 'Kamin', 'begleiter'], ['FRIDGE', 'Mini-Kühlschrank', 'begleiter'],
   ['HAMMOCK', 'Hängematte', 'begleiter'], ['BUNNY', 'Plüsch-Hase', 'begleiter'], ['RADIATOR', 'Heizkörper', 'begleiter'], ['THERMOS', 'Thermoskanne mit Tee', 'begleiter'],
-  ['SNOWGLOBE', 'Schneekugel', 'begleiter'],
+  ['SNOWGLOBE', 'Schneekugel', 'begleiter'], ['XMASTREE', 'Mini-Weihnachtsbaum', 'begleiter'],
+  // Hand
+  ['WALLET', 'Geldbeutel', 'hand'],
   ['ASHTRAY', 'Aschenbecher', 'begleiter'], ['SHISHA', 'Mini-Shisha', 'begleiter'], ['BONG', 'Mini-Bong', 'begleiter'], ['ENERGYCAN', 'Energydose', 'begleiter'],
   ['SNUSCAN', 'Snus-Dose', 'begleiter'], ['CIGPACK', 'Kippenschachtel', 'begleiter'], ['ZIPPO', 'Sturmfeuerzeug', 'begleiter'],
   // Effekte
@@ -766,6 +772,7 @@ const ITEMS = [
   // selten (goldenes Päckchen)
   ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['SIMPLECROWN', 'Schlichte Goldkrone ✦', 'kopf', true], ['CHAINBEANIE', 'Beanie mit Goldkette ✦', 'kopf', true],
   ['GOLDHALO', 'Goldener Heiligenschein ✦', 'kopf', true], ['JOINTCROWN', 'Joint-Krone ✦', 'kopf', true],
+  ['ORANGECAN', 'Orangen-Dose (legendär) ✦', 'begleiter', true], ['LIMECAN', 'Limetten-Dose (legendär) ✦', 'begleiter', true],
   ['NEONVAPE', 'Neon-Vape ✦', 'mund', true], ['JOINTXXL', 'XXL-Joint ✦', 'mund', true], ['GOLDJOINT', 'Joint mit Goldpapier ✦', 'mund', true],
   ['GOLDRINGCIGAR', 'Zigarre mit Goldring ✦', 'mund', true], ['CIGARXXL', 'Zigarre XXL ✦', 'mund', true], ['DIAMONDCIG', 'Diamant-Zigarette ✦', 'mund', true],
   ['GOLDPICK', 'Goldener Zahnstocher ✦', 'mund', true], ['GOLDBARS', 'Goldbarren ✦', 'begleiter', true],
@@ -1308,7 +1315,7 @@ function settingsState() {
 function pushSettingsState() {
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('cfg:state', settingsState());
 }
-const BOOL_KEYS = ['laufen', 'schwerkraft', 'aufFenstern', 'fensterSpringen', 'tastatur', 'mikrofon', 'pausen', 'launeAn', 'imVollbild'];
+const BOOL_KEYS = ['fangen', 'laufen', 'schwerkraft', 'aufFenstern', 'fensterSpringen', 'tastatur', 'mikrofon', 'pausen', 'launeAn', 'imVollbild'];
 const EXTRA_BOOLS = ['weihnachten', 'silvester', 'ostern', 'halloween', 'winterschnee', 'geburtstag', 'wetter', 'temperatur'];
 async function setFromSettings(key, value) {
   if (key === 'figur') setFigur(String(value));
@@ -1415,6 +1422,10 @@ if (!app.requestSingleInstanceLock()) {
     win.webContents.once('did-finish-load', applyEnergyMode);
     refreshWeather();
     powerMonitor.on('on-battery', sendPower);
+    // Begrüßung: nach dem Entsperren / Aufwachen und morgens beim Start
+    powerMonitor.on('unlock-screen', () => sendAll('command', 'greet'));
+    powerMonitor.on('resume', () => setTimeout(() => sendAll('command', 'greet'), 3000));
+    if (new Date().getHours() >= 5 && new Date().getHours() < 11) setTimeout(() => sendAll('command', 'greet'), 4000);
     powerMonitor.on('on-ac', sendPower);
     updater = setupUpdater({
       getToken,

@@ -5,10 +5,11 @@ let state = null;
 let page = 'start';
 try { page = localStorage.getItem('buddy-settings-page') || 'start'; } catch (e) { /* egal */ }
 
-const SLOT_NAMES = { kopf: 'Kopf', mund: 'Mund', begleiter: 'Begleiter', effekt: 'Effekt' };
+const SLOT_NAMES = { kopf: 'Kopf', mund: 'Mund', hand: 'Hand', begleiter: 'Begleiter', effekt: 'Effekt' };
 const SLOT_HINT = {
   kopf: 'Sitzt auf dem Kopf.',
   mund: 'Ein Klick auf die Figur benutzt es (Zug nehmen, grinsen, spucken …).',
+  hand: 'Hält die Figur in der linken Hand. Ab und zu macht sie etwas damit.',
   begleiter: 'Steht neben der Figur oder sie sitzt darauf. Ohne Mund-Teil benutzt ein Klick den Begleiter.',
   effekt: 'Läuft ständig um die Figur herum.',
 };
@@ -95,6 +96,7 @@ function drawFigure(canvas, id, equip, px) {
   else if (e.mund && HELD.has(e.mund)) { const pos = A.hand || A.mouth; paint(P[e.mund === 'NEONVAPE' ? 'VAPE' : e.mund], pos[0], pos[1] - 1); }
   else if (e.mund === 'TOOTHPICK' || e.mund === 'GOLDPICK') paint(P[e.mund], A.mouth[0], A.mouth[1] - 1);
   else if (e.mund === 'HOSE') { paint(['jj'], A.mouth[0], A.mouth[1] - 1); for (let i = 0; i <= 20; i++) { const k = i / 20; paint(['k'], Math.round(A.mouth[0] + 2 + (W + 4 - A.mouth[0] - 2) * k), Math.round(A.mouth[1] - 1 + (H - A.mouth[1]) * k + Math.sin(k * Math.PI) * 4), null); } }
+  if (e.hand === 'WALLET') { const mug = A.mug || [-9, 11]; paint(P.WALLET, mug[0] + 2, mug[1] + 3); }
   if (e.begleiter && P[e.begleiter] && !SIZED.has(e.begleiter)) {
     const rows = P[e.begleiter === 'ZIPPO' ? 'ZIPPO_OPEN' : e.begleiter];
     paint(rows, W + 1, H - rows.length + 1);
@@ -204,6 +206,7 @@ const PAGES = {
       el('h1', {}, 'Verhalten'),
       el('div', { class: 'group' },
         switchCard('Läuft herum', 'Läuft ab und zu ein Stück an der Taskleiste entlang.', t.laufen, 'laufen'),
+        switchCard('Fangen spielen', 'Rennt deinem Mauszeiger hinterher und jubelt, wenn sie ihn erwischt.', t.fangen, 'fangen'),
         switchCard('Schwerkraft', 'An: fällt nach unten. Aus: bleibt, wo du sie hinziehst.', t.schwerkraft, 'schwerkraft'),
         switchCard('Auf Fenster setzen', 'An den oberen Rand eines Fensters ziehen und loslassen.', t.aufFenstern, 'aufFenstern'),
         switchCard('Springt aufs aktive Fenster', 'Springt ab und zu auf das Fenster, in dem du arbeitest.', t.fensterSpringen, 'fensterSpringen')),

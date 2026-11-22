@@ -9,6 +9,15 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
+## Version 1.38
+- Neue Figur: Orangi (silberne Orangen-Dose, eigenes Design, sprudelt beim Tippen).
+- Legendäre Begleiter ✦: Orangen-Dose und Limetten-Dose (trinkt daraus, danach hyper). Neu: Mini-Weihnachtsbaum (blinkt).
+- Neuer Platz „Hand“: Geldbeutel (ab und zu aufmachen und Geld zählen).
+- Interaktion: Kitzeln (Maus schnell über der Figur hin und her), Fangen spielen (an/aus unter Verhalten),
+  Verstecken hinter der Taskleiste (anklicken: erwischt!), Begrüßung morgens und nach dem Entsperren, Feierabend abends.
+- Neue Animationen: Liegestütze, Moonwalk, Breakdance, Handstand, Purzelbaum, Schattenboxen, Selfie mit Blitz,
+  Handy, Zeitung lesen, Pupsen, Rülpsen nach dem Essen.
+
 ## Version 1.37
 - Neuer Name: Claude Desktop Buddy. Einstellungen, Sammlung und Autostart bleiben erhalten.
 

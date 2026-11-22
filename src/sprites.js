@@ -171,6 +171,10 @@
     smokeUp: { arms: 'smokeUp', wing: 'up', eye: 'sleepy' },
     // Kaffee: Becher in der linken Hand, zum Trinken anheben
     coffee: { eye: 'happy', arms: 'cup' },
+    // Schattenboxen und Liegestütze
+    punchL: { arms: 'waveL2', eye: 'angry' },
+    punchR: { arms: 'wave2', eye: 'angry' },
+    pushdown: { sit: true, feet: 'none', arms: 'droop', eye: 'angry' },
     sip: { eye: 'happy', arms: 'sip', headDy: -1 },
     // auf dem Bauch rutschen (Pinguin), Bambus kauen (Panda)
     slide: { eye: 'happy', sit: true, feet: 'none', wing: 'up', arms: 'cheer' },
@@ -256,7 +260,7 @@
     thinks: true, // denkt mit, wenn ein Claude-Fenster vorne ist
     laptop: true, // tippt auf einem Laptop statt auf der Mini-Tastatur, trinkt Kaffee
     voice: 'blip',
-    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin', 'coffee'],
+    idleActions: ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin', 'coffee', 'pushups', 'moonwalk', 'breakdance', 'handstand', 'roll', 'boxing', 'selfie', 'phone', 'newspaper', 'fart'],
     typingFrames: ['tapL', 'tapR'],
     anchors: { mouth: [16, 13], hand: [28, 11], keyboard: [8, 16], tap: [15, 17], idea: [13, -7], lens: [26, 4], mushroom: [-9, 16], snore: [17, 11],
       hat: [15, 7], umbrella: [9, -11], glasses: [6, 7], laptop: [4, 11], mug: [-8, 8] },
@@ -481,7 +485,8 @@
     '...........XXXXXXXXXXXXXXXXXXXXX..........',
   ];
 
-  const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin'];
+  const FUN_ACTIONS = ['pushups', 'moonwalk', 'breakdance', 'handstand', 'roll', 'boxing', 'selfie', 'phone', 'newspaper', 'fart'];
+  const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin', ...FUN_ACTIONS];
   const critterDefs = {
     boo: {
       // nach Vorlage: Bettlaken-Geist, Kopf oben links, linker Arm angehoben, rechter Arm angelegt,
@@ -656,6 +661,45 @@
       face(g, o) { rect(g, 10, 16 + o.hy, 12, 16 + o.hy, 'e'); },
       anchors: { hat: [11, 9], glasses: [8, 12] },
       noCoffee: true, // ist selbst eine Tasse
+    },
+    orangi: {
+      // eigene silberne Orangen-Dose (Zero): Banderole oben, Orangenscheibe als Zeichen, Gesicht wie Mini-Claude
+      name: 'Orangi (Orangen-Dose)',
+      palette: {
+        W: '#eceef2', w: '#c9cdd5', v: '#9ba1ac', h: '#ffffff', N: '#b9bec9', B: '#4b505c', G: '#7d8391',
+        A: '#f39a2b', O: '#d4731a', F: '#ffd38a',
+        X: '#2a2c33', x: '#5d616c', E: '#15161b', e: '#15161b', P: '#ffb0a0', m: '#3a1a10', t: '#ff8a6a',
+      },
+      fizzy: true, // sprudelt beim schnellen Tippen
+      eyes: { xs: [8, 14], y: 9, w: 2, h: 2 },
+      pattern: ['HE', 'EE'],
+      cheeks: [7, 16],
+      mouth: [11, 12],
+      arms: [3, 19, 11, 2, 3],
+      feet: [[8, 2], [14, 2]],
+      shape(g, o) {
+        const b = o.by;
+        // Deckel
+        rect(g, 7, 0 + b, 16, 0 + b, 'v');
+        rect(g, 6, 1 + b, 17, 1 + b, (x) => (x === 6 || x === 17 ? 'v' : 'N'));
+        set(g, [[10, 1 + b], [11, 1 + b], [12, 1 + b]], 'B');
+        rect(g, 5, 2 + b, 18, 2 + b, 'v');
+        // Dose: silber gebürstet, links Schatten, rechts Glanz
+        rect(g, 5, 3 + b, 18, 19, (x) => (x === 5 ? 'v' : x === 6 ? 'w' : x === 18 ? 'w' : x === 17 ? 'h' : 'W'));
+        // orange Banderole oben mit hellem Schriftzug angedeutet
+        rect(g, 5, 4 + b, 18, 7 + b, (x, y) => (y === 7 + b ? 'O' : x === 17 ? 'F' : 'A'));
+        rect(g, 8, 5 + b, 15, 5 + b, (x) => (x % 2 ? 'F' : 'A'));
+        // Orangenscheibe als eigenes Zeichen
+        ellipse(g, 12, 16.5 + b, 3.2, 2.8, (nx, ny) => (nx * nx + ny * ny > 0.6 ? 'O' : 'A'));
+        set(g, [[12, 15 + b], [11, 16 + b], [13, 16 + b], [12, 17 + b], [12, 16 + b]], 'F');
+        // „ZERO“ angedeutet
+        rect(g, 9, 19, 14, 19, (x) => (x % 2 ? 'G' : 'w'));
+        // Boden
+        rect(g, 6, 20, 17, 20, 'v');
+      },
+      face(g, o) { set(g, [[11, 12 + o.hy], [12, 12 + o.hy]], 'm'); },
+      anchors: { hat: [12, 1], glasses: [7, 8] },
+      mug: ['A', 'O'],
     },
     monsti: {
       // nach Foto Pixel für Pixel übernommen (weiße Energydose, volle Auflösung), nur mit Gesicht
@@ -1002,6 +1046,15 @@
   const GOLDJOINT = JOINT.map((r) => r.replace(/9/g, 'i').replace(/0/g, 'I'));
   const DIAMONDCIG = CIG_STAGES[9].map((r, y) => (y === 1 || y === 2 ? [...r].map((c, x) => (c === '3' && x % 3 === y % 3 ? 'C' : c)).join('') : r));
 
+  // Handy, Zeitung, Geldbeutel, Weihnachtsbaum, zwei Dosen als Begleiter (Version 1.38)
+  const PHONE = small(['KKKK', 'KbbK', 'KbcK', 'KbbK', 'KKKK']);
+  const NEWSPAPER = small(['aaaaaaaaaaaaaa', 'aKKKKKaj5j5j5a', 'aKKKKKaaaaaaaa', 'aj5j5jaj5j5j5a', 'aaaaaaaaaaaaaa', 'aj5j5j5j5j5j5a', 'aaaaaaaaaaaaaa']);
+  const WALLET = small(['((((((', '()))))', '(()(((', '((((((']);
+  const WALLET_OPEN = small(['.VVVV.', 'VZVVZV', '((((((', '(i)(((', '((((((']);
+  const XMASTREE = small(['...i...', '...V...', '..VVV..', '..VdV..', '.VVVVV.', '.VbVVd.', 'VVVVVVV', 'VdVVbVV', '...u...', '..uuu..']);
+  const ORANGECAN = small(['.jjjj.', 'aaaaaa', 'yyyyyy', 'yaaaya', 'QQQQQQ', 'aaaaaa', 'aayyaa', 'aaaaaa', '.jjjj.']);
+  const LIMECAN = small(['.jjjj.', 'aaaaaa', 'MMMMMM', 'MaaaMa', 'ZZZZZZ', 'aaaaaa', 'aaMMaa', 'aaaaaa', '.jjjj.']);
+
   // Aschenbecher (Glas), Kippe darin; Feuerzeug zum Anzünden
   const ASHTRAY = small(['4555555554', '5444444445', '.55555555.']);
   const BUTT = ['2113'];
@@ -1090,7 +1143,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, JOINTXXL, SHERLOCK, VAPEXXL, GOLDPICK, CIGARXXL, GOLDRINGCIGAR, NOSESPRAY, GOLDJOINT, DIAMONDCIG,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, PHONE, NEWSPAPER, WALLET, WALLET_OPEN, XMASTREE, ORANGECAN, LIMECAN, JOINTXXL, SHERLOCK, VAPEXXL, GOLDPICK, CIGARXXL, GOLDRINGCIGAR, NOSESPRAY, GOLDJOINT, DIAMONDCIG,
         CIGARILLO, ROLLIE, SLIM, FRUITVAPE, GRILLZ, SHISHA, BONG, ENERGYCAN, SNUSCAN, SNUSCAN_OPEN, CIGPACK, CIGPACK_OPEN, ZIPPO, ZIPPO_OPEN, JOINTCROWN, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },
