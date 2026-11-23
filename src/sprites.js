@@ -576,6 +576,61 @@
     '........NNNNNNNNNNNNNNNNNNNN........',
   ];
 
+  const ROTTI = [
+    '..........................',
+    '......EEE.................',
+    '........E.................',
+    '........E..DEE............',
+    '........E..FIIE...........',
+    '........E.FFIIIE..........',
+    '........EDFFIIIE..........',
+    '........DFFFIIIIE.........',
+    '.......DFFFIIIIIE.........',
+    '......DFFFFIIIIIIE........',
+    '....DDFFFFFIIIIIIE........',
+    '.....EFFFFIIIIIIIIE.......',
+    '.....EFFIIIIIIIIFFFDDDDD..',
+    '.DDDDDDIIFFFFFIIIIIIEEEED.',
+    'DEEEEEEFFIIIIIIIIIIIIENND.',
+    'DNNEEEEIIIIIIIIIIIIIIIEND.',
+    'DNNNNEIIIIIIIIIIIIIIIIIED.',
+    'DMMNEIIIIIIIIIIIIIIIIIIED.',
+    'DMMEIIIIIIIIIIIIIINNNIIIE.',
+    '.DEFIIIIIIIIINNNIINNIIIIE.',
+    '.DEFIIIIIIIIIINNIIIAANNIIE',
+    '.EFFIIIIIIINNAAIIIINAAANIE',
+    '.EFFIIIIIINAAANIIIIAAANNNE',
+    '.EFFIIIIINNNAAAIINIIEEENNE',
+    '.EFFFIIINNNEEEIINANIEEENNE',
+    '.EFFFFIINNNEEEIIANAEEEMME.',
+    '..EFFFFFFMMMEEEFFFEEEEFE..',
+    '.EFFFFFFFFFCCCCCACACCFAA..',
+    '.EFFFFFIIICCCCCCCACCCCFFA.',
+    '.EFFFFIIICCCCCCCHAHCCCCFA.',
+    '.EFFFIIICCCACCHCCACCHCCFA.',
+    '.EFFFIICCCCCAAAAACAAAAAA..',
+    '.EFFFIICCCCAEEACCCCCAEEA..',
+    '..EFFFICCCAECCEACCCAECCEA.',
+    '..EFFFFCCCACCHCACCCACCHCA.',
+    '...EFFFCCCACHCHACCCACHCHA.',
+    '....EEECCCCCCCACCCCCCCCA..',
+    '.....AEAAAAAAAAAAAAAAAA...',
+    '....AEEBBJJJBBJJJJAAA.....',
+    '....AEBBJJBBBJJBBBJJJA....',
+    '....ABBJJBBBJJBBBJJJBBA...',
+    '....ABBJJBBJJBBBJJJBBBBA..',
+    '....ABJJBBBJJBBBJJBBBBBA..',
+    '....ABJJBBJJBBBJJJBBBBBA..',
+    '....ABJJBBJJBBBJJBBBBBBA..',
+    '.....AFFBBJJBBBJJBBBBBBA..',
+    '.....AFFBBJJBBBJJBBBBBBA..',
+    '......AFBBFFBBBFFBBBBBA...',
+    '.......AFBFFFBBFFBBBBBA...',
+    '........AAFFFBBFFFBBBA....',
+    '..........AAFFBBFFFAA.....',
+    '............AAAAAAA.......',
+  ];
+
   const CRITTER_ACTIONS = ['wave', 'yawn', 'stretch', 'idea', 'look', 'dance', 'mushroom', 'wink', 'bounce', 'sneeze', 'spin', ...FUN_ACTIONS];
   const critterDefs = {
     boo: {
@@ -784,41 +839,22 @@
       mug: ['A', 'O'],
     },
     rotti: {
-      // roter Panda: orange, weiße Gesichtsflecken, dunkler Bauch, geringelter Schwanz
+      // roter Panda Pixel für Pixel nach Bild; hebt man ihn hoch, hält ihn die Hand aus dem Bild am Nacken
       name: 'Rotti (Roter Panda)',
-      palette: {
-        W: '#e0702e', w: '#c25a20', v: '#9a4416', h: '#f3955a', B: '#f6eee6', N: '#4a2618', A: '#d06a2c', O: '#6a3018',
-        G: '#241210', X: '#3a1c10', x: '#7a3a1c', E: '#1a0e0a', e: '#1a0e0a', P: '#f4a6a0', m: '#3a1a10', t: '#f07a6a',
+      palette: { A: '#3e1a0f', B: '#702a15', C: '#673628', D: '#8f4124', E: '#ad5532', F: '#e67336', G: '#da8e77', H: '#ccae72', I: '#fa955f', J: '#faa969', K: '#e2a08f', L: '#f6aa8f', M: '#f6c6b5', N: '#f9f8f6', X: '#3e1a0f', x: '#702a15', e: '#3e1a0f', P: '#f6aa8f', m: '#3e1a0f', t: '#e67336' },
+      dangle: true,
+      w: 26, h: 52, scale: 1.9, noOutline: true,
+      eyes: { xs: [0, 0], y: -5, w: 0, h: 0 },
+      pattern: [''],
+      mouth: [-20, -20],
+      grabHand: ['DGGGGGGKKKKKKKKKKKKGGDKKKMMMMMMMMD.', '.DDGGGGGGGKKKKKKKKKKGGDKKMMMMMMMMMD', '...DDDGGGGGGKKKKGGKKKGDKKKMMMMMMMMD', '......DDGGGGGGGGKKKKKGDKKKMMMMMMMMD', '........DDGGGGGKKKKKKGGDKKMMMMMMMMD', '..........DGGGKKKKKKKKGDKKKMMMMMMMD', '...........DGGKKKKGKKKGD..KKMMMMMD.', '...........DGGGKKGKKKKKGDKMKKKKMMD.', '............DGGGGKKKKKKGDKMMMMMMMD.', '.............DGGKKKKKKKGDKMMMMMMD..', '.............DGGGKKKKKKLDKMMMMMMD..', '..............DGGKKK...LDKMMMMMMD..', '...............DGG..MM.LDDMMMMMD...', '..................MMMM.LD...MMMD...', '...............DMMMMMM.LD....MD....', '................DMMMMM.D...........', '................DMMMMN.............', '................DMMMMN.............', '.................DMMN..............', '..................NN...............'],
+      handAt: [-14, -10],
+      shape(g) { ROTTI.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.') g[y][x] = ch; })); },
+      anchors: {
+        hat: [13, 13], glasses: [4, 17], mouth: [14, 21], keyboard: [6, 40], tap: [13, 42], idea: [10, -6], lens: [24, 12],
+        mushroom: [-9, 44], snore: [22, 14], umbrella: [6, -12], mug: [-9, 26],
       },
-      dangle: true, // hängt am Nacken, wenn man ihn hochhebt
-      eyes: { xs: [8, 14], y: 10, w: 2, h: 2 },
-      pattern: ['HE', 'EE'],
-      cheeks: [7, 16],
-      mouth: [11, 14],
-      arms: [6, 16, 15, 2, 3],
-      armKey: 'N',
-      feet: [[8, 2], [14, 2]],
-      footKey: 'N',
-      shape(g, o) {
-        // geringelter Schwanz hinten rechts
-        for (let y = 12; y <= 20; y++) for (let x = 17; x <= 21; x++) {
-          const dx = (x - 19) / 2.6, dy = (y - 16.5) / 4.6;
-          if (dx * dx + dy * dy <= 1) g[y + o.by - 0 > 21 ? 21 : y][x] = Math.floor((y + o.step) / 2) % 2 ? 'O' : 'A';
-        }
-        ellipse(g, 12, 18 + o.by, 5.5, 3.6, () => 'N');
-        ellipse(g, 6, 4.5 + o.hy, 2.6, 2.6, body);
-        ellipse(g, 18, 4.5 + o.hy, 2.6, 2.6, body);
-        set(g, [[6, 4 + o.hy], [18, 4 + o.hy]], 'B');
-        ellipse(g, 12, 10 + o.hy, 8, 6, body);
-        // weiße Flecken: Wangen und über den Augen
-        ellipse(g, 7, 12.5 + o.hy, 2.3, 1.6, () => 'B');
-        ellipse(g, 17, 12.5 + o.hy, 2.3, 1.6, () => 'B');
-        set(g, [[8, 8 + o.hy], [9, 8 + o.hy], [14, 8 + o.hy], [15, 8 + o.hy]], 'B');
-        ellipse(g, 12, 13.5 + o.hy, 2, 1.4, () => 'B');
-      },
-      face(g, o) { set(g, [[11, 12 + o.hy], [12, 12 + o.hy]], 'G'); },
-      anchors: { hat: [12, 4], glasses: [7, 9] },
-      mug: ['A', 'O'],
+      mug: ['F', 'E'],
     },
     blip: {
       // eigenes kleines Mini-Alien: runder grüner Kopf, zwei Antennen mit Leuchtpunkten, silberner Anzug
@@ -905,6 +941,9 @@
       cuddly: def.cuddly || false,
       steams: def.steams || false,
       fizzy: def.fizzy || false,
+      dangle: def.dangle || false,
+      grabHand: def.grabHand || null,
+      handAt: def.handAt || null,
       mug: def.mug || null,
       idleActions: [...CRITTER_ACTIONS, ...(def.extraActions || []), ...(def.noCoffee ? [] : ['coffee'])],
       typingFrames: ['tapL', 'tapR'],
@@ -1206,10 +1245,13 @@
   const RPS_SCHERE = small(['n...n', 'n...n', '.n.n.', '.nnn.', 'nnnnn', '.nnn.']);
 
   // Drink, Hand, Capybara, schwarze Dose (Version 1.40)
-  const DRINK = small(['yy.......', 'ya|...|..', '.y|...|..', '.|DDDDD|.', '.|dCCadD|', '.|dCCadD|', '.|DdddDD|', '.|||||||.', '..|||||..']);
+  const DRINK = small(['.II............', 'IJII...........', 'IJ.AAAAAAAAAAA.', '.IA...........B', '.JACCCCCCCCCCCB', '..ACBCGGGGGGCCB', '..AEBEGGGGGGEEB', '..AEBDHHHHHFDEB', '..ADBDHGHHHFEDB', '..ADBDHHHHHFDDB', '..ADBEHHHHHFDDB', '..ADBDFFFFFFDDB', '..AEDDDDEDDDDEB', '..AAAAAAAAAAAAB', '....BBBBBBBBB..', '...............']);
   const GRABHAND = small(['..;::::;..', '..::::::..', '..::::::..', '..::::::..', '.;::::::;.', ';::::::::;', ';::;::;::;', '.::.::.::.', '.;:.;:.;:.']);
-  const CAPY = small(['..__.......', '.,,,,,,,,..', ',,,,,,,,,,.', ',K,,,,,,,,,', '_,,,,,,,,,,', '__,,,,,,,,,', '.,,,,,,,,,.', '.,_,,.,_,_.']);
-  const BLACKCAN = small(['.jjjjj.', 'KKKKKKK', 'K5K5K5K', 'K5K5K5K', 'K5K5K5K', 'KK5K5KK', 'KKK5KKK', 'KKKKKKK', 'K55555K', 'KKKKKKK', '.jjjjj.']);
+  const CAPY = ['...AAAA.......', '..AEDABA......', '.DEFEEBBAAA...', 'ABFFDDFFDBCDA.', 'ABBFDDFFDEFFDA', 'ABBFFFFFFFFFFA', '.AABDDFFFFFDFA', '...AFDDFFFFFFA', '...ACDFDEEFFBA', '....BBDACBDDA.', '....AAA..AAA..'];
+  const BLACKCAN = small(['.AAAAAAAAA..', 'ADAAAAACCCAG', 'AAAAAAAAAAFG', 'AEEEEEEEEEFG', 'AAAAAAAAAAEG', 'ADAHHHHHHHAG', 'ADAHAHHEAAFG', 'ADDHCHHEAAFG', 'ADDHCEHEAAFG', 'ADAHCEHEAHFG', 'ADAHCEHEDHFG', 'ADAHAHBEDHFG', 'ADDHAHDEAAFG', 'ADEAAAHEHAFG', 'AFEAAAAEAEFG', 'AFDFBEAEEEFG', 'AFEEEAAEEEAG', 'AAAGAGGDGGAG', 'AABGAGGAGEAB', 'AFAEDAAAAEAG', 'AAACBAAACEFG', 'AAEEEEEEEEFG', 'ABAEEEEEEAA.', '.ACCCCCCCA..']);
+
+  // eigene Farbtabellen für Teile nach Bildern (gelten nur für dieses Teil)
+  const PROP_PALS = { CAPY: { 'A': '#312219', 'B': '#754a2c', 'C': '#97693e', 'D': '#b8824c', 'E': '#ba824b', 'F': '#ba834d' }, BLACKCAN: { 'A': '#010101', 'B': '#0f0f0d', 'C': '#181815', 'D': '#252521', 'E': '#30332a', 'F': '#4d504b', 'G': '#61615d', 'H': '#7d7e7b' }, DRINK: { 'A': '#f4ecec', 'B': '#d6a6a6', 'C': '#3a0c14', 'D': '#7a1018', 'E': '#a3201e', 'F': '#8a2a14', 'G': '#f1ddd6', 'H': '#e8682a', 'I': '#f6a628', 'J': '#c26a10' } };
 
   // Aschenbecher (Glas), Kippe darin; Feuerzeug zum Anzünden
   const ASHTRAY = small(['4555555554', '5444444445', '.55555555.']);
@@ -1298,6 +1340,7 @@
       ...c,
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
+      propPals: PROP_PALS,
       props: {
         IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, DRINK, GRABHAND, CAPY, BLACKCAN, RPS_STEIN, RPS_PAPIER, RPS_SCHERE, PHONE, NEWSPAPER, WALLET, WALLET_OPEN, XMASTREE, ORANGECAN, LIMECAN, JOINTXXL, SHERLOCK, VAPEXXL, GOLDPICK, CIGARXXL, GOLDRINGCIGAR, NOSESPRAY, GOLDJOINT, DIAMONDCIG,
         CIGARILLO, ROLLIE, SLIM, FRUITVAPE, GRILLZ, SHISHA, BONG, ENERGYCAN, SNUSCAN, SNUSCAN_OPEN, CIGPACK, CIGPACK_OPEN, ZIPPO, ZIPPO_OPEN, JOINTCROWN, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,

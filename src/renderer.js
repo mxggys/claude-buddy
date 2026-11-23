@@ -102,8 +102,11 @@ function recolor(palette, keys, variant) {
 }
 // Aktuelle Figur und davon abhängige Werte
 let CHAR, PALETTE, FRAMES, EYE, ANCHORS, WIDTH, HEIGHT, SCALE, DW, DH;
+const PROP_PAL_OF = new Map(); // Bild-Zeilen eines Teils → seine eigene Farbtabelle
 function applyCharacter(id) {
   CHAR = DuckSprites.character(id);
+  PROP_PAL_OF.clear();
+  for (const [name, pal] of Object.entries(CHAR.propPals || {})) if (CHAR.props[name]) PROP_PAL_OF.set(CHAR.props[name], pal);
   frameCache.clear();
   ({ palette: PALETTE, frames: FRAMES, eye: EYE, anchors: ANCHORS, width: WIDTH, height: HEIGHT } = CHAR);
   PALETTE = recolor(PALETTE, CHAR.ownColors || [], CONFIG.farbe);
@@ -144,7 +147,7 @@ function cachedFrame(frame, flip, map) {
 
 // Die Figur wird erst in Original-Pixeln auf diese Leinwand gemalt und dann skaliert.
 // Ränder lassen Platz für Zubehör, das über die Figur hinausragt (Tastatur, Glühbirne).
-const PAD = 12;
+const PAD = 16;
 const sprite = document.createElement('canvas');
 const sctx = sprite.getContext('2d');
 
@@ -426,12 +429,13 @@ function lookOffset(t, flip) {
 
 // ---------- Zeichnen ----------
 // Malt ein Pixel-Raster auf die Figuren-Leinwand (col/row in Raster-Pixeln), gespiegelt wenn nötig.
-function paint(rows, col, row, flip, map = null) {
+function paint(rows, col, row, flip, map = null, pal = null) {
+  if (!pal && CHAR.propPals) pal = PROP_PAL_OF.get(rows) || null; // Teile nach Bildern bringen ihre eigenen Farben mit
   for (let r = 0; r < rows.length; r++) {
     for (let c = 0; c < rows[r].length; c++) {
       let ch = rows[r][c];
       if (map && map[ch]) ch = map[ch];
-      const color = PALETTE[ch];
+      const color = (pal && pal[ch] && ch !== 'X' && ch !== 'x') ? pal[ch] : PALETTE[ch];
       if (!color) continue;
       const sc = col + c;
       sctx.fillStyle = color;
@@ -2161,7 +2165,9 @@ function drawActionProps(t, frame, flip) {
   const doing = (a) => duck.action === a && acting(t);
   const mug = ANCHORS.mug || [-9, Math.round(HEIGHT * 0.45)];
   // festgehalten: eine Hand kommt von oben und hält die Figur am Nacken
-  if (duck.dragging && !edgeUnder) {
+  if (duck.dragging && !edgeUnder && CHAR.grabHand) {
+    paint(CHAR.grabHand, CHAR.handAt[0], CHAR.handAt[1], flip); // Hand aus dem Bild (roter Panda)
+  } else if (duck.dragging && !edgeUnder) {
     const hand = CHAR.props.GRABHAND;
     const hx = (ANCHORS.hat ? ANCHORS.hat[0] : Math.round(WIDTH / 2)) - Math.floor(hand[0].length / 2);
     const hy = (ANCHORS.hat ? ANCHORS.hat[1] : 2) - hand.length + 1; // nur die Fingerspitzen greifen oben am Nacken

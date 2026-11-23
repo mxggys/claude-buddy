@@ -76,16 +76,17 @@ function drawFigure(canvas, id, equip, px) {
   const OX = 12, OY = 10, GW = W + 24, GH = H + 13;
   canvas.width = GW * px; canvas.height = GH * px;
   const cx = canvas.getContext('2d');
-  const paint = (rows, col, row, map) => rows && rows.forEach((line, r) => {
+  const palOf = new Map(Object.entries(C.propPals || {}).map(([n, p]) => [P[n], p]));
+  const paint = (rows, col, row, map) => { const rowsPal = palOf.get(rows); return rows && rows.forEach((line, r) => {
     for (let c = 0; c < line.length; c++) {
       let ch = line[c];
       if (map && map[ch]) ch = map[ch];
-      const color = PAL[ch];
+      const color = (C.propPals && rowsPal && rowsPal[ch] && ch !== 'X' && ch !== 'x') ? rowsPal[ch] : PAL[ch];
       if (!color) continue;
       cx.fillStyle = color;
       cx.fillRect((OX + col + c) * px, (OY + row + r) * px, px, px);
     }
-  });
+  }); };
   const e = equip || {};
   const frame = e.mund === 'GRILLZ' ? C.frames.happy : C.frames.idle;
   paint(frame, 0, 0, e.effekt === 'GOLDOUTLINE' ? { X: 'i', x: 'I' } : null);
