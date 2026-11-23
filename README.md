@@ -4,13 +4,16 @@ Kleiner Pixel-Begleiter für Windows 11, der unten an der Taskleiste sitzt.
 
 Figuren: Mini-Claude (tippt auf einem Laptop, macht Kaffeepausen), Boo (Bettlaken-Geist, schwebt),
 Frosti (Pinguin, watschelt beim Tippen), Axo (Axolotl, Kiemen wackeln beim Tippen),
-Pando (Panda),
 Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
+## Version 1.41
+- Pando und Rotti entfernt.
+- Monsti und Orangi neu gezeichnet: saubere Dosen-Schattierung, neuer Deckel, Monsti mit Kralle,
+  beide maßstabsgetreu wie eine echte 500-ml-Dose (66 x 168 mm) und gleich groß.
+
 ## Version 1.40
-- Neue Figur: Rotti (roter Panda Pixel für Pixel nach Bild).
 - 1.40.3: Hopsi und Blip entfernt, Figurengrößen angeglichen.
 - Hand: Drink mit Eis (Schluck ab und zu, Eis funkelt). Begleiter: Capybara (chillt, manchmal mit Orange auf dem Kopf),
   Schwarze Energydose ✦.
@@ -109,7 +112,7 @@ Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schn
 - Läuft herum (im Menü einschalten): ab und zu ein Stück an der Taskleiste (oder auf dem Fenster) entlang und wieder zurück.
 - Füttern (im Menü): der Snack ploppt mit Funkeln über ihr auf und segelt im Bogen herunter, sie schaut hoch und
   schnappt ihn mit einem Hüpfer, isst ihn in drei Bissen (mit Krümeln) und freut sich. Frosti bekommt Fisch,
-  Hopsi eine Karotte, Pando Bambus, die anderen Apfel oder Keks.
+  die anderen Apfel oder Keks.
 - Spielzeit im Menü: wie lange ihr schon zusammen verbracht habt (Stunden und Minuten, heute und insgesamt,
   seit dem ersten Start), mit Zeit-Abzeichen von 1 bis 10.000 Stunden.
 - Neuer Tipp-Rekord: Jubel mit Konfetti (Axo feiert doppelt und tanzt).
@@ -161,7 +164,7 @@ Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schn
   schnelles Verschieben genießt sie.
 - Stabiler und sparsamer: abgestürzte oder hängende Figur wird neu geladen, Posen werden zwischengespeichert,
   das Fehler-Log wird automatisch gekürzt.
-- Eigenheiten: Pando kaut Bambus und kugelt sich bei Klick-Spam, Boo wird beim Anklicken durchsichtig und verblasst
+- Eigenheiten: Boo wird beim Anklicken durchsichtig und verblasst
   ab und zu, Hopsi macht Freudensprünge, alle hüpfen ab und zu vor Freude.
 - Ostern (Hasenohren, Osterei) und Halloween (Kürbis, Fledermäuse am Abend), abschaltbar unter Extras.
 - Vollbild-Spiele und -Videos: wird ausgeblendet (abschaltbar).
