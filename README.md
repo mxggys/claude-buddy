@@ -10,8 +10,7 @@ Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
 ## Version 1.40
-- Neue Figuren: Rotti (roter Panda Pixel für Pixel nach Bild, beim Hochheben hält ihn die Hand aus dem Bild) und Blip (eigenes grünes Mini-Alien).
-- Beim Festhalten kommt eine Hand von oben und hält die Figur am Nacken (alle Figuren).
+- Neue Figuren: Rotti (roter Panda Pixel für Pixel nach Bild) und Blip (eigenes grünes Mini-Alien).
 - Hand: Drink mit Eis (Schluck ab und zu, Eis funkelt). Begleiter: Capybara (chillt, manchmal mit Orange auf dem Kopf),
   Schwarze Energydose ✦.
 

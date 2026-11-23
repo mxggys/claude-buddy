@@ -2164,16 +2164,6 @@ function drawUnderFigure(t, frame, flip) {
 function drawActionProps(t, frame, flip) {
   const doing = (a) => duck.action === a && acting(t);
   const mug = ANCHORS.mug || [-9, Math.round(HEIGHT * 0.45)];
-  // festgehalten: eine Hand kommt von oben und hält die Figur am Nacken
-  if (duck.dragging && !edgeUnder && CHAR.grabHand) {
-    paint(CHAR.grabHand, CHAR.handAt[0], CHAR.handAt[1], flip); // Hand aus dem Bild (roter Panda)
-  } else if (duck.dragging && !edgeUnder) {
-    const hand = CHAR.props.GRABHAND;
-    const hx = (ANCHORS.hat ? ANCHORS.hat[0] : Math.round(WIDTH / 2)) - Math.floor(hand[0].length / 2);
-    const hy = (ANCHORS.hat ? ANCHORS.hat[1] : 2) - hand.length + 1; // nur die Fingerspitzen greifen oben am Nacken
-    for (let y = -PAD; y < hy + 1; y++) paint([';::::;'], hx + 2, y, flip); // Arm nach oben aus dem Bild
-    paint(hand, hx, hy, flip);
-  }
   if (handItem === 'DRINK' && duck.state !== 'sleep') {
     const sip = doing('drink') && frame === FRAMES.sip;
     paint(CHAR.props.DRINK, mug[0] + 1, mug[1] + 1 - (sip ? 4 : 0), flip, Math.floor(t / 500) % 6 === 0 ? { C: 'a' } : null);
