@@ -4,13 +4,14 @@ Kleiner Pixel-Begleiter für Windows 11, der unten an der Taskleiste sitzt.
 
 Figuren: Mini-Claude (tippt auf einem Laptop, macht Kaffeepausen), Boo (Bettlaken-Geist, schwebt),
 Frosti (Pinguin, watschelt beim Tippen), Axo (Axolotl, Kiemen wackeln beim Tippen),
-Hopsi (Hase, springt höher, klappt im Schlaf ein Ohr um), Pando (Panda),
+Pando (Panda),
 Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
 ## Version 1.40
-- Neue Figuren: Rotti (roter Panda Pixel für Pixel nach Bild) und Blip (eigenes grünes Mini-Alien).
+- Neue Figur: Rotti (roter Panda Pixel für Pixel nach Bild).
+- 1.40.3: Hopsi und Blip entfernt, Figurengrößen angeglichen.
 - Hand: Drink mit Eis (Schluck ab und zu, Eis funkelt). Begleiter: Capybara (chillt, manchmal mit Orange auf dem Kopf),
   Schwarze Energydose ✦.
 

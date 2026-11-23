@@ -707,34 +707,6 @@
       anchors: { hat: [12, 6], glasses: [7, 9] },
       record: true, // freut sich besonders über einen Tipp-Rekord
     },
-    hopsi: {
-      name: 'Hopsi (Hase)',
-      palette: { W: '#f3efe8', w: '#e2dace', v: '#cbbfae', h: '#ffffff', B: '#fff8f0', A: '#f39bb4', X: '#5b5048', x: '#9a8d82', E: '#1d1714', e: '#1d1714', m: '#5a2a24', t: '#f07a8a', P: '#ffa8b8' },
-      jump: 1.35, // springt beim Doppelklick höher
-      extraActions: ['binky', 'binky'],
-      eyes: { xs: [8, 14], y: 12, w: 2, h: 2 },
-      pattern: ['HE', 'EE'],
-      cheeks: [7, 16],
-      mouth: [11, 15],
-      arms: [5, 17, 15, 2, 3],
-      feet: [[8, 3], [13, 3]],
-      footKey: 'B',
-      shape(g, o) {
-        // Ohren: im Schlaf und bei Müdigkeit klappt eins um
-        const flop = o.sit;
-        rect(g, 8, 2 + o.hy, 9, 9 + o.hy, (x, y) => (x === 9 && y > 3 + o.hy && y < 8 + o.hy ? 'A' : 'W'));
-        if (flop) rect(g, 14, 9 + o.hy, 19, 10 + o.hy, (x, y) => (y === 9 + o.hy && x > 14 && x < 19 ? 'A' : 'w'));
-        else rect(g, 14, 2 + o.hy, 15, 9 + o.hy, (x, y) => (x === 14 && y > 3 + o.hy && y < 8 + o.hy ? 'A' : 'w'));
-        ellipse(g, 12, 15 + o.by, 7.5, 6 - o.by * 0.5, body);
-        ellipse(g, 12, 17.5 + o.by, 4, 3, () => 'B');
-      },
-      face(g, o) {
-        set(g, [[12, 14 + o.hy]], 'A');
-        set(g, [[11, 15 + o.hy], [13, 15 + o.hy]], 'e');
-      },
-      mug: ['y', 'Q'],
-      anchors: { hat: [12, 10], glasses: [7, 11] },
-    },
     pando: {
       name: 'Pando (Panda)',
       palette: { W: '#f5f5f7', w: '#e3e3ea', v: '#cbcbd5', h: '#ffffff', G: '#25252d', X: '#121217', x: '#4a4a55', E: '#ffffff', e: '#ffffff', H: '#25252d', m: '#25252d', t: '#ff7d8a', P: '#ffb3c0' },
@@ -817,7 +789,7 @@
       },
       eyeBg: 'v',
       fizzy: true, // sprudelt beim schnellen Tippen
-      w: 36, h: 85, scale: 1.15,
+      w: 36, h: 85, scale: 0.95,
       eyes: { xs: [5, 12], y: 25, w: 5, h: 5 },
       pattern: ['HHEEE', 'HHEEE', 'EEEEE', 'EEEEE', 'EEEEE'],
       cheeks: [5, 12],
@@ -843,7 +815,7 @@
       name: 'Rotti (Roter Panda)',
       palette: { A: '#3e1a0f', B: '#702a15', C: '#673628', D: '#8f4124', E: '#ad5532', F: '#e67336', G: '#da8e77', H: '#ccae72', I: '#fa955f', J: '#faa969', K: '#e2a08f', L: '#f6aa8f', M: '#f6c6b5', N: '#f9f8f6', X: '#3e1a0f', x: '#702a15', e: '#3e1a0f', P: '#f6aa8f', m: '#3e1a0f', t: '#e67336' },
       dangle: true,
-      w: 26, h: 52, scale: 1.9, noOutline: true,
+      w: 26, h: 52, scale: 1.6, noOutline: true,
       eyes: { xs: [0, 0], y: -5, w: 0, h: 0 },
       pattern: [''],
       mouth: [-20, -20],
@@ -856,32 +828,6 @@
       },
       mug: ['F', 'E'],
     },
-    blip: {
-      // eigenes kleines Mini-Alien: runder grüner Kopf, zwei Antennen mit Leuchtpunkten, silberner Anzug
-      name: 'Blip (Mini-Alien)',
-      palette: {
-        W: '#7ed957', w: '#5fb83d', v: '#3f8a28', h: '#b2f08a', B: '#cfd4dc', N: '#9aa1ad', A: '#ffe066',
-        X: '#1f3a14', x: '#3f6a2c', E: '#0c140a', e: '#0c140a', P: '#ff9ec0', m: '#1f3a14', t: '#ff7d9a',
-      },
-      float: true,
-      eyes: { xs: [8, 14], y: 8, w: 2, h: 3 },
-      pattern: ['HE', 'EE', 'EE'],
-      cheeks: [7, 16],
-      mouth: [11, 12],
-      arms: [5, 17, 14, 2, 3],
-      feet: [[9, 2], [13, 2]],
-      footKey: 'N',
-      shape(g, o) {
-        // Antennen mit Leuchtpunkten
-        set(g, [[9, 2 + o.hy], [8, 1 + o.hy], [15, 2 + o.hy], [16, 1 + o.hy]], 'v');
-        set(g, [[8, 0 + o.hy], [16, 0 + o.hy]], 'A');
-        ellipse(g, 12, 17 + o.by, 5, 4, (nx) => (Math.abs(nx) < 0.12 ? 'N' : 'B'));
-        ellipse(g, 12, 9 + o.hy, 7, 6, body);
-      },
-      face(g, o) { set(g, [[11, 12 + o.hy], [12, 12 + o.hy]], 'm'); },
-      anchors: { hat: [12, 3], glasses: [7, 7] },
-      mug: ['B', 'N'],
-    },
     monsti: {
       // nach Foto Pixel für Pixel übernommen (weiße Energydose, volle Auflösung), nur mit Gesicht
       name: 'Monsti (Energydose)',
@@ -892,7 +838,7 @@
       },
       eyeBg: 'q',
       fizzy: true, // sprudelt beim schnellen Tippen
-      w: 42, h: 84, scale: 1.2, noOutline: true,
+      w: 42, h: 84, scale: 0.95, noOutline: true,
       // Augen wie bei Mini-Claude: 3 x 3 schwarz mit Glanzpunkt oben links
       eyes: { xs: [12, 26], y: 14, w: 4, h: 4 },
       pattern: ['HEEE', 'EEEE', 'EEEE', 'EEEE'],
