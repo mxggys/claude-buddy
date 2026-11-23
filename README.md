@@ -13,6 +13,8 @@ Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schn
 - Monsti und Orangi neu gezeichnet: saubere Dosen-Schattierung, neuer Deckel.
 - 1.41.1: maßstabsgetreu: Monsti ist eine 0,5-l-Dose (66 x 168 mm) im Ultra-White-Look mit silberner Kralle,
   Orangi die schlanke 0,25-l-Dose (53 x 134 mm) und damit 80 % so hoch.
+- 1.41.2: beide Dosen realistisch: hochauflösend mit Licht gerendert (Alu-Deckel und -Hals, Lack, Glanzstreifen)
+  und auf Pixel heruntergerechnet; Monster-Kralle mit ausgefransten Kanten.
 
 ## Version 1.40
 - 1.40.3: Hopsi und Blip entfernt, Figurengrößen angeglichen.
