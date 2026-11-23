@@ -97,6 +97,7 @@ function drawFigure(canvas, id, equip, px) {
   else if (e.mund === 'TOOTHPICK' || e.mund === 'GOLDPICK') paint(P[e.mund], A.mouth[0], A.mouth[1] - 1);
   else if (e.mund === 'HOSE') { paint(['jj'], A.mouth[0], A.mouth[1] - 1); for (let i = 0; i <= 20; i++) { const k = i / 20; paint(['k'], Math.round(A.mouth[0] + 2 + (W + 4 - A.mouth[0] - 2) * k), Math.round(A.mouth[1] - 1 + (H - A.mouth[1]) * k + Math.sin(k * Math.PI) * 4), null); } }
   if (e.hand === 'WALLET') { const mug = A.mug || [-9, 11]; paint(P.WALLET, mug[0] + 2, mug[1] + 3); }
+  if (e.hand === 'DRINK') { const mug = A.mug || [-9, 11]; paint(P.DRINK, mug[0] + 1, mug[1] + 1); }
   if (e.begleiter && P[e.begleiter] && !SIZED.has(e.begleiter)) {
     const rows = P[e.begleiter === 'ZIPPO' ? 'ZIPPO_OPEN' : e.begleiter];
     paint(rows, W + 1, H - rows.length + 1);

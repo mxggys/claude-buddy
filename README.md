@@ -9,6 +9,12 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
+## Version 1.40
+- Neue Figuren: Rotti (roter Panda, hängt beim Hochheben brav am Nacken) und Blip (eigenes grünes Mini-Alien).
+- Beim Festhalten kommt eine Hand von oben und hält die Figur am Nacken (alle Figuren).
+- Hand: Drink mit Eis (Schluck ab und zu, Eis funkelt). Begleiter: Capybara (chillt, manchmal mit Orange auf dem Kopf),
+  Schwarze Energydose ✦.
+
 ## Version 1.39
 - Mini-Spiele auf der Start-Seite: Schere, Stein, Papier gegen die Figur (Schnick, Schnack, Schnuck in einer
   Sprechblase, Spielstand wird gemerkt) und Korbwerfen (Ball per Ziehen in den Korb werfen, die Figur wirft mit,

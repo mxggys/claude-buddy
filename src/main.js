@@ -765,7 +765,8 @@ const ITEMS = [
   ['HAMMOCK', 'Hängematte', 'begleiter'], ['BUNNY', 'Plüsch-Hase', 'begleiter'], ['RADIATOR', 'Heizkörper', 'begleiter'], ['THERMOS', 'Thermoskanne mit Tee', 'begleiter'],
   ['SNOWGLOBE', 'Schneekugel', 'begleiter'], ['XMASTREE', 'Mini-Weihnachtsbaum', 'begleiter'],
   // Hand
-  ['WALLET', 'Geldbeutel', 'hand'],
+  ['WALLET', 'Geldbeutel', 'hand'], ['DRINK', 'Drink mit Eis', 'hand'],
+  ['CAPY', 'Capybara', 'begleiter'],
   ['ASHTRAY', 'Aschenbecher', 'begleiter'], ['SHISHA', 'Mini-Shisha', 'begleiter'], ['BONG', 'Mini-Bong', 'begleiter'], ['ENERGYCAN', 'Energydose', 'begleiter'],
   ['SNUSCAN', 'Snus-Dose', 'begleiter'], ['CIGPACK', 'Kippenschachtel', 'begleiter'], ['ZIPPO', 'Sturmfeuerzeug', 'begleiter'],
   // Effekte
@@ -775,7 +776,7 @@ const ITEMS = [
   // selten (goldenes Päckchen)
   ['GOLDCROWN', 'Goldkrone ✦', 'kopf', true], ['SIMPLECROWN', 'Schlichte Goldkrone ✦', 'kopf', true], ['CHAINBEANIE', 'Beanie mit Goldkette ✦', 'kopf', true],
   ['GOLDHALO', 'Goldener Heiligenschein ✦', 'kopf', true], ['JOINTCROWN', 'Joint-Krone ✦', 'kopf', true],
-  ['ORANGECAN', 'Orangen-Dose (legendär) ✦', 'begleiter', true], ['LIMECAN', 'Limetten-Dose (legendär) ✦', 'begleiter', true],
+  ['ORANGECAN', 'Orangen-Dose (legendär) ✦', 'begleiter', true], ['BLACKCAN', 'Schwarze Energydose ✦', 'begleiter', true], ['LIMECAN', 'Limetten-Dose (legendär) ✦', 'begleiter', true],
   ['NEONVAPE', 'Neon-Vape ✦', 'mund', true], ['JOINTXXL', 'XXL-Joint ✦', 'mund', true], ['GOLDJOINT', 'Joint mit Goldpapier ✦', 'mund', true],
   ['GOLDRINGCIGAR', 'Zigarre mit Goldring ✦', 'mund', true], ['CIGARXXL', 'Zigarre XXL ✦', 'mund', true], ['DIAMONDCIG', 'Diamant-Zigarette ✦', 'mund', true],
   ['GOLDPICK', 'Goldener Zahnstocher ✦', 'mund', true], ['GOLDBARS', 'Goldbarren ✦', 'begleiter', true],

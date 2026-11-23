@@ -47,6 +47,8 @@
     9: '#8b4400', 0: '#663200', '+': '#b84142', '-': '#571f20', '~': '#949494',
     // Kaffeebecher: Becher, Schatten, Kaffee, Dampf
     '=': '#efe6d2', '#': '#cdbf9f', '%': '#3b2414', '&': '#e3cfa8',
+    // Haut (Hand von oben), Glas, Capybara
+    ':': '#f2c6a0', ';': '#d49a74', '|': '#e4eef4', ',': '#c08a55', '_': '#7f5530',
     // Zigarre: Deckblatt hell/mittel/dunkel, Bauchbinde gold/rot
     '[': '#9a5a32', '(': '#74401f', ')': '#4f2a12', ']': '#d9b23a', '!': '#b02a2a',
     // Pfeife: Mundstück schwarz glänzend, Holzkopf mit Maserung
@@ -781,6 +783,69 @@
       },
       mug: ['A', 'O'],
     },
+    rotti: {
+      // roter Panda: orange, weiße Gesichtsflecken, dunkler Bauch, geringelter Schwanz
+      name: 'Rotti (Roter Panda)',
+      palette: {
+        W: '#e0702e', w: '#c25a20', v: '#9a4416', h: '#f3955a', B: '#f6eee6', N: '#4a2618', A: '#d06a2c', O: '#6a3018',
+        G: '#241210', X: '#3a1c10', x: '#7a3a1c', E: '#1a0e0a', e: '#1a0e0a', P: '#f4a6a0', m: '#3a1a10', t: '#f07a6a',
+      },
+      dangle: true, // hängt am Nacken, wenn man ihn hochhebt
+      eyes: { xs: [8, 14], y: 10, w: 2, h: 2 },
+      pattern: ['HE', 'EE'],
+      cheeks: [7, 16],
+      mouth: [11, 14],
+      arms: [6, 16, 15, 2, 3],
+      armKey: 'N',
+      feet: [[8, 2], [14, 2]],
+      footKey: 'N',
+      shape(g, o) {
+        // geringelter Schwanz hinten rechts
+        for (let y = 12; y <= 20; y++) for (let x = 17; x <= 21; x++) {
+          const dx = (x - 19) / 2.6, dy = (y - 16.5) / 4.6;
+          if (dx * dx + dy * dy <= 1) g[y + o.by - 0 > 21 ? 21 : y][x] = Math.floor((y + o.step) / 2) % 2 ? 'O' : 'A';
+        }
+        ellipse(g, 12, 18 + o.by, 5.5, 3.6, () => 'N');
+        ellipse(g, 6, 4.5 + o.hy, 2.6, 2.6, body);
+        ellipse(g, 18, 4.5 + o.hy, 2.6, 2.6, body);
+        set(g, [[6, 4 + o.hy], [18, 4 + o.hy]], 'B');
+        ellipse(g, 12, 10 + o.hy, 8, 6, body);
+        // weiße Flecken: Wangen und über den Augen
+        ellipse(g, 7, 12.5 + o.hy, 2.3, 1.6, () => 'B');
+        ellipse(g, 17, 12.5 + o.hy, 2.3, 1.6, () => 'B');
+        set(g, [[8, 8 + o.hy], [9, 8 + o.hy], [14, 8 + o.hy], [15, 8 + o.hy]], 'B');
+        ellipse(g, 12, 13.5 + o.hy, 2, 1.4, () => 'B');
+      },
+      face(g, o) { set(g, [[11, 12 + o.hy], [12, 12 + o.hy]], 'G'); },
+      anchors: { hat: [12, 4], glasses: [7, 9] },
+      mug: ['A', 'O'],
+    },
+    blip: {
+      // eigenes kleines Mini-Alien: runder grüner Kopf, zwei Antennen mit Leuchtpunkten, silberner Anzug
+      name: 'Blip (Mini-Alien)',
+      palette: {
+        W: '#7ed957', w: '#5fb83d', v: '#3f8a28', h: '#b2f08a', B: '#cfd4dc', N: '#9aa1ad', A: '#ffe066',
+        X: '#1f3a14', x: '#3f6a2c', E: '#0c140a', e: '#0c140a', P: '#ff9ec0', m: '#1f3a14', t: '#ff7d9a',
+      },
+      float: true,
+      eyes: { xs: [8, 14], y: 8, w: 2, h: 3 },
+      pattern: ['HE', 'EE', 'EE'],
+      cheeks: [7, 16],
+      mouth: [11, 12],
+      arms: [5, 17, 14, 2, 3],
+      feet: [[9, 2], [13, 2]],
+      footKey: 'N',
+      shape(g, o) {
+        // Antennen mit Leuchtpunkten
+        set(g, [[9, 2 + o.hy], [8, 1 + o.hy], [15, 2 + o.hy], [16, 1 + o.hy]], 'v');
+        set(g, [[8, 0 + o.hy], [16, 0 + o.hy]], 'A');
+        ellipse(g, 12, 17 + o.by, 5, 4, (nx) => (Math.abs(nx) < 0.12 ? 'N' : 'B'));
+        ellipse(g, 12, 9 + o.hy, 7, 6, body);
+      },
+      face(g, o) { set(g, [[11, 12 + o.hy], [12, 12 + o.hy]], 'm'); },
+      anchors: { hat: [12, 3], glasses: [7, 7] },
+      mug: ['B', 'N'],
+    },
     monsti: {
       // nach Foto Pixel für Pixel übernommen (weiße Energydose, volle Auflösung), nur mit Gesicht
       name: 'Monsti (Energydose)',
@@ -1140,6 +1205,12 @@
   const RPS_PAPIER = small(['n.n.n.', 'n.n.n.', 'nnnnnn', 'nnnnnn', 'nnnnnn', '.nnnn.']);
   const RPS_SCHERE = small(['n...n', 'n...n', '.n.n.', '.nnn.', 'nnnnn', '.nnn.']);
 
+  // Drink, Hand, Capybara, schwarze Dose (Version 1.40)
+  const DRINK = small(['yy.......', 'ya|...|..', '.y|...|..', '.|DDDDD|.', '.|dCCadD|', '.|dCCadD|', '.|DdddDD|', '.|||||||.', '..|||||..']);
+  const GRABHAND = small(['..;::::;..', '..::::::..', '..::::::..', '..::::::..', '.;::::::;.', ';::::::::;', ';::;::;::;', '.::.::.::.', '.;:.;:.;:.']);
+  const CAPY = small(['..__.......', '.,,,,,,,,..', ',,,,,,,,,,.', ',K,,,,,,,,,', '_,,,,,,,,,,', '__,,,,,,,,,', '.,,,,,,,,,.', '.,_,,.,_,_.']);
+  const BLACKCAN = small(['.jjjjj.', 'KKKKKKK', 'K5K5K5K', 'K5K5K5K', 'K5K5K5K', 'KK5K5KK', 'KKK5KKK', 'KKKKKKK', 'K55555K', 'KKKKKKK', '.jjjjj.']);
+
   // Aschenbecher (Glas), Kippe darin; Feuerzeug zum Anzünden
   const ASHTRAY = small(['4555555554', '5444444445', '.55555555.']);
   const BUTT = ['2113'];
@@ -1228,7 +1299,7 @@
       palette: { ...SHARED, ...c.palette },
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, RPS_STEIN, RPS_PAPIER, RPS_SCHERE, PHONE, NEWSPAPER, WALLET, WALLET_OPEN, XMASTREE, ORANGECAN, LIMECAN, JOINTXXL, SHERLOCK, VAPEXXL, GOLDPICK, CIGARXXL, GOLDRINGCIGAR, NOSESPRAY, GOLDJOINT, DIAMONDCIG,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, BAMBOO, EGG, APPLE, COOKIE, FISH, CARROT, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, DRINK, GRABHAND, CAPY, BLACKCAN, RPS_STEIN, RPS_PAPIER, RPS_SCHERE, PHONE, NEWSPAPER, WALLET, WALLET_OPEN, XMASTREE, ORANGECAN, LIMECAN, JOINTXXL, SHERLOCK, VAPEXXL, GOLDPICK, CIGARXXL, GOLDRINGCIGAR, NOSESPRAY, GOLDJOINT, DIAMONDCIG,
         CIGARILLO, ROLLIE, SLIM, FRUITVAPE, GRILLZ, SHISHA, BONG, ENERGYCAN, SNUSCAN, SNUSCAN_OPEN, CIGPACK, CIGPACK_OPEN, ZIPPO, ZIPPO_OPEN, JOINTCROWN, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },

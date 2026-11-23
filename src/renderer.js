@@ -341,6 +341,7 @@ const ACTIONS = {
   tickle: { frames: ['cheer1', 'happy', 'cheer2', 'happy'], step: 110, ms: 1700, priority: true }, // gekitzelt: lacht und zappelt
   peek: { frames: ['idle'], ms: 6500 },              // versteckt sich hinter der Taskleiste und guckt raus
   greet: { frames: ['wave1', 'wave2'], step: 220, ms: 2200 },
+  drink: { frames: ['coffee', 'sip', 'sip', 'coffee', 'happy'], step: 420, ms: 2100 }, // Schluck aus dem Glas
   wallet: { frames: ['coffee', 'happy', 'coffee', 'happy'], step: 400, ms: 1600 }, // Geldbeutel auf, Geld zählen
   coffee: { frames: ['coffee', 'coffee', 'coffee', 'sip', 'sip', 'coffee', 'coffee', 'sip', 'coffee'], step: 600, ms: 5400 }, // Kaffeepause
   // Reaktionen haben Vorrang vor allem anderen
@@ -365,6 +366,7 @@ function currentFrame(t) {
   // festgehalten: zappeln, außer über einem Fensterrand (dann ruhig: hier kann man loslassen)
   if (duck.dragging) {
     if (edgeUnder) return edgeUnder === 'top' ? FRAMES.happy : FRAMES.reach;
+    if (CHAR.dangle) return FRAMES.sad; // roter Panda: hängt brav am Nacken und guckt verlegen
     return Math.floor(t / 140) % 2 ? FRAMES.drag1 : FRAMES.drag2;
   }
   if (duck.sliding) return FRAMES.slide;
@@ -499,7 +501,7 @@ function paintFigure(t) {
     paint(rows, Math.round(WIDTH / 2 - rows[0].length / 2), up ? -6 : -2, flip);
   }
   if ((duck.action === 'bong' || duck.action === 'energy' || duck.action === 'boba') && acting(t) && ANCHORS.mug) {
-    const can = buddyItem === 'ORANGECAN' || buddyItem === 'LIMECAN' ? buddyItem : 'ENERGYCAN';
+    const can = ['ORANGECAN', 'LIMECAN', 'BLACKCAN'].includes(buddyItem) ? buddyItem : 'ENERGYCAN';
     const rows = CHAR.props[{ bong: 'BONG', energy: can, boba: 'BUBBLETEA' }[duck.action]];
     const [mx, my] = ANCHORS.mug;
     const lift = frame === FRAMES.sip ? 3 : 0;
@@ -1408,6 +1410,11 @@ function pickState(t) {
   else if (!hardSave() && maybeWalk(t, r)) { /* läuft los */ }
   else if (r > 0.94 && !hardSave() && !perch && !hanging()) startAction('peek', t); // versteckt sich kurz
   else if (handItem === 'WALLET' && r > 0.9 && !hardSave()) { startAction('wallet', t); setTimeout(() => sparkle(3), 500); }
+  else if (handItem === 'DRINK' && r > 0.88 && !hardSave()) {
+    startAction('drink', t);
+    // Eis klirrt: kleines Funkeln am Glas
+    setTimeout(() => { const m = gridPoint((ANCHORS.mug || [-9, 10])[0] + 5, (ANCHORS.mug || [-9, 10])[1]); for (let i = 0; i < 3; i++) particles.push({ type: 'glint', x: m.x + rand(-6, 6), y: m.y + rand(-4, 4), vx: 0, vy: 0, life: 1, color: '#e8f8ff' }); }, 900);
+  }
   else if (r < 0.5 && !hardSave()) startAction(list[Math.floor(Math.random() * list.length)], t);
 }
 
@@ -2005,7 +2012,7 @@ function drawCoffee(t, frame, flip) {
 }
 
 // ---------- Begleiter neben ihr: Shisha, Bong, Energydose, Snus, Kippenschachtel, Sturmfeuerzeug ----------
-const SIDE_BUDDIES = new Set(['XMASTREE', 'ORANGECAN', 'LIMECAN', 'ASHTRAY', 'SHISHA', 'BONG', 'ENERGYCAN', 'SNUSCAN', 'CIGPACK', 'ZIPPO', 'BUBBLETEA', 'MINITEDDY', 'BUNNY', 'DUMBBELL', 'FIREPLACE', 'FRIDGE', 'GOLDBARS', 'RADIATOR', 'THERMOS']);
+const SIDE_BUDDIES = new Set(['CAPY', 'BLACKCAN', 'XMASTREE', 'ORANGECAN', 'LIMECAN', 'ASHTRAY', 'SHISHA', 'BONG', 'ENERGYCAN', 'SNUSCAN', 'CIGPACK', 'ZIPPO', 'BUBBLETEA', 'MINITEDDY', 'BUNNY', 'DUMBBELL', 'FIREPLACE', 'FRIDGE', 'GOLDBARS', 'RADIATOR', 'THERMOS']);
 let zippoOpenUntil = 0;
 let nextBuddyUse = 0;
 const actionSince = (t) => t - (duck.actionUntil - ACTIONS[duck.action].ms);
@@ -2036,7 +2043,16 @@ function drawSideBuddy(t, frame, flip) {
     const ph = Math.floor(t / 500) % 3;
     at(CHAR.props.XMASTREE, ph === 0 ? { d: 'i', b: 'd' } : ph === 1 ? { b: 'i', d: 'b' } : null);
   }
-  if ((buddyItem === 'ORANGECAN' || buddyItem === 'LIMECAN') && !doing('energy')) at(CHAR.props[buddyItem]);
+  if ((buddyItem === 'ORANGECAN' || buddyItem === 'LIMECAN' || buddyItem === 'BLACKCAN') && !doing('energy')) at(CHAR.props[buddyItem]);
+  if (buddyItem === 'CAPY') {
+    // Capybara chillt; ab und zu mit Orange auf dem Kopf und etwas Dampf
+    const rows = CHAR.props.CAPY;
+    at(rows);
+    if (Math.floor(t / 9000) % 3 === 0) {
+      paint(['.yy.', 'yQyy', '.yy.'], WIDTH + 3, HEIGHT - rows.length - 1, flip);
+      if (Math.floor(t / 600) % 2) paint(['&'], WIDTH + 8, HEIGHT - rows.length - 2 - Math.floor(t / 300) % 3, flip);
+    }
+  }
   if (buddyItem === 'THERMOS') at(CHAR.props.THERMOS);
   if (buddyItem === 'MINITEDDY') at(CHAR.props.MINITEDDY);
   if (buddyItem === 'BUNNY') at(CHAR.props.BUNNY);
@@ -2144,6 +2160,18 @@ function drawUnderFigure(t, frame, flip) {
 function drawActionProps(t, frame, flip) {
   const doing = (a) => duck.action === a && acting(t);
   const mug = ANCHORS.mug || [-9, Math.round(HEIGHT * 0.45)];
+  // festgehalten: eine Hand kommt von oben und hält die Figur am Nacken
+  if (duck.dragging && !edgeUnder) {
+    const hand = CHAR.props.GRABHAND;
+    const hx = (ANCHORS.hat ? ANCHORS.hat[0] : Math.round(WIDTH / 2)) - Math.floor(hand[0].length / 2);
+    const hy = (ANCHORS.hat ? ANCHORS.hat[1] : 2) - hand.length + 1; // nur die Fingerspitzen greifen oben am Nacken
+    for (let y = -PAD; y < hy + 1; y++) paint([';::::;'], hx + 2, y, flip); // Arm nach oben aus dem Bild
+    paint(hand, hx, hy, flip);
+  }
+  if (handItem === 'DRINK' && duck.state !== 'sleep') {
+    const sip = doing('drink') && frame === FRAMES.sip;
+    paint(CHAR.props.DRINK, mug[0] + 1, mug[1] + 1 - (sip ? 4 : 0), flip, Math.floor(t / 500) % 6 === 0 ? { C: 'a' } : null);
+  }
   if (doing('phone')) {
     paint(CHAR.props.PHONE, mug[0] + 3, mug[1] + 1, flip, Math.floor(t / 300) % 3 ? null : { c: 'a' });
   }
@@ -2194,7 +2222,7 @@ function useBuddy(t) {
     kick();
     return true;
   }
-  const action = { ORANGECAN: 'energy', LIMECAN: 'energy', SHISHA: 'shisha', BONG: 'bong', ENERGYCAN: 'energy', SNUSCAN: 'snus', BUBBLETEA: 'boba', DUMBBELL: 'lift' }[buddyItem];
+  const action = { BLACKCAN: 'energy', ORANGECAN: 'energy', LIMECAN: 'energy', SHISHA: 'shisha', BONG: 'bong', ENERGYCAN: 'energy', SNUSCAN: 'snus', BUBBLETEA: 'boba', DUMBBELL: 'lift' }[buddyItem];
   if (!action) return false;
   startAction(action, t);
   if (action === 'lift') setTimeout(() => { const m = gridPoint(WIDTH * 0.8, 4); for (let i = 0; i < 2; i++) particles.push({ type: 'rain', x: m.x + rand(-4, 4), y: m.y, vx: rand(10, 30), vy: rand(-30, -10), life: 0.6 }); }, 1400);
@@ -2231,7 +2259,7 @@ function useBuddy(t) {
 }
 function updateBuddy(dt, t) {
   if (!buddyItem || !smokeCfg.self || hardSave() || duck.state !== 'idle' || acting(t) || isTyping(t) || !duck.onGround) return;
-  const every = { ORANGECAN: 90, LIMECAN: 90, SHISHA: 60, BONG: 90, ENERGYCAN: 100, SNUSCAN: 150, ZIPPO: 30, BUBBLETEA: 80, THERMOS: 120, DUMBBELL: 70, FRIDGE: 140, MINITEDDY: 60, BUNNY: 60 }[buddyItem];
+  const every = { BLACKCAN: 90, ORANGECAN: 90, LIMECAN: 90, SHISHA: 60, BONG: 90, ENERGYCAN: 100, SNUSCAN: 150, ZIPPO: 30, BUBBLETEA: 80, THERMOS: 120, DUMBBELL: 70, FRIDGE: 140, MINITEDDY: 60, BUNNY: 60 }[buddyItem];
   if (!every) return;
   if (!nextBuddyUse) nextBuddyUse = t + (every * 1000 / smokeCfg.rate) * rand(0.3, 1);
   if (t < nextBuddyUse) return;
