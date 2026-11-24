@@ -8,6 +8,11 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
+## Version 1.43
+- Dosen größer und plastischer: Kong Strong 33 x 82 px, Monster 42 x 102 px (Kong 80 % der Monster-Höhe).
+  Stärkere Zylinder-Schattierung (dunkle Ränder, Glanzstreifen, Reflexkante), größere Augen (5 x 5) wie bei Mini-Claude.
+- Kong Strong: größere Schrift (ORANGE, KONG / STRONG), längere Schrift-Streifen, mehr Punkte-Raster.
+
 ## Version 1.42
 - 1.42.1: Bugfix Größen: Zubehör (Zigarette, Hüte, Essen, Begleiter, Rauch) ist jetzt bei jeder Figur gleich groß;
   vorher wirkte es an den fein gezeichneten Dosen dreimal zu klein. Kleine Größen (z. B. 60 %) werden sauberer verkleinert.
