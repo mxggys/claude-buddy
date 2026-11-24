@@ -286,6 +286,7 @@
     width: CW,
     height: CH,
     scale: 3,
+    display: 3.75, // auf dem Bildschirm so groß wie die anderen Figuren (~75 px hoch)
   };
 
   // ---------------------------------------------------------------------------------------------
@@ -670,6 +671,7 @@
     kuschel: {
       name: 'Kuschel (Koala)',
       palette: { W: '#a3a7b3', w: '#8a8e99', v: '#70747e', h: '#c7cad3', B: '#f1f1f4', G: '#16161a', X: '#2f3036', x: '#6b6e78', E: '#16161a', e: '#16161a', P: '#f2a7b5', m: '#3a2a30', t: '#f07a8a' },
+      display: 3.9, // Anzeige-Maßstab: so hoch wie die anderen Figuren
       cuddly: true, // schläft beim Streicheln ein, am liebsten seitlich an einem Fenster
       eyes: { xs: [8, 14], y: 11, w: 2, h: 2 },
       pattern: ['HE', 'EE'],
@@ -693,6 +695,7 @@
     mokka: {
       name: 'Mokka (Kaffeetasse)',
       palette: { W: '#f2ece4', w: '#d6cbbd', v: '#bfb2a2', h: '#ffffff', A: '#6b3e22', a: '#4f2c16', X: '#3a2418', x: '#7a5a48', E: '#1a110b', e: '#1a110b', P: '#f4a0a8', m: '#3a1a10', t: '#f07a6a' },
+      display: 5.1, // Anzeige-Maßstab: so hoch wie die anderen Figuren
       colorKeys: ['W', 'w', 'v', 'h', 'X', 'x'], // Farbvarianten: nur die Tasse einfärben, der Kaffee bleibt braun
       steams: true, // dampft, morgens und beim schnellen Tippen kräftiger
       eyes: { xs: [9, 13], y: 13, w: 2, h: 2 },
@@ -725,7 +728,7 @@
       },
       eyeBg: 'v',
       fizzy: true, // sprudelt beim schnellen Tippen
-      w: 33, h: 82, scale: 1,
+      w: 33, h: 82, scale: 1, display: 0.92,
       eyes: { xs: [3, 9], y: 25, w: 5, h: 5 },
       pattern: ['HHEEE', 'HHEEE', 'EEEEE', 'EEEEE', 'EEEEE'],
       mouth: [7, 33],
@@ -759,7 +762,7 @@
       },
       eyeBg: 'q',
       fizzy: true, // sprudelt beim schnellen Tippen
-      w: 42, h: 102, scale: 1,
+      w: 42, h: 102, scale: 1, display: 0.8,
       eyes: { xs: [13, 24], y: 12, w: 5, h: 5 },
       pattern: ['HHEEE', 'HHEEE', 'EEEEE', 'EEEEE', 'EEEEE'],
       mouth: [19, 18],
@@ -834,6 +837,7 @@
       width: def.w || VW,
       height: def.h || VH,
       scale: def.scale || 3,
+      display: def.display || null,
     };
   }
 

@@ -180,12 +180,34 @@ function cigRows(n) {
   const key = PM + ':' + n;
   return cigCache[key] || (cigCache[key] = upscale(DuckSprites.cigarette(n)));
 }
+// Alle Figuren auf eine gemeinsame Auflösung bringen (ca. 1 Pixel = 1 Bildpunkt bei 100 %): grobe Figuren werden
+// ganzzahlig hochgerechnet. So sind alle Figuren bei jeder Größe ähnlich groß und gleich scharf, und das Zubehör
+// (PM-fach hochgerechnet) ist überall gleich groß.
+function normalizeCharacter(c) {
+  const target = c.display || c.scale;
+  if (c.scale < 1.5) return { ...c, scale: target };
+  let F = 1, best = Infinity;
+  for (let f = 1; f <= Math.floor(target); f++) {
+    const sc = target / f, pm = Math.max(1, Math.round(3 / sc)), err = Math.abs(pm * sc - 3);
+    if (err < best - 1e-9) { best = err; F = f; }
+  }
+  const upF = (rows) => rows.flatMap((r) => Array(F).fill([...r].map((ch) => ch.repeat(F)).join('')));
+  const frames = {};
+  for (const [k, f] of Object.entries(c.frames)) { const u = upF(f); if (f.eyeDy) u.eyeDy = f.eyeDy * F; frames[k] = u; }
+  const anchors = Object.fromEntries(Object.entries(c.anchors).map(([k, v]) => [k, Array.isArray(v) ? v.map((n) => n * F) : v]));
+  return {
+    ...c, frames, anchors, width: c.width * F, height: c.height * F, scale: target / F, fineFactor: F,
+    props: { ...c.props, GLASSES: upF(c.props.GLASSES) },
+    eye: { positions: c.eye.positions.map(([x, y]) => [x * F, y * F]), pattern: upF(c.eye.pattern) },
+  };
+}
 function applyCharacter(id) {
   CHAR = DuckSprites.character(id);
   // Dosen: jede Farbe ist eine eigene Sorte mit eigenem Bild (statt alles einzufärben)
   const sorte = CHAR.variants && CHAR.variants[CONFIG.farbe];
   if (sorte) CHAR = { ...DuckSprites.character(sorte), id: CHAR.id, sorte: CONFIG.farbe };
-  PM = CHAR.scale < 1.5 ? Math.max(1, Math.round(3 / CHAR.scale)) : 1;
+  CHAR = normalizeCharacter(CHAR);
+  PM = Math.max(1, Math.round(3 / CHAR.scale));
   PAD = 16 * PM;
   if (PM > 1) {
     const props = {};
@@ -206,7 +228,7 @@ function applyCharacter(id) {
     if (CHAR.mug) { PROP_PALETTE['¹'] = PALETTE[CHAR.mug[0]]; PROP_PALETTE['²'] = PALETTE[CHAR.mug[1]]; CHAR.mug = ['¹', '²']; }
     // Dinge links neben der Figur (Becher, Pilz) brauchen mehr Abstand, weil sie hochgerechnet breiter sind
     ANCHORS = { ...ANCHORS };
-    for (const k of ['mug', 'mushroom']) if (ANCHORS[k] && ANCHORS[k][0] < 0) ANCHORS[k] = [ANCHORS[k][0] * PM, ANCHORS[k][1]];
+    if (!CHAR.fineFactor) for (const k of ['mug', 'mushroom']) if (ANCHORS[k] && ANCHORS[k][0] < 0) ANCHORS[k] = [ANCHORS[k][0] * PM, ANCHORS[k][1]];
   }
   crispColors();
   applySize(SIZE);
@@ -3994,9 +4016,8 @@ window.addEventListener('wheel', (e) => {
     return;
   }
   e.preventDefault();
-  // nächste scharfe Größen-Stufe (wie im Einstellungsfenster)
-  const STEPS = [0.33, 0.5, 0.67, 0.83, 1, 1.33, 1.5, 1.67, 2, 2.33, 2.5, 2.67, 3];
-  const next = e.deltaY < 0 ? STEPS.find((v) => v > SIZE + 0.01) : [...STEPS].reverse().find((v) => v < SIZE - 0.01);
+  // Größe in 10er-Schritten
+  const next = Math.min(MAX_SIZE, Math.max(MIN_SIZE, Math.round((SIZE + (e.deltaY < 0 ? 0.1 : -0.1)) * 10) / 10));
   if (next) setSize(next);
   if (bridge) bridge.saveSize(SIZE);
 }, { passive: false });

@@ -47,7 +47,7 @@ const BASE_W = 240;
 const BASE_H = 200;
 const MIN_SIZE = 0.1;
 const MAX_SIZE = 3;
-const SIZE_PRESETS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.75, 1, 1.5, 2];
+const SIZE_PRESETS = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1, 1.2, 1.5, 2];
 const WEATHER_EVERY = 15 * 60 * 1000; // alle 15 Minuten (Regen ist oft kurz)
 
 const DEFAULT_SETTINGS = {
@@ -926,9 +926,8 @@ function decayMood() {
   changeMood(-3 * steps);
 }
 
-// Größen rasten auf Stufen ein (Drittel bis 1, darüber halbe Schritte), dann sind alle Pixel gleich groß und scharf
-const SIZE_STEPS = [0.33, 0.5, 0.67, 0.83, 1, 1.33, 1.5, 1.67, 2, 2.33, 2.5, 2.67, 3];
-const snapSize = (v) => SIZE_STEPS.reduce((best, s) => (Math.abs(s - v) < Math.abs(best - v) ? s : best), 1);
+// Größe immer in 10er-Schritten: 10 %, 20 %, 30 % … 300 %
+const snapSize = (v) => Math.min(MAX_SIZE, Math.max(MIN_SIZE, Math.round(v * 10) / 10));
 function setSize(size) {
   settings.groesse = snapSize(Math.min(MAX_SIZE, Math.max(MIN_SIZE, size)));
   saveSettings();
@@ -1027,7 +1026,7 @@ function askText(opts) {
 async function askSize() {
   const value = await askText({
     label: 'Eigene Größe in Prozent',
-    hint: `Von 33 bis ${MAX_SIZE * 100}; rastet auf scharfe Stufen ein (67, 100, 133 …). Tipp: Strg + Mausrad auf der Figur.`,
+    hint: `Von 10 bis ${MAX_SIZE * 100}; in 10er-Schritten (10, 20, 30 …). Tipp: Strg + Mausrad auf der Figur.`,
     value: String(Math.round(settings.groesse * 100)),
   });
   const pct = parseFloat(String(value || '').replace(',', '.').replace('%', ''));
@@ -1293,12 +1292,10 @@ function openSettings(page) {
 }
 // Was ist neu: einmal nach jedem Update auf der Startseite der Einstellungen
 const CHANGELOG = [
-  'Mini-Claude mit Licht und Schatten; Farben wirken nicht mehr einfarbig, Gold glänzt, Mitternacht funkelt',
-  'Größen rasten auf Stufen ein (z. B. 67 %, 100 %, 133 %) – alles bleibt scharf',
-  'Weichere Landung mit kleinem Nachfedern',
-  'Dosen: Dosenturm wächst beim Tippen, Doppelklick zerdrückt die Dose kurz, Feierabend um 18 Uhr mit „Pssst“',
-  'Neu: Spiegel-Sonnenbrille, Kühlbox als Begleiter, Effekt „Frost & Eis“',
-];
+  'Größe jetzt in 10er-Schritten (10 %, 20 %, 30 % … 300 %), auch mit Strg + Mausrad',
+  'Alle Figuren gleich groß: Mini-Claude, Koala, Tasse und Dosen sind bei gleicher Größe jetzt etwa gleich hoch',
+  'Einheitlich scharf: alle Figuren laufen durch dieselbe Darstellung, Zubehör ist überall gleich groß',
+]
 function settingsState() {
   const z = settings.zaehler;
   const owned = new Set(settings.sammlung);

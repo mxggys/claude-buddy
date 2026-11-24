@@ -7,6 +7,11 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Orangi (Kong-Strong-Dose, 0,25 l) und Monsti (Monster-Dose, 0,5 l), beide mit Gesicht, sprudeln beim schnellen Tippen.
 
+## Version 1.46
+- Größe in 10er-Schritten (10–300 %), Regler, Strg + Mausrad und eigene Eingabe.
+- Alle Figuren einheitlich: bei gleicher Größe etwa gleich hoch (ca. 72–80 px bei 100 %; vorher Tasse 42, Koala 57, Claude 60, Kong 82, Monster 102 px).
+  Alle Figuren werden intern auf dieselbe Auflösung gebracht, dadurch gleich scharf bei jeder Größe und Zubehör überall gleich groß.
+
 ## Version 1.45
 - Mini-Claude mit Licht und Schatten; Farbvarianten verschieben helle und dunkle Töne unterschiedlich (wirkt nicht mehr einfarbig),
   Gold glänzt, Mitternacht funkelt mit kleinen Sternen.

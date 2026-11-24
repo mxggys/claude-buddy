@@ -47,18 +47,16 @@ test('Dosen haben für jede Farbe eine eigene Sorte', () => {
   }
 });
 
-test('Zubehör hochrechnen: Größe auf dem Bildschirm bei allen Figuren gleich', () => {
-  const up = (rows, pm) => rows.flatMap((r) => Array(pm).fill([...r].map((ch) => ch.repeat(pm)).join('')));
-  for (const id of S.ORDER) {
-    const c = S.character(id);
-    const pm = c.scale < 1.5 ? Math.max(1, Math.round(3 / c.scale)) : 1;
-    const cig = up(c.props.CIGARETTE, pm);
-    const screen = cig[0].length * c.scale * pm / pm; // Breite in Bildpunkten bei Größe 100 %
-    const ref = S.character('claude').props.CIGARETTE[0].length * S.character('claude').scale;
-    assert.ok(Math.abs(cig[0].length * c.scale - ref) <= ref * 0.34, `${id}: Zigarette ${cig[0].length * c.scale}px statt ~${ref}px (${screen})`);
-  }
+test('Zubehör hochrechnen: Größe auf dem Bildschirm bei allen Figuren gleich (±20 %)', () => {
+  const pxOf = (c) => {
+    const target = c.display || c.scale;
+    if (c.scale < 1.5) return Math.max(1, Math.round(3 / target)) * target;
+    let best = Infinity, px = 0;
+    for (let f = 1; f <= Math.floor(target); f++) { const sc = target / f, pm = Math.max(1, Math.round(3 / sc)); if (Math.abs(pm * sc - 3) < best - 1e-9) { best = Math.abs(pm * sc - 3); px = pm * sc; } }
+    return px;
+  };
+  for (const id of S.ORDER) { const px = pxOf(S.character(id)); assert.ok(px > 2.4 && px < 3.6, `${id}: Zubehör-Pixel ${px.toFixed(2)} Bildpunkte`); }
 });
-
 test('Jedes Kopf-/Mund-/Begleiter-Teil aus dem Laden existiert als Bild', () => {
   const main = fs.readFileSync(path.join(__dirname, '../src/main.js'), 'utf8');
   const items = [...main.matchAll(/\['([A-Z0-9_]+)', '[^']*', '(kopf|begleiter)'/g)].map((m) => m[1]);
@@ -74,11 +72,18 @@ test('Dosen sind maßstabsgetreu: Kong Strong ~80 % der Monster-Höhe', () => {
   assert.ok(ratio > 0.75 && ratio < 0.85, `Verhältnis ${ratio.toFixed(2)}`);
 });
 
-test('Größen rasten auf scharfe Stufen ein', () => {
+test('Größe nur in 10er-Schritten', () => {
   const main = fs.readFileSync(path.join(__dirname, '../src/main.js'), 'utf8');
-  const steps = JSON.parse(main.match(/const SIZE_STEPS = (\[[^\]]*\])/)[1]);
-  // Mini-Claude (scale 3): jede Stufe ergibt ganze oder halbe Bildpunkte pro Pixel
-  for (const v of steps) assert.ok(Math.abs(v * 3 * 2 - Math.round(v * 3 * 2)) < 0.05, `Stufe ${v}`);
+  assert.ok(/const snapSize = \(v\) => Math\.min\(MAX_SIZE, Math\.max\(MIN_SIZE, Math\.round\(v \* 10\) \/ 10\)\)/.test(main), 'snapSize nicht in 10er-Schritten');
+});
+test('Alle Figuren sind bei gleicher Größe ähnlich hoch (sichtbar 70–90 px bei 100 %)', () => {
+  for (const id of S.ORDER) {
+    const c = S.character(id);
+    let top = Infinity, bot = -1;
+    c.frames.idle.forEach((row, y) => { if ([...row].some((ch) => ch !== '.')) { top = Math.min(top, y); bot = Math.max(bot, y); } });
+    const h = (bot - top + 1) * (c.display || c.scale);
+    assert.ok(h >= 70 && h <= 90, `${id}: ${h.toFixed(0)} px`);
+  }
 });
 test('Neue Teile haben Bilder: Kühlbox, Mini-Dosen', () => {
   const P = S.character('claude').props;

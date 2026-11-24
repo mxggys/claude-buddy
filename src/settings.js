@@ -205,7 +205,7 @@ const PAGES = {
       drawFigure(c, f.id, null, 2);
       figs.append(el('button', { type: 'button', class: 'tile', 'aria-pressed': String(state.figur === f.id), onclick: () => set('figur', f.id) }, c, el('small', {}, f.name)));
     }
-    const size = el('input', { type: 'range', min: '33', max: '300', step: '1', value: String(Math.round(state.groesse * 100)), 'aria-label': 'Größe (rastet auf scharfe Stufen ein)' });
+    const size = el('input', { type: 'range', min: '10', max: '300', step: '10', value: String(Math.round(state.groesse * 100)), 'aria-label': 'Größe in 10er-Schritten' });
     const sizeLabel = el('span', { class: 'muted' }, `${Math.round(state.groesse * 100)} %`);
     size.addEventListener('input', () => { sizeLabel.textContent = `${size.value} %`; });
     size.addEventListener('change', () => set('groesse', Number(size.value) / 100));
