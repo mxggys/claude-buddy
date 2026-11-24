@@ -8,6 +8,12 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
+## Version 1.42
+- Dosen pixelgenau in echter Bildschirmgröße (kein Runterskalieren mehr, dadurch scharf):
+  Monsti 34 x 84 px (0,5 l), Orangi 27 x 67 px (0,25 l, 80 %), passend zu den Tieren (ca. 66–72 px).
+- Kong Strong neu aufgebaut: ORANGE-Band, zwei getrennte Schrift-Streifen KONG / STRONG, Punkte-Raster, Alu-Glanz.
+- Monster: Kralle wie im Logo, Augen frei darüber, MONSTER / ENERGY darunter.
+
 ## Version 1.41
 - Pando und Rotti entfernt.
 - Monsti und Orangi neu gezeichnet: saubere Dosen-Schattierung, neuer Deckel.
