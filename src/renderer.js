@@ -86,8 +86,8 @@ function hslToHex(h, s, l) {
   };
   return `#${f(0)}${f(8)}${f(4)}`;
 }
-function recolor(palette, keys, variant) {
-  const v = VARIANTS[variant];
+function recolor(palette, keys, variant, tweaks) {
+  const v = (tweaks && tweaks[variant]) || VARIANTS[variant];
   if (!v) return palette;
   const out = { ...palette };
   for (const k of keys) {
@@ -99,6 +99,56 @@ function recolor(palette, keys, variant) {
     out[k] = hslToHex(v.h, s, l);
   }
   return out;
+}
+
+// Fein gezeichnete Figuren klein: erst sauber verkleinern, dann wieder auf klare Pixel und die eigenen Farben bringen
+// (sonst wirkt z. B. die Dose bei 60 % verwaschen, während Mini-Claude mit groben Pixeln scharf bleibt)
+const crisp = { canvas: null, ctx: null, colors: [], cache: new Map() };
+function crispColors() {
+  const seen = new Set();
+  const add = (c) => { if (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)) seen.add(c.toLowerCase()); };
+  Object.values(PALETTE).forEach(add);
+  Object.values(PROP_PALETTE || {}).forEach(add);
+  for (const pal of Object.values(CHAR.propPals || {})) Object.values(pal).forEach(add);
+  crisp.colors = [...seen].map((c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]);
+  crisp.cache.clear();
+}
+function nearestColor(r, g, b) {
+  const key = (r << 16) | (g << 8) | b;
+  let hit = crisp.cache.get(key);
+  if (hit) return hit;
+  let best = null, bd = Infinity;
+  for (const c of crisp.colors) {
+    // Helligkeit zählt mehr als Farbton, damit Schrift und Kanten erhalten bleiben
+    const dr = r - c[0], dg = g - c[1], db = b - c[2];
+    const d = dr * dr * 0.3 + dg * dg * 0.59 + db * db * 0.11 + Math.abs((r + g + b) - (c[0] + c[1] + c[2])) * 6;
+    if (d < bd) { bd = d; best = c; }
+  }
+  if (crisp.cache.size > 20000) crisp.cache.clear();
+  crisp.cache.set(key, best);
+  return best;
+}
+function crispSprite(scale) {
+  const tw = Math.max(1, Math.round(spriteCanvas.width * scale));
+  const th = Math.max(1, Math.round(spriteCanvas.height * scale));
+  if (!crisp.canvas) { crisp.canvas = document.createElement('canvas'); crisp.ctx = crisp.canvas.getContext('2d', { willReadFrequently: true }); }
+  if (crisp.canvas.width !== tw || crisp.canvas.height !== th) { crisp.canvas.width = tw; crisp.canvas.height = th; }
+  const c = crisp.ctx;
+  c.clearRect(0, 0, tw, th);
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(spriteCanvas, 0, 0, tw, th);
+  const img = c.getImageData(0, 0, tw, th);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const a = d[i + 3];
+    if (a < 110) { d[i + 3] = 0; continue; }
+    // halbdurchsichtige Effekte (Tropfen, Glanz) behalten ihre Durchsicht, alles andere wird deckend
+    const [r, g, b] = nearestColor(d[i], d[i + 1], d[i + 2]);
+    d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = a > 200 ? 255 : a;
+  }
+  c.putImageData(img, 0, 0);
+  return crisp.canvas;
 }
 // Aktuelle Figur und davon abhängige Werte
 let CHAR, PALETTE, FRAMES, EYE, ANCHORS, WIDTH, HEIGHT, SCALE, DW, DH;
@@ -124,6 +174,9 @@ function cigRows(n) {
 }
 function applyCharacter(id) {
   CHAR = DuckSprites.character(id);
+  // Dosen: jede Farbe ist eine eigene Sorte mit eigenem Bild (statt alles einzufärben)
+  const sorte = CHAR.variants && CHAR.variants[CONFIG.farbe];
+  if (sorte) CHAR = { ...DuckSprites.character(sorte), id: CHAR.id, sorte: CONFIG.farbe };
   PM = CHAR.scale < 1.5 ? Math.max(1, Math.round(3 / CHAR.scale)) : 1;
   PAD = 16 * PM;
   if (PM > 1) {
@@ -135,13 +188,19 @@ function applyCharacter(id) {
   for (const [name, pal] of Object.entries(CHAR.propPals || {})) if (CHAR.props[name]) PROP_PAL_OF.set(CHAR.props[name], pal);
   frameCache.clear();
   ({ palette: PALETTE, frames: FRAMES, eye: EYE, anchors: ANCHORS, width: WIDTH, height: HEIGHT } = CHAR);
-  PALETTE = recolor(PALETTE, CHAR.ownColors || [], CONFIG.farbe);
+  if (!CHAR.variants && !CHAR.sorte) PALETTE = recolor(PALETTE, CHAR.colorKeys || CHAR.ownColors || [], CONFIG.farbe, CHAR.variantTweaks);
   // Fein aufgelöste Figuren haben viele eigene Farbtöne; die sollen Zubehör nicht umfärben
   PROP_PALETTE = PALETTE;
   if (PM > 1 && DuckSprites.SHARED) {
     PROP_PALETTE = { ...DuckSprites.SHARED };
     for (const k of ['E', 'e', 'H', 'P', 'm', 't', CHAR.eyeBg]) if (PALETTE[k]) PROP_PALETTE[k] = PALETTE[k];
+    // Becherfarben der Figur unter eigenen Zeichen, damit sie kein anderes Zubehör umfärben
+    if (CHAR.mug) { PROP_PALETTE['¹'] = PALETTE[CHAR.mug[0]]; PROP_PALETTE['²'] = PALETTE[CHAR.mug[1]]; CHAR.mug = ['¹', '²']; }
+    // Dinge links neben der Figur (Becher, Pilz) brauchen mehr Abstand, weil sie hochgerechnet breiter sind
+    ANCHORS = { ...ANCHORS };
+    for (const k of ['mug', 'mushroom']) if (ANCHORS[k] && ANCHORS[k][0] < 0) ANCHORS[k] = [ANCHORS[k][0] * PM, ANCHORS[k][1]];
   }
+  crispColors();
   applySize(SIZE);
 }
 function applySize(size) {
@@ -180,6 +239,7 @@ function cachedFrame(frame, flip, map) {
 // Die Figur wird erst in Original-Pixeln auf diese Leinwand gemalt und dann skaliert.
 // Ränder lassen Platz für Zubehör, das über die Figur hinausragt (Tastatur, Glühbirne).
 const sprite = document.createElement('canvas');
+const spriteCanvas = sprite; // dasselbe Bild, Name für die Schärfe-Funktion
 const sctx = sprite.getContext('2d');
 
 const duck = {
@@ -344,7 +404,6 @@ const ACTIONS = {
   dance: { frames: ['dance1', 'dance2'], step: 260, ms: 3100 },
   mushroom: { frames: ['idle', 'idle', 'happy', 'happy'], step: 750, ms: 3000 },
   bounce: { frames: ['happy'], ms: 1300 },                 // zwei, drei kleine Freudenhüpfer
-  bamboo: { frames: ['chew1', 'chew2'], step: 230, ms: 3600 }, // Panda kaut Bambus
   melt: { frames: ['happy'], ms: 1900 },                   // Schleim zerfließt und ploppt zurück
   vanish: { frames: ['idle'], ms: 3000 },                  // Geist verblasst kurz
   binky: { frames: ['cheer1', 'cheer2'], step: 160, ms: 900 }, // Hase: Freudensprung
@@ -400,7 +459,6 @@ function currentFrame(t) {
   // festgehalten: zappeln, außer über einem Fensterrand (dann ruhig: hier kann man loslassen)
   if (duck.dragging) {
     if (edgeUnder) return edgeUnder === 'top' ? FRAMES.happy : FRAMES.reach;
-    if (CHAR.dangle) return FRAMES.sad; // roter Panda: hängt brav am Nacken und guckt verlegen
     return Math.floor(t / 140) % 2 ? FRAMES.drag1 : FRAMES.drag2;
   }
   if (duck.sliding) return FRAMES.slide;
@@ -487,6 +545,7 @@ function paintFigure(t) {
   const eyeMap = movingEye ? { E: CHAR.eyeBg } : null;
   const outlineMap = effectItem === 'GOLDOUTLINE' ? { ...(eyeMap || {}), X: 'i', x: 'I', Y: 'i' } : eyeMap;
   sctx.drawImage(cachedFrame(frame, flip, outlineMap), PAD, PAD);
+  drawCanFx(t, flip);
   drawUnderFigure(t, frame, flip);
   if (movingEye) {
     const { dx, dy } = lookOffset(t, flip);
@@ -575,7 +634,6 @@ function paintFigure(t) {
     const [bx, by] = ANCHORS.idea;
     paint(CHAR.props.BELL, bx + (Math.floor(t / 90) % 2 ? 1 : -1), by + 2, flip);
   }
-  if (duck.action === 'bamboo' && acting(t) && ANCHORS.bamboo) paint(CHAR.props.BAMBOO, ...ANCHORS.bamboo, flip);
   if (duck.action === 'juggle' && acting(t) && ANCHORS.stone) {
     const phase = (t % 600) / 600; // Stein fliegt hoch und fällt zurück
     paint(CHAR.props.STONE, ANCHORS.stone[0], ANCHORS.stone[1] - Math.round(Math.sin(phase * Math.PI) * 5), flip);
@@ -610,11 +668,13 @@ function draw(t) {
   // groß: harte Pixel; sehr klein: weich verkleinern, damit nichts verschwindet
   ctx.imageSmoothingEnabled = SCALE < 1;
   ctx.imageSmoothingQuality = 'high'; // verkleinert sauber statt Pixel zu verschlucken
+  const sprite = (PM > 1 && SCALE < 0.98) ? crispSprite(SCALE) : spriteCanvas;
+  if (sprite !== spriteCanvas) ctx.imageSmoothingEnabled = false;
   // Stauchen/Strecken mit Fußpunkt unten in der Mitte
   let { sx, sy } = squashNow(t);
   if (duck.sliding) { sx *= 1.18; sy *= 0.82; } // flach auf dem Bauch
-  const w = sprite.width * SCALE * sx;
-  const h = sprite.height * SCALE * sy;
+  const w = spriteCanvas.width * SCALE * sx;
+  const h = spriteCanvas.height * SCALE * sy;
   const footX = duck.x + DW / 2;
   const footY = duck.y + DH - floatLift(t) + peekOffset(t);
   ctx.globalAlpha = figureAlpha(t);
@@ -1023,7 +1083,50 @@ function updateHalloween(t) {
 // Kaffeetasse: Dampf steigt auf, morgens und beim schnellen Tippen kräftiger
 let steamAcc = 0;
 let fizzAcc = 0;
+// Dosen: Kondenstropfen laufen ab und zu am Blech herunter, beim Erschrecken/Freuen springt die Lasche auf
+const canFx = { drops: [], nextDrop: 0, tabUntil: 0 };
+function updateCanFx(dt, t) {
+  if (!CHAR.fizzy || PM === 1) { canFx.drops.length = 0; return; }
+  if (!hardSave() && t > canFx.nextDrop && canFx.drops.length < 3) {
+    canFx.nextDrop = t + rand(2500, 7000);
+    canFx.drops.push({ x: Math.round(rand(3, WIDTH - 4)), y: rand(HEIGHT * 0.15, HEIGHT * 0.45), v: rand(5, 10), pauseUntil: 0 });
+  }
+  for (const d of canFx.drops) {
+    if (t < d.pauseUntil) continue;
+    d.y += d.v * dt;
+    if (Math.random() < dt * 0.6) d.pauseUntil = t + rand(200, 900); // Tropfen bleibt kurz hängen
+  }
+  canFx.drops = canFx.drops.filter((d) => d.y < HEIGHT - 6);
+}
+function popTab(t) {
+  if (!CHAR.fizzy || PM === 1) return;
+  canFx.tabUntil = t + 800;
+  const [fc, fr] = ANCHORS.fizz || [11.5, 2];
+  for (let i = 0; i < 10; i++) particles.push({ type: 'fizz', x: duck.x + (isFlipped() ? WIDTH - fc : fc) * SCALE, y: duck.y + fr * SCALE, vx: rand(-40, 40), vy: rand(-120, -60), life: 1 });
+}
+function drawCanFx(t, flip) {
+  if (!CHAR.fizzy || PM === 1) return;
+  const col = (x) => PAD + (flip ? WIDTH - 1 - x : x);
+  for (const d of canFx.drops) {
+    const y = Math.round(d.y);
+    sctx.fillStyle = 'rgba(235, 246, 255, 0.35)';
+    sctx.fillRect(col(d.x), PAD + y - 4, 2, 4);           // nasse Spur
+    sctx.fillStyle = 'rgba(245, 252, 255, 0.95)';
+    sctx.fillRect(col(d.x), PAD + y, 2, 2);               // Tropfen
+    sctx.fillStyle = 'rgba(120, 150, 180, 0.55)';
+    sctx.fillRect(col(d.x), PAD + y + 2, 2, 1);           // Schatten unten am Tropfen
+  }
+  if (t < canFx.tabUntil) {
+    // Lasche steht hoch
+    const [fc, fr] = ANCHORS.fizz || [11.5, 2];
+    sctx.fillStyle = '#d7dbe0';
+    sctx.fillRect(col(Math.round(fc) + (flip ? 2 : -2)) - 0, PAD + Math.round(fr) - 4, 5, 2);
+    sctx.fillStyle = '#8f959c';
+    sctx.fillRect(col(Math.round(fc) + (flip ? 2 : -2)), PAD + Math.round(fr) - 2, 5, 1);
+  }
+}
 function updateSteam(dt, t) {
+  updateCanFx(dt, t);
   if (CHAR.fizzy && !hardSave() && duck.state !== 'sleep' && keyTimes.length > 2) {
     // Energydose sprudelt: kleine Bläschen aus der Lasche, je schneller getippt, desto mehr
     fizzAcc += dt * Math.min(12, keyTimes.length * 1.5);
@@ -1278,6 +1381,7 @@ function startAction(name, t) {
 // Reaktion mit Effekten starten
 function react(name, t) {
   startAction(name, t);
+  if (name === 'startle' || name === 'cheer' || name === 'tickle') popTab(t);
   const headX = duck.x + DW * (CHAR.front ? 0.5 : 0.62);
   if (name === 'startle') {
     duck.onGround = false;
@@ -1444,7 +1548,7 @@ function pickState(t) {
   else if (twoPets && r < 0.62 && r > 0.5 && greetFriend(t)) { /* winkt der anderen Figur */ }
   else if (!hardSave() && maybeJumpToWindow(t, r)) { /* springt aufs Fenster */ }
   else if (!hardSave() && maybeWalk(t, r)) { /* läuft los */ }
-  else if (r > 0.94 && !hardSave() && !perch && !hanging()) startAction('peek', t); // versteckt sich kurz
+  // (früher: versteckt sich kurz unter dem Bildschirmrand – entfernt, das Abtauchen hat gestört)
   else if (handItem === 'WALLET' && r > 0.9 && !hardSave()) { startAction('wallet', t); setTimeout(() => sparkle(3), 500); }
   else if (handItem === 'DRINK' && r > 0.88 && !hardSave()) {
     startAction('drink', t);
@@ -3147,10 +3251,10 @@ function ring() {
 // und schnappt ihn mit einem kleinen Hüpfer. Dann drei Bissen (der Snack wird kleiner, Krümel fliegen),
 // zum Schluss zufrieden mit Herzen.
 // Lieblingsessen je Figur (kommt öfter und freut sie besonders)
-const FAVORITE_FOOD = { claude: 'PIZZA', boo: 'DONUT', frosti: 'FISH', axo: 'MELON', hopsi: 'CARROT', pando: 'BAMBOO', kuschel: 'PANCAKES', mokka: 'CROISSANT', monsti: 'POPCORN' };
+const FAVORITE_FOOD = { claude: 'PIZZA', kuschel: 'PANCAKES', mokka: 'CROISSANT', orangi: 'BURGER', monsti: 'POPCORN' };
 const FOODS = ['DOENER', 'PIZZA', 'BURGER', 'FRIES', 'TACO', 'PRETZEL', 'PASTA', 'DONUT', 'ICECREAM', 'CROISSANT', 'PANCAKES', 'CHOCOLATE', 'MUFFIN', 'MELON', 'BANANA', 'POPCORN', 'APPLE', 'COOKIE'];
 const FOOD_COLOR = {
-  APPLE: '#e2463d', COOKIE: '#c9954f', FISH: '#9fd0ff', CARROT: '#f08a24', BAMBOO: '#7bbf4a',
+  APPLE: '#e2463d', COOKIE: '#c9954f',
   DOENER: '#c9954f', PIZZA: '#f2cf63', BURGER: '#b8913f', FRIES: '#f2cf63', TACO: '#efd27c', PRETZEL: '#8a5a30',
   PASTA: '#e2463d', DONUT: '#f6a3bd', ICECREAM: '#f6a3bd', CROISSANT: '#d9a35a', PANCAKES: '#efd27c',
   CHOCOLATE: '#5a3418', MUFFIN: '#5a3418', MELON: '#e2463d', BANANA: '#f2cf63', POPCORN: '#ffffff',
@@ -3793,7 +3897,7 @@ if (bridge) {
     else onKey();
   });
   window.__duck = {
-    duck, mic, cursor, onKey, moveCursor, startAction, react, setSize,
+    duck, mic, cursor, onKey, moveCursor, startAction, react, setSize, canFx, popTab,
     setCharacter(id) {
       const bottom = duck.y + DH;
       applyCharacter(id);

@@ -71,38 +71,63 @@ function inputCard(title, sub, value, placeholder, key) {
 // ---------- Figuren zeichnen ----------
 function drawFigure(canvas, id, equip, px) {
   if (!S) return;
-  const C = S.character(id);
-  const PAL = C.palette, P = C.props, W = C.width, H = C.height, A = C.anchors;
-  const OX = 12, OY = 10, GW = W + 24, GH = H + 13;
-  canvas.width = GW * px; canvas.height = GH * px;
-  const cx = canvas.getContext('2d');
+  let C = S.character(id);
+  // Dosen: die gewählte Farbe ist eine eigene Sorte
+  const sorte = C.variants && C.variants[state.farbe];
+  if (sorte) C = S.character(sorte);
+  // fein gezeichnete Figuren (Dosen): Zubehör hochrechnen, damit es so groß ist wie bei Mini-Claude
+  const pm = C.scale < 1.5 ? Math.max(1, Math.round(3 / C.scale)) : 1;
+  const up = (rows) => (pm === 1 || !Array.isArray(rows) || typeof rows[0] !== 'string') ? rows
+    : rows.flatMap((r) => Array(pm).fill([...r].map((ch) => ch.repeat(pm)).join('')));
+  const P = {};
+  for (const [k, rows] of Object.entries(C.props)) P[k] = k === 'GLASSES' ? rows : up(rows);
+  const PAL = C.palette, W = C.width, H = C.height, A = C.anchors;
+  const MUG = A.mug ? [A.mug[0] < 0 ? A.mug[0] * pm : A.mug[0], A.mug[1]] : [-9 * pm, 11];
+  const PROPPAL = pm > 1 && S.SHARED ? { ...S.SHARED, E: PAL.E, e: PAL.e, H: PAL.H, P: PAL.P, m: PAL.m, t: PAL.t } : PAL;
+  const OX = 12 * pm, OY = 10 * pm, GW = W + 24 * pm, GH = H + 13 * pm;
+  // erst 1 Zelle = 1 Bildpunkt malen, dann auf die Kachelgröße bringen
+  const work = document.createElement('canvas');
+  work.width = GW; work.height = GH;
+  const cx = work.getContext('2d');
+  const k = px / pm;
+  canvas.width = Math.round(GW * k); canvas.height = Math.round(GH * k);
   const palOf = new Map(Object.entries(C.propPals || {}).map(([n, p]) => [P[n], p]));
-  const paint = (rows, col, row, map) => { const rowsPal = palOf.get(rows); return rows && rows.forEach((line, r) => {
+  const paintWith = (base) => (rows, col, row, map) => { const rowsPal = palOf.get(rows); return rows && rows.forEach((line, r) => {
     for (let c = 0; c < line.length; c++) {
       let ch = line[c];
       if (map && map[ch]) ch = map[ch];
-      const color = (C.propPals && rowsPal && rowsPal[ch] && ch !== 'X' && ch !== 'x') ? rowsPal[ch] : PAL[ch];
+      const color = (C.propPals && rowsPal && rowsPal[ch] && ch !== 'X' && ch !== 'x') ? rowsPal[ch] : base[ch];
       if (!color) continue;
       cx.fillStyle = color;
-      cx.fillRect((OX + col + c) * px, (OY + row + r) * px, px, px);
+      cx.fillRect(OX + col + c, OY + row + r, 1, 1);
     }
   }); };
+  const paintFig = paintWith(PAL);
+  const paint = paintWith(PROPPAL);
+  const finish = () => {
+    const out = canvas.getContext('2d');
+    out.imageSmoothingEnabled = k < 1;
+    out.imageSmoothingQuality = 'high';
+    out.clearRect(0, 0, canvas.width, canvas.height);
+    out.drawImage(work, 0, 0, canvas.width, canvas.height);
+  };
   const e = equip || {};
   const frame = e.mund === 'GRILLZ' ? C.frames.happy : C.frames.idle;
-  paint(frame, 0, 0, e.effekt === 'GOLDOUTLINE' ? { X: 'i', x: 'I' } : null);
-  if (frame.some((r) => r.includes('E'))) for (const [c, r] of C.eye.positions) paint(C.eye.pattern, c, r);
+  paintFig(frame, 0, 0, e.effekt === 'GOLDOUTLINE' ? { X: 'i', x: 'I' } : null);
+  if (frame.some((r) => r.includes('E'))) for (const [c, r] of C.eye.positions) paintFig(C.eye.pattern, c, r);
   if (e.kopf && P[e.kopf]) { const rows = P[e.kopf]; paint(rows, A.hat[0] - Math.floor(rows[0].length / 2), A.hat[1] - rows.length + 1 - (e.kopf === 'GOLDHALO' ? 3 : 0)); }
   if (e.mund === 'GRILLZ') paint(P.GRILLZ, A.mouth[0] - 3, A.mouth[1]);
   else if (e.mund === 'CHEW') { paint(['hh', 'WW', 'ww'], A.mouth[0] + 2, A.mouth[1] - 2); paint(['('], A.mouth[0], A.mouth[1]); }
   else if (e.mund && HELD.has(e.mund)) { const pos = A.hand || A.mouth; paint(P[e.mund === 'NEONVAPE' ? 'VAPE' : e.mund], pos[0], pos[1] - 1); }
   else if (e.mund === 'TOOTHPICK' || e.mund === 'GOLDPICK') paint(P[e.mund], A.mouth[0], A.mouth[1] - 1);
   else if (e.mund === 'HOSE') { paint(['jj'], A.mouth[0], A.mouth[1] - 1); for (let i = 0; i <= 20; i++) { const k = i / 20; paint(['k'], Math.round(A.mouth[0] + 2 + (W + 4 - A.mouth[0] - 2) * k), Math.round(A.mouth[1] - 1 + (H - A.mouth[1]) * k + Math.sin(k * Math.PI) * 4), null); } }
-  if (e.hand === 'WALLET') { const mug = A.mug || [-9, 11]; paint(P.WALLET, mug[0] + 2, mug[1] + 3); }
-  if (e.hand === 'DRINK') { const mug = A.mug || [-9, 11]; paint(P.DRINK, mug[0] + 1, mug[1] + 1); }
+  if (e.hand === 'WALLET') { const mug = MUG; paint(P.WALLET, mug[0] + 2, mug[1] + 3); }
+  if (e.hand === 'DRINK') { const mug = MUG; paint(P.DRINK, mug[0] + 1, mug[1] + 1); }
   if (e.begleiter && P[e.begleiter] && !SIZED.has(e.begleiter)) {
     const rows = P[e.begleiter === 'ZIPPO' ? 'ZIPPO_OPEN' : e.begleiter];
     paint(rows, W + 1, H - rows.length + 1);
   }
+  finish();
 }
 // ein einzelnes Teil als kleines Bild (für die Kacheln)
 function drawItem(canvas, key, slot) {

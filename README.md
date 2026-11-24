@@ -2,11 +2,24 @@
 
 Kleiner Pixel-Begleiter für Windows 11, der unten an der Taskleiste sitzt.
 
-Figuren: Mini-Claude (tippt auf einem Laptop, macht Kaffeepausen), Boo (Bettlaken-Geist, schwebt),
-Frosti (Pinguin, watschelt beim Tippen), Axo (Axolotl, Kiemen wackeln beim Tippen),
+Figuren: Mini-Claude (tippt auf einem Laptop, macht Kaffeepausen),
 Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
-Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
+Orangi (Kong-Strong-Dose, 0,25 l) und Monsti (Monster-Dose, 0,5 l), beide mit Gesicht, sprudeln beim schnellen Tippen.
+
+## Version 1.44
+- Figuren aufgeräumt: nur noch Mini-Claude, Kuschel, Mokka, Kong Strong und Monster (Boo, Frosti, Axo entfernt).
+- Farben bei jeder Figur geprüft und korrigiert. Bei den Dosen ist jede Farbe eine eigene Sorte:
+  Kong Strong Orange / Berry / Lime / Grape / Pink / Gold / Zero,
+  Monster Ultra White / Ultra Blue / Classic (schwarz-grün) / Ultra Violet / Ultra Rosa / Ultra Gold / Ultra Black.
+  Mokka behält braunen Kaffee, Boo-Fix entfällt mit Boo.
+- Kong Strong: fette, gut lesbare Schrift (KONG / STRONG, Sorte im Band); Zigarette & Co. am rechten Dosenrand statt über der Schrift.
+- Kaffeebecher an den Dosen in richtiger Größe und mit Abstand; Vorschau im Einstellungsfenster zeigt Sorte und Zubehör richtig groß.
+- Kleine Größen (z. B. 60 %): fein gezeichnete Figuren werden jetzt scharf auf klare Pixel gerechnet statt verwaschen.
+- Kein Abtauchen unter den Bildschirmrand mehr (Versteck-Animation entfernt).
+- Dosen-Animationen: Kondenstropfen laufen herunter, die Lasche springt beim Erschrecken/Freuen auf (mit Sprudel).
+- Tests: `npm test` prüft Figuren, Farben, Sorten und Zubehör-Größen; läuft vor jedem Release automatisch.
+- Aufgeräumt: Reste von Panda, Hase, Greif-Hand, Bambus, Karotte und Fisch entfernt.
 
 ## Version 1.43
 - Dosen größer und plastischer: Kong Strong 33 x 82 px, Monster 42 x 102 px (Kong 80 % der Monster-Höhe).

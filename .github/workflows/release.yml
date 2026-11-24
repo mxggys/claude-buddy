@@ -25,6 +25,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Prüfungen zuerst: schlägt eine fehl, wird nichts veröffentlicht
+      - run: npm test
       # Auf Windows kann das Enten-Symbol direkt in die .exe geschrieben werden
       - run: npx electron-builder --win nsis --x64 --publish always --config.win.signAndEditExecutable=true
         env:
