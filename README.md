@@ -9,6 +9,9 @@ Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Monsti (Energydose wie eine weiße Monster-Dose, mit Gesicht, sprudelt beim schnellen Tippen). Alle außer Mokka machen Kaffeepausen mit eigenem Becher.
 
 ## Version 1.42
+- 1.42.1: Bugfix Größen: Zubehör (Zigarette, Hüte, Essen, Begleiter, Rauch) ist jetzt bei jeder Figur gleich groß;
+  vorher wirkte es an den fein gezeichneten Dosen dreimal zu klein. Kleine Größen (z. B. 60 %) werden sauberer verkleinert.
+- 1.42.1: Monster wie das echte Ultra White: weiße Dose mit silbergrauer Kralle statt schwarzer.
 - Dosen pixelgenau in echter Bildschirmgröße (kein Runterskalieren mehr, dadurch scharf):
   Monsti 34 x 84 px (0,5 l), Orangi 27 x 67 px (0,25 l, 80 %), passend zu den Tieren (ca. 66–72 px).
 - Kong Strong neu aufgebaut: ORANGE-Band, zwei getrennte Schrift-Streifen KONG / STRONG, Punkte-Raster, Alu-Glanz.

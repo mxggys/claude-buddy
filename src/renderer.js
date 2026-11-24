@@ -103,13 +103,45 @@ function recolor(palette, keys, variant) {
 // Aktuelle Figur und davon abhängige Werte
 let CHAR, PALETTE, FRAMES, EYE, ANCHORS, WIDTH, HEIGHT, SCALE, DW, DH;
 const PROP_PAL_OF = new Map(); // Bild-Zeilen eines Teils → seine eigene Farbtabelle
+// Zubehör (Zigarette, Hut, Essen, Begleiter …) soll auf dem Bildschirm bei jeder Figur gleich groß sein.
+// Fein aufgelöste Figuren (z. B. die Dosen, 1 Pixel = 1 Bildpunkt) bekommen das Zubehör deshalb hochgerechnet:
+// PM = wie viele Figur-Pixel ein Zubehör-Pixel breit ist (Mini-Claude: scale 3 → PM 1; Dose: scale 1 → PM 3).
+let PM = 1;
+let PROP_PALETTE = null;
+let PAD = 16; // Rand ums Figurbild (wächst mit PM)
+const upCache = new WeakMap();
+function upscale(rows) {
+  if (PM === 1 || !Array.isArray(rows) || typeof rows[0] !== 'string') return rows;
+  let byPm = upCache.get(rows);
+  if (!byPm) { byPm = {}; upCache.set(rows, byPm); }
+  if (!byPm[PM]) byPm[PM] = rows.flatMap((r) => Array(PM).fill([...r].map((ch) => ch.repeat(PM)).join('')));
+  return byPm[PM];
+}
+const cigCache = {};
+function cigRows(n) {
+  const key = PM + ':' + n;
+  return cigCache[key] || (cigCache[key] = upscale(DuckSprites.cigarette(n)));
+}
 function applyCharacter(id) {
   CHAR = DuckSprites.character(id);
+  PM = CHAR.scale < 1.5 ? Math.max(1, Math.round(3 / CHAR.scale)) : 1;
+  PAD = 16 * PM;
+  if (PM > 1) {
+    const props = {};
+    for (const [name, rows] of Object.entries(CHAR.props)) props[name] = name === 'GLASSES' ? rows : upscale(rows);
+    CHAR.props = props;
+  }
   PROP_PAL_OF.clear();
   for (const [name, pal] of Object.entries(CHAR.propPals || {})) if (CHAR.props[name]) PROP_PAL_OF.set(CHAR.props[name], pal);
   frameCache.clear();
   ({ palette: PALETTE, frames: FRAMES, eye: EYE, anchors: ANCHORS, width: WIDTH, height: HEIGHT } = CHAR);
   PALETTE = recolor(PALETTE, CHAR.ownColors || [], CONFIG.farbe);
+  // Fein aufgelöste Figuren haben viele eigene Farbtöne; die sollen Zubehör nicht umfärben
+  PROP_PALETTE = PALETTE;
+  if (PM > 1 && DuckSprites.SHARED) {
+    PROP_PALETTE = { ...DuckSprites.SHARED };
+    for (const k of ['E', 'e', 'H', 'P', 'm', 't', CHAR.eyeBg]) if (PALETTE[k]) PROP_PALETTE[k] = PALETTE[k];
+  }
   applySize(SIZE);
 }
 function applySize(size) {
@@ -147,7 +179,6 @@ function cachedFrame(frame, flip, map) {
 
 // Die Figur wird erst in Original-Pixeln auf diese Leinwand gemalt und dann skaliert.
 // Ränder lassen Platz für Zubehör, das über die Figur hinausragt (Tastatur, Glühbirne).
-const PAD = 16;
 const sprite = document.createElement('canvas');
 const sctx = sprite.getContext('2d');
 
@@ -186,7 +217,7 @@ function figureAlpha(t) {
 function floatLift(t) {
   if (!CHAR.float || duck.dragging) return 0;
   const bob = hardSave() ? 0 : Math.sin(t / 650);
-  return Math.round((2 + bob * 1.5) * SCALE);
+  return Math.round((2 + bob * 1.5) * (SCALE * PM));
 }
 
 // Figur kurz stauchen oder strecken; federt von selbst zurück
@@ -435,7 +466,7 @@ function paint(rows, col, row, flip, map = null, pal = null) {
     for (let c = 0; c < rows[r].length; c++) {
       let ch = rows[r][c];
       if (map && map[ch]) ch = map[ch];
-      const color = (pal && pal[ch] && ch !== 'X' && ch !== 'x') ? pal[ch] : PALETTE[ch];
+      const color = (pal && pal[ch] && ch !== 'X' && ch !== 'x') ? pal[ch] : PROP_PALETTE[ch];
       if (!color) continue;
       const sc = col + c;
       sctx.fillStyle = color;
@@ -578,6 +609,7 @@ function draw(t) {
   paintFigure(t);
   // groß: harte Pixel; sehr klein: weich verkleinern, damit nichts verschwindet
   ctx.imageSmoothingEnabled = SCALE < 1;
+  ctx.imageSmoothingQuality = 'high'; // verkleinert sauber statt Pixel zu verschlucken
   // Stauchen/Strecken mit Fußpunkt unten in der Mitte
   let { sx, sy } = squashNow(t);
   if (duck.sliding) { sx *= 1.18; sy *= 0.82; } // flach auf dem Bauch
@@ -634,13 +666,13 @@ function drawSnore(t) {
   if (phase > 0.85) return; // geplatzt
   const [col, row] = ANCHORS.snore;
   const sx = isFlipped() ? WIDTH - 1 - col : col;
-  const x = duck.x + sx * SCALE + (isFlipped() ? -1 : 1) * SCALE * 2;
+  const x = duck.x + sx * SCALE + (isFlipped() ? -1 : 1) * SCALE * PM * 2;
   const y = duck.y + row * SCALE;
-  const r = Math.max(1.5, SCALE * (0.6 + phase * 2.4));
+  const r = Math.max(1.5, (SCALE * PM) * (0.6 + phase * 2.4));
   ctx.globalAlpha = 0.75;
   ctx.fillStyle = '#e8f4ff';
   ctx.strokeStyle = '#9fc6e8';
-  ctx.lineWidth = Math.max(1, SCALE * 0.35);
+  ctx.lineWidth = Math.max(1, (SCALE * PM) * 0.35);
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
@@ -658,7 +690,7 @@ function drawShadow() {
   const k = Math.max(0.35, 1 - lift / 400);
   ctx.fillStyle = `rgba(20, 10, 15, ${0.22 * k})`;
   ctx.beginPath();
-  ctx.ellipse(duck.x + DW * (CHAR.front ? 0.5 : 0.42), groundY() + DH - SCALE, DW * 0.36 * k, Math.max(1, SCALE * 1.6 * k), 0, 0, Math.PI * 2);
+  ctx.ellipse(duck.x + DW * (CHAR.front ? 0.5 : 0.42), groundY() + DH - (SCALE * PM), DW * 0.36 * k, Math.max(1, (SCALE * PM) * 1.6 * k), 0, 0, Math.PI * 2);
   ctx.fill();
 }
 
@@ -667,7 +699,7 @@ const fxPx = () => Math.max(1, Math.round(2 * Math.min(1.5, SIZE)));
 
 function drawSmall(rows, x, y, px) {
   rows.forEach((line, r) => [...line].forEach((k, c) => {
-    const color = PALETTE[k];
+    const color = PROP_PALETTE[k];
     if (!color) return;
     ctx.fillStyle = color;
     ctx.fillRect(Math.round(x + c * px), Math.round(y + r * px), px, px);
@@ -2304,7 +2336,7 @@ function itemAnchor(t) {
 }
 // Bild des Mund-Teils; die Zigarette wird mit der Zeit kürzer
 function mouthRows() {
-  if (mouthItem === 'CIGARETTE') return DuckSprites.cigarette(Math.ceil(cig.left));
+  if (mouthItem === 'CIGARETTE') return cigRows(Math.ceil(cig.left));
   return CHAR.props[MOUTH_ART[mouthItem] || 'CIGARETTE'];
 }
 function mouthTip() {
@@ -2358,11 +2390,11 @@ function drawMouthItem(t, offY, flip) {
   // Ausdrücken und neu anzünden
   if (duck.action === 'relight' && acting(t)) {
     const since = t - (duck.actionUntil - ACTIONS.relight.ms);
-    if (since < 700) rows = DuckSprites.cigarette(1);   // Stummel, gleich weg
+    if (since < 700) rows = cigRows(1);   // Stummel, gleich weg
     else if (since < 1400) return;                     // kurz nichts
     else {
       // neue Zigarette im Mund, Feuerzeug an die Spitze
-      rows = DuckSprites.cigarette(9);
+      rows = cigRows(9);
       const m = ANCHORS.mouth;
       const lit = since > 1900;
       paint(rows, m[0], m[1] + offY - 1, flip, lit ? { 7: '8' } : { 7: '4', 6: '4', 5: '4' });
@@ -2579,7 +2611,7 @@ function ashVx(p) {
   const flip = isFlipped();
   const col = WIDTH + 6;
   const tx = duck.x + (flip ? WIDTH - 1 - col : col) * SCALE;
-  const fall = Math.max(10, duck.y + DH - 2 * SCALE - p.y);
+  const fall = Math.max(10, duck.y + DH - 2 * (SCALE * PM) - p.y);
   const time = (-10 + Math.sqrt(100 + 2 * 380 * fall)) / 380;
   return (tx - p.x) / Math.max(0.15, time);
 }
@@ -2659,7 +2691,7 @@ function drawEffectLights(t) {
   if (effectItem === 'GOLDSHADOW') {
     ctx.fillStyle = `rgba(255, 196, 60, ${0.35 + Math.sin(t / 600) * 0.08})`;
     ctx.beginPath();
-    ctx.ellipse(cx, groundY() + DH - SCALE, DW * 0.5, Math.max(2, SCALE * 2.4), 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, groundY() + DH - (SCALE * PM), DW * 0.5, Math.max(2, (SCALE * PM) * 2.4), 0, 0, Math.PI * 2);
     ctx.fill();
   }
   if (effectItem === 'STARCIRCLE') {
@@ -2744,7 +2776,7 @@ function updateSnow(dt, t) {
   // genug Schnee: Schneemann bauen (einmal, neben ihrem Platz)
   if (snow.depth > 0.6 && snow.man === 0 && duck.state === 'idle' && duck.onGround && !perch && !ball.on && !acting(t) && !dnd()) {
     const w = CHAR.props.SNOWMAN[0].length * SCALE;
-    snow.manX = duck.x + DW + 4 * SCALE + w < W ? duck.x + DW + 4 * SCALE : duck.x - w - 4 * SCALE;
+    snow.manX = duck.x + DW + 4 * (SCALE * PM) + w < W ? duck.x + DW + 4 * (SCALE * PM) : duck.x - w - 4 * (SCALE * PM);
     snow.man = 0.01;
     ACTIONS.build = ACTIONS.build || { frames: ['tapL', 'tapR'], step: 220, ms: 5000 };
     startAction('build', t);
@@ -2778,7 +2810,7 @@ function drawSnow() {
     const baseY = bottomY() + DH - rows.length * px;
     for (let r = rows.length - show; r < rows.length; r++) {
       for (let c = 0; c < rows[r].length; c++) {
-        const color = PALETTE[rows[r][c]];
+        const color = PROP_PALETTE[rows[r][c]];
         if (!color) continue;
         ctx.fillStyle = color;
         ctx.fillRect(Math.round(snow.manX + c * px), Math.round(baseY + r * px), Math.ceil(px), Math.ceil(px));
@@ -2835,7 +2867,7 @@ function giftBox() {
 function placeGift() {
   if (!giftReady || giftX !== null) return;
   const w = giftRows()[0].length * SCALE * 0.9;
-  giftX = duck.x - w - 6 * SCALE >= 0 ? duck.x - w - 6 * SCALE : duck.x + DW + 6 * SCALE;
+  giftX = duck.x - w - 6 * (SCALE * PM) >= 0 ? duck.x - w - 6 * (SCALE * PM) : duck.x + DW + 6 * (SCALE * PM);
 }
 function overGift(x, y) {
   const g = giftBox();
@@ -2847,7 +2879,7 @@ function drawGift(t) {
   if (g) {
     const hop = Math.floor(t / 1600) % 3 === 0 ? Math.round(Math.abs(Math.sin(t / 120)) * 2 * Math.max(0.6, SIZE)) : 0; // wackelt ab und zu
     giftRows().forEach((line, r) => [...line].forEach((ch, c) => {
-      const color = PALETTE[ch];
+      const color = PROP_PALETTE[ch];
       if (!color) return;
       ctx.fillStyle = color;
       ctx.fillRect(Math.round(g.x + c * g.px), Math.round(g.y + r * g.px - hop), Math.ceil(g.px), Math.ceil(g.px));
@@ -2861,7 +2893,7 @@ function drawGift(t) {
     const x = reveal.x - (rows[0].length * px) / 2;
     const y = reveal.y - k * 40 * Math.max(0.6, SIZE);
     rows.forEach((line, r) => [...line].forEach((ch, c) => {
-      const color = PALETTE[ch];
+      const color = PROP_PALETTE[ch];
       if (!color) return;
       ctx.fillStyle = color;
       ctx.fillRect(Math.round(x + c * px), Math.round(y + r * px), Math.ceil(px), Math.ceil(px));
