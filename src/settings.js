@@ -115,6 +115,16 @@ function drawFigure(canvas, id, equip, px) {
   const frame = e.mund === 'GRILLZ' ? C.frames.happy : C.frames.idle;
   paintFig(frame, 0, 0, e.effekt === 'GOLDOUTLINE' ? { X: 'i', x: 'I' } : null);
   if (frame.some((r) => r.includes('E'))) for (const [c, r] of C.eye.positions) paintFig(C.eye.pattern, c, r);
+  if (e.kopf === 'SPIEGELBRILLE') {
+    // Spiegel-Sonnenbrille über den Augen (wie in der App)
+    const ew = C.eye.pattern[0].length, eh = C.eye.pattern.length, xs = C.eye.positions.map(([x]) => x), y0 = C.eye.positions[0][1] - 1;
+    const put = (x, y, col) => { cx.fillStyle = col; cx.fillRect(OX + x, OY + y, 1, 1); };
+    for (let x = Math.min(...xs) - 1; x <= Math.max(...xs) + ew; x++) put(x, y0, '#14161c');
+    for (const ex of xs) for (let y = y0 + 1; y <= y0 + eh + 1; y++) for (let x = ex - 1; x <= ex + ew; x++) {
+      const edge = x === ex - 1 || x === ex + ew || y === y0 + eh + 1;
+      put(x, y, edge ? '#14161c' : (x - ex + y - y0 === 2 ? '#f4fbff' : (y - y0) / (eh + 1) < 0.45 ? '#41609a' : '#253352'));
+    }
+  }
   if (e.kopf && P[e.kopf]) { const rows = P[e.kopf]; paint(rows, A.hat[0] - Math.floor(rows[0].length / 2), A.hat[1] - rows.length + 1 - (e.kopf === 'GOLDHALO' ? 3 : 0)); }
   if (e.mund === 'GRILLZ') paint(P.GRILLZ, A.mouth[0] - 3, A.mouth[1]);
   else if (e.mund === 'CHEW') { paint(['hh', 'WW', 'ww'], A.mouth[0] + 2, A.mouth[1] - 2); paint(['('], A.mouth[0], A.mouth[1]); }
@@ -161,6 +171,10 @@ const PAGES = {
     const timers = state.timers.map((tm) => card(tm.label, `klingelt um ${tm.at}`, el('button', { type: 'button', class: 'btn', onclick: () => set('timerCancel', tm.id) }, 'Abbrechen')));
     return [
       el('h1', {}, 'Start'),
+      (state.neu && state.neu.length) ? el('div', { class: 'card col' },
+        txt(`Neu in Version ${state.version}`, null),
+        el('ul', { class: 'muted', style: 'margin:4px 0 8px 18px;padding:0' }, ...state.neu.map((n) => el('li', {}, n))),
+        el('button', { type: 'button', class: 'btn', onclick: () => set('gesehenVersion', true) }, 'Gelesen')) : null,
       el('div', { class: 'card hero' }, prev, el('div', {}, el('b', {}, state.name || (fig ? fig.name.replace(/ \(.*\)$/, '') : 'Claude Desktop Buddy')), el('span', { class: 'muted' }, state.mood ? `Laune: ${state.mood}` : 'Laune ist aus'))),
       el('h2', {}, 'Schnell'),
       el('div', { class: 'quick' },
@@ -191,7 +205,7 @@ const PAGES = {
       drawFigure(c, f.id, null, 2);
       figs.append(el('button', { type: 'button', class: 'tile', 'aria-pressed': String(state.figur === f.id), onclick: () => set('figur', f.id) }, c, el('small', {}, f.name)));
     }
-    const size = el('input', { type: 'range', min: '10', max: '300', step: '5', value: String(Math.round(state.groesse * 100)), 'aria-label': 'Größe' });
+    const size = el('input', { type: 'range', min: '33', max: '300', step: '1', value: String(Math.round(state.groesse * 100)), 'aria-label': 'Größe (rastet auf scharfe Stufen ein)' });
     const sizeLabel = el('span', { class: 'muted' }, `${Math.round(state.groesse * 100)} %`);
     size.addEventListener('input', () => { sizeLabel.textContent = `${size.value} %`; });
     size.addEventListener('change', () => set('groesse', Number(size.value) / 100));

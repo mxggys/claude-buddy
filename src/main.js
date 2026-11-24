@@ -161,6 +161,7 @@ function loadSettings() {
   settings.zaehler.tage = settings.zaehler.tage || {};
   // früher ein Haken (an/aus), jetzt eine Stufe
   if (typeof settings.energiesparen === 'boolean') settings.energiesparen = settings.energiesparen ? 2 : 0;
+  if (typeof settings.groesse === 'number') settings.groesse = snapSize(settings.groesse); // alte Zwischengrößen auf scharfe Stufen
   settings.version = SETTINGS_VERSION;
   saveSettings();
 }
@@ -766,6 +767,7 @@ const ITEMS = [
   ['SNOWGLOBE', 'Schneekugel', 'begleiter'], ['XMASTREE', 'Mini-Weihnachtsbaum', 'begleiter'],
   // Hand
   ['WALLET', 'Geldbeutel', 'hand'], ['DRINK', 'Drink mit Eis', 'hand'],
+  ['SPIEGELBRILLE', 'Spiegel-Sonnenbrille', 'kopf'], ['KUEHLBOX', 'Kühlbox (Dosen setzen sich zum Schlafen rein)', 'begleiter'], ['FROST', 'Frost & Eis', 'effekt'],
   ['CAPY', 'Capybara', 'begleiter'],
   ['ASHTRAY', 'Aschenbecher', 'begleiter'], ['SHISHA', 'Mini-Shisha', 'begleiter'], ['BONG', 'Mini-Bong', 'begleiter'], ['ENERGYCAN', 'Energydose', 'begleiter'],
   ['SNUSCAN', 'Snus-Dose', 'begleiter'], ['CIGPACK', 'Kippenschachtel', 'begleiter'], ['ZIPPO', 'Sturmfeuerzeug', 'begleiter'],
@@ -924,8 +926,11 @@ function decayMood() {
   changeMood(-3 * steps);
 }
 
+// Größen rasten auf Stufen ein (Drittel bis 1, darüber halbe Schritte), dann sind alle Pixel gleich groß und scharf
+const SIZE_STEPS = [0.33, 0.5, 0.67, 0.83, 1, 1.33, 1.5, 1.67, 2, 2.33, 2.5, 2.67, 3];
+const snapSize = (v) => SIZE_STEPS.reduce((best, s) => (Math.abs(s - v) < Math.abs(best - v) ? s : best), 1);
 function setSize(size) {
-  settings.groesse = Math.round(Math.min(MAX_SIZE, Math.max(MIN_SIZE, size)) * 100) / 100;
+  settings.groesse = snapSize(Math.min(MAX_SIZE, Math.max(MIN_SIZE, size)));
   saveSettings();
   fitPetWindow();
   sendSettings();
@@ -1022,7 +1027,7 @@ function askText(opts) {
 async function askSize() {
   const value = await askText({
     label: 'Eigene Größe in Prozent',
-    hint: `Von ${MIN_SIZE * 100} bis ${MAX_SIZE * 100}. Tipp: Strg + Mausrad auf der Figur.`,
+    hint: `Von 33 bis ${MAX_SIZE * 100}; rastet auf scharfe Stufen ein (67, 100, 133 …). Tipp: Strg + Mausrad auf der Figur.`,
     value: String(Math.round(settings.groesse * 100)),
   });
   const pct = parseFloat(String(value || '').replace(',', '.').replace('%', ''));
@@ -1286,6 +1291,14 @@ function openSettings(page) {
   });
   settingsWin.on('closed', () => { settingsWin = null; });
 }
+// Was ist neu: einmal nach jedem Update auf der Startseite der Einstellungen
+const CHANGELOG = [
+  'Mini-Claude mit Licht und Schatten; Farben wirken nicht mehr einfarbig, Gold glänzt, Mitternacht funkelt',
+  'Größen rasten auf Stufen ein (z. B. 67 %, 100 %, 133 %) – alles bleibt scharf',
+  'Weichere Landung mit kleinem Nachfedern',
+  'Dosen: Dosenturm wächst beim Tippen, Doppelklick zerdrückt die Dose kurz, Feierabend um 18 Uhr mit „Pssst“',
+  'Neu: Spiegel-Sonnenbrille, Kühlbox als Begleiter, Effekt „Frost & Eis“',
+];
 function settingsState() {
   const z = settings.zaehler;
   const owned = new Set(settings.sammlung);
@@ -1293,6 +1306,7 @@ function settingsState() {
   return {
     figur: settings.figur, zweiteFigur: settings.zweiteFigur, name: settings.name, name2: settings.name2,
     groesse: settings.groesse, farbe: settings.farbe, farbe2: settings.farbe2,
+    neu: settings.gesehenVersion === app.getVersion() ? [] : CHANGELOG,
     slots: Object.fromEntries(Object.entries(SLOTS).map(([slot, key]) => [slot, settings[key] || null])),
     items: ITEMS.map(([key, name, slot, golden]) => ({ key, name, slot, golden: Boolean(golden), owned: owned.has(key) })),
     figures: ORDER.map((id) => ({ id, name: CHARACTERS[id].name })),
@@ -1329,6 +1343,7 @@ async function setFromSettings(key, value) {
     settings[key] = String(value || '').trim().slice(0, 24);
     saveSettings(); sendSettings(); sendAll('command', { type: 'name' }); buildMenu();
   } else if (key === 'groesse') setSize(Number(value) || 1);
+  else if (key === 'gesehenVersion') { settings.gesehenVersion = app.getVersion(); saveSettings(); }
   else if (key === 'farbe' || key === 'farbe2') { if (COLORS.some(([k]) => k === value)) setColor(value, key === 'farbe2'); }
   else if (key.startsWith('slot:')) {
     const slot = key.slice(5);

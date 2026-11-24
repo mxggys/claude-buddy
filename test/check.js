@@ -63,7 +63,7 @@ test('Jedes Kopf-/Mund-/Begleiter-Teil aus dem Laden existiert als Bild', () => 
   const main = fs.readFileSync(path.join(__dirname, '../src/main.js'), 'utf8');
   const items = [...main.matchAll(/\['([A-Z0-9_]+)', '[^']*', '(kopf|begleiter)'/g)].map((m) => m[1]);
   const props = S.character('claude').props;
-  const COMPOSITE = { CHAIR: 'CHAIR_BACK', SNOWGLOBE: 'GLOBEBASE' }; // aus mehreren Teilen gebaut
+  const COMPOSITE = { CHAIR: 'CHAIR_BACK', SNOWGLOBE: 'GLOBEBASE', SPIEGELBRILLE: 'GLASSES' }; // aus mehreren Teilen gebaut / gezeichnet
   const missing = items.filter((k) => !props[k] && !props[COMPOSITE[k]]);
   assert.strictEqual(missing.length, 0, `kein Bild für: ${missing.join(', ')}`);
 });
@@ -72,6 +72,21 @@ test('Dosen sind maßstabsgetreu: Kong Strong ~80 % der Monster-Höhe', () => {
   const k = S.character('orangi'), m = S.character('monsti');
   const ratio = (k.height * k.scale) / (m.height * m.scale);
   assert.ok(ratio > 0.75 && ratio < 0.85, `Verhältnis ${ratio.toFixed(2)}`);
+});
+
+test('Größen rasten auf scharfe Stufen ein', () => {
+  const main = fs.readFileSync(path.join(__dirname, '../src/main.js'), 'utf8');
+  const steps = JSON.parse(main.match(/const SIZE_STEPS = (\[[^\]]*\])/)[1]);
+  // Mini-Claude (scale 3): jede Stufe ergibt ganze oder halbe Bildpunkte pro Pixel
+  for (const v of steps) assert.ok(Math.abs(v * 3 * 2 - Math.round(v * 3 * 2)) < 0.05, `Stufe ${v}`);
+});
+test('Neue Teile haben Bilder: Kühlbox, Mini-Dosen', () => {
+  const P = S.character('claude').props;
+  for (const k of ['KUEHLBOX', 'STACKCAN_O', 'STACKCAN_M']) assert.ok(P[k], k);
+});
+test('Mini-Claude hat Licht und Schatten (nicht einfarbig)', () => {
+  const idle = S.character('claude').frames.idle.join('');
+  for (const k of ['o', 'q', 'W', 'w']) assert.ok(idle.includes(k), `Ton ${k} fehlt`);
 });
 
 console.log(`${passed} ok, ${failed} fehlgeschlagen`);

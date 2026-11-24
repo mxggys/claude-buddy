@@ -64,7 +64,7 @@ const frameCache = new Map(); // fertig gemalte Posen der aktuellen Figur
 // ---------- Farbvarianten: Farbton der Figur ändern (Augen, Mund und Bäckchen bleiben) ----------
 const VARIANTS = {
   blau: { h: 212 }, gruen: { h: 128 }, lila: { h: 275 }, rosa: { h: 332 },
-  gold: { h: 44, sAdd: 0.25, lAdd: 0.04 }, mitternacht: { h: 232, sMul: 0.6, lMul: 0.5 },
+  gold: { h: 40, sAdd: 0.25, lAdd: 0.04, shift: 1.4 }, mitternacht: { h: 232, sMul: 0.6, lMul: 0.5, shift: 1.6 },
 };
 const KEEP_COLORS = new Set(['E', 'e', 'H', 'P', 'm', 't', 'k']);
 function hexToHsl(hex) {
@@ -90,26 +90,30 @@ function recolor(palette, keys, variant, tweaks) {
   const v = (tweaks && tweaks[variant]) || VARIANTS[variant];
   if (!v) return palette;
   const out = { ...palette };
-  for (const k of keys) {
-    const c = palette[k];
-    if (KEEP_COLORS.has(k) || typeof c !== 'string' || c.length !== 7) continue;
-    let [, s, l] = hexToHsl(c);
+  const usable = keys.filter((k) => !KEEP_COLORS.has(k) && typeof palette[k] === 'string' && palette[k].length === 7);
+  const avgL = usable.reduce((sum, k) => sum + hexToHsl(palette[k])[2], 0) / Math.max(1, usable.length);
+  for (const k of usable) {
+    let [, s, l] = hexToHsl(palette[k]);
+    // Farbton-Verschiebung wie in der Pixel-Kunst: helle Töne wandern etwas zu einer, dunkle zur anderen Seite.
+    // Dadurch wirkt eine Farbvariante lebendig statt einfarbig.
+    const dh = Math.max(-24, Math.min(24, (l - avgL) * 80)) * (v.shift === undefined ? 1 : v.shift);
     s = Math.min(1, Math.max(s, 0.32) * (v.sMul || 1) + (v.sAdd || 0));
     l = Math.min(0.97, Math.max(0.04, l * (v.lMul || 1) + (v.lAdd || 0)));
-    out[k] = hslToHex(v.h, s, l);
+    out[k] = hslToHex((v.h + dh + 360) % 360, s, l);
   }
   return out;
 }
 
 // Fein gezeichnete Figuren klein: erst sauber verkleinern, dann wieder auf klare Pixel und die eigenen Farben bringen
 // (sonst wirkt z. B. die Dose bei 60 % verwaschen, während Mini-Claude mit groben Pixeln scharf bleibt)
-const crisp = { canvas: null, ctx: null, colors: [], cache: new Map() };
+const crisp = { canvas: null, ctx: null, colors: [], cache: new Map(), at: 0, scale: 0 };
 function crispColors() {
   const seen = new Set();
   const add = (c) => { if (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)) seen.add(c.toLowerCase()); };
   Object.values(PALETTE).forEach(add);
   Object.values(PROP_PALETTE || {}).forEach(add);
   for (const pal of Object.values(CHAR.propPals || {})) Object.values(pal).forEach(add);
+  crisp.at = 0;
   crisp.colors = [...seen].map((c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]);
   crisp.cache.clear();
 }
@@ -129,6 +133,10 @@ function nearestColor(r, g, b) {
   return best;
 }
 function crispSprite(scale) {
+  // spart Rechenzeit: das scharf gerechnete Bild höchstens alle 40 ms neu (25 Bilder/s reichen bei kleiner Größe)
+  const t = performance.now();
+  if (crisp.canvas && crisp.scale === scale && t - crisp.at < 40) return crisp.canvas;
+  crisp.at = t; crisp.scale = scale;
   const tw = Math.max(1, Math.round(spriteCanvas.width * scale));
   const th = Math.max(1, Math.round(spriteCanvas.height * scale));
   if (!crisp.canvas) { crisp.canvas = document.createElement('canvas'); crisp.ctx = crisp.canvas.getContext('2d', { willReadFrequently: true }); }
@@ -546,6 +554,9 @@ function paintFigure(t) {
   const outlineMap = effectItem === 'GOLDOUTLINE' ? { ...(eyeMap || {}), X: 'i', x: 'I', Y: 'i' } : eyeMap;
   sctx.drawImage(cachedFrame(frame, flip, outlineMap), PAD, PAD);
   drawCanFx(t, flip);
+  drawColorFx(t, frame, flip);
+  drawFrost(t, frame, flip);
+  drawCanStack(flip);
   drawUnderFigure(t, frame, flip);
   if (movingEye) {
     const { dx, dy } = lookOffset(t, flip);
@@ -556,6 +567,7 @@ function paintFigure(t) {
     const w = EYE.pattern[0].length;
     for (const [col, row] of EYE.positions) paint(['+'.repeat(w)], col, row + Math.max(0, EYE.pattern.length - 2) + (frame.eyeDy || 0), flip);
   }
+  if (accessory === 'SPIEGELBRILLE' && duck.state !== 'sleep') drawMirrorShades(t, flip, frame.eyeDy || 0);
   drawSideBuddy(t, frame, flip);
   if (buddyItem === 'ASHTRAY') {
     const rows = CHAR.props.ASHTRAY;
@@ -617,7 +629,8 @@ function paintFigure(t) {
   drawMouthItem(t, offY, flip);
   drawMouthExtras(t, frame, offY, flip);
   // Sonnenbrille bei Sonne (bleibt auch beim Blinzeln auf, sonst flackert sie)
-  if (sunny() && duck.state !== 'sleep') paint(CHAR.props.GLASSES, ANCHORS.glasses[0], ANCHORS.glasses[1] + offY, flip);
+  if (accessory === 'SPIEGELBRILLE') { /* wird nach den Augen gemalt */ }
+  else if (sunny() && duck.state !== 'sleep') paint(CHAR.props.GLASSES, ANCHORS.glasses[0], ANCHORS.glasses[1] + offY, flip);
   const hat = activeHat(t);
   if (hat) {
     // Hüte sind verschieden hoch: an Mitte und Unterkante ausrichten (Heiligenschein schwebt darüber)
@@ -1083,6 +1096,128 @@ function updateHalloween(t) {
 // Kaffeetasse: Dampf steigt auf, morgens und beim schnellen Tippen kräftiger
 let steamAcc = 0;
 let fizzAcc = 0;
+
+
+// ---------- Dosen-Extras: zerdrücken, Dosenturm, Feierabend; Spiegelbrille; Frost ----------
+function crushCan(t) {
+  squash(1.3, 0.56, 520); // knautscht zusammen …
+  for (let i = 0; i < 8; i++) particles.push({ type: 'dust', x: duck.x + DW / 2 + rand(-DW / 2, DW / 2), y: duck.y + DH - 6, vx: rand(-60, 60), vy: rand(-40, -10), life: 1 });
+  say('Knack!', 900);
+  setTimeout(() => { squash(0.88, 1.14, 220); popTab(now()); }, 470); // … und ploppt wieder auf
+}
+const STACK_EVERY = 300;                 // alle 300 Tastenanschläge eine leere Dose mehr
+const STACK_MAX = 6;
+const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+const stack = (() => {
+  try { const v = JSON.parse(localStorage.getItem('buddy-dosenturm') || 'null'); if (v && v.day === todayKey()) return v; } catch (e) { /* egal */ }
+  return { day: todayKey(), keys: 0 };
+})();
+function countStackKey() {
+  if (stack.day !== todayKey()) { stack.day = todayKey(); stack.keys = 0; }
+  const before = Math.floor(stack.keys / STACK_EVERY);
+  stack.keys++;
+  if (stack.keys % 25 === 0) { try { localStorage.setItem('buddy-dosenturm', JSON.stringify(stack)); } catch (e) { /* egal */ } }
+  if (CHAR.fizzy && PM > 1 && Math.floor(stack.keys / STACK_EVERY) > before && before < STACK_MAX) { sparkle(3); say(`Dose ${before + 1} leer!`, 1600); }
+}
+function drawCanStack(flip) {
+  if (!CHAR.fizzy || PM === 1 || stack.day !== todayKey()) return;
+  const n = Math.min(STACK_MAX, Math.floor(stack.keys / STACK_EVERY));
+  if (!n) return;
+  const name = CHAR.id === 'orangi' ? 'STACKCAN_O' : 'STACKCAN_M';
+  const rows = CHAR.props[name];
+  const w = rows[0].length, h = rows.length;
+  for (let i = 0; i < n; i++) {
+    const col = i % 2, row = Math.floor(i / 2);
+    paint(rows, -3 - (2 - col) * w + (row % 2 ? Math.round(w / 2) * 0 : 0), HEIGHT - (row + 1) * h + 1, flip);
+  }
+}
+let feierabendDay = (() => { try { return localStorage.getItem('buddy-feierabend') || ''; } catch (e) { return ''; } })();
+function checkFeierabend(t) {
+  const h = hour();
+  if (h < 18 || h >= 23 || feierabendDay === todayKey() || dnd() || duck.state === 'sleep' || duck.dragging || acting(t)) return;
+  feierabendDay = todayKey();
+  try { localStorage.setItem('buddy-feierabend', feierabendDay); } catch (e) { /* egal */ }
+  say(CHAR.fizzy ? 'Pssst … Feierabend! 🍻' : 'Feierabend! 🎉', 3500);
+  react('cheer', t); // Dosen: Lasche springt dabei auf
+}
+function drawMirrorShades(t, flip, eyeDy = 0) {
+  // Gläser genau über den Augen der Figur (passt zu jeder Augengröße), dunkler Rahmen, wandernde Spiegelung
+  const ew = EYE.pattern[0].length, eh = EYE.pattern.length;
+  const xs = EYE.positions.map(([x]) => x);
+  const y0 = EYE.positions[0][1] + eyeDy - 1;
+  const left = Math.min(...xs) - 1, right = Math.max(...xs) + ew;
+  const span = right - left + 1;
+  const sweep = ((t / 1400) % 2.6) * span - span * 0.5;
+  const put = (x, y, color) => { sctx.fillStyle = color; sctx.fillRect(PAD + (flip ? WIDTH - 1 - x : x), PAD + y, 1, 1); };
+  for (let x = left; x <= right; x++) put(x, y0, '#14161c');                    // Bügel oben durchgehend
+  for (const ex of xs) {
+    for (let y = y0 + 1; y <= y0 + eh + 1; y++) {
+      for (let x = ex - 1; x <= ex + ew; x++) {
+        const edge = x === ex - 1 || x === ex + ew || y === y0 + eh + 1;
+        if (edge) { put(x, y, '#14161c'); continue; }
+        const k = (y - y0) / (eh + 1);
+        let color = k < 0.45 ? '#41609a' : '#253352';                              // Verlauf: oben heller
+        const d = Math.abs((x - left) + (y - y0) - sweep);
+        if (d < 1.1) color = d < 0.55 ? '#f4fbff' : '#a8d4ff';                   // Spiegelung
+        put(x, y, color);
+      }
+    }
+  }
+}
+const frostEdges = new WeakMap();
+function drawFrost(t, frame, flip) {
+  if (effectItem !== 'FROST') return;
+  let edges = frostEdges.get(frame);
+  if (!edges) {
+    edges = [];
+    const at = (x, y) => (frame[y] && frame[y][x]) || '.';
+    for (let y = 0; y < frame.length; y++) for (let x = 0; x < frame[y].length; x++) {
+      if (at(x, y) === '.') continue;
+      if (at(x, y - 1) === '.') edges.push([x, y, 'top']);
+      else if (at(x - 1, y) === '.' || at(x + 1, y) === '.') { if ((x * 7 + y * 3) % 3 === 0) edges.push([x, y, 'side']); }
+      if (at(x, y + 1) === '.' && y < frame.length - 3 && (x * 5 + y) % 4 === 0) edges.push([x, y + 1, 'icicle']);
+      if (PM > 1 && (((x * 73856093) ^ (y * 19349663)) >>> 0) % 23 === 0) edges.push([x, y, 'speck']); // beschlagenes, vereistes Blech
+    }
+    frostEdges.set(frame, edges);
+  }
+  const k = PM; // auf fein gezeichneten Figuren etwas dicker
+  for (const [x, y, kind] of edges) {
+    const px = PAD + (flip ? WIDTH - 1 - x : x);
+    if (kind === 'top') { sctx.fillStyle = 'rgba(176, 222, 255, 0.95)'; sctx.fillRect(px, PAD + y, 1, Math.max(1, Math.round(k * 0.7))); sctx.fillStyle = 'rgba(255, 255, 255, 0.95)'; sctx.fillRect(px, PAD + y, 1, 1); }
+    else if (kind === 'speck') { sctx.fillStyle = 'rgba(235, 247, 255, 0.7)'; sctx.fillRect(px, PAD + y, 1, 1); }
+    else if (kind === 'side') { sctx.fillStyle = 'rgba(160, 210, 250, 0.75)'; sctx.fillRect(px, PAD + y, 1, Math.max(1, k - 1)); }
+    else {
+      const len = 1 + ((x + y) % 3) * Math.max(1, Math.round(k * 0.7));
+      sctx.fillStyle = 'rgba(150, 205, 250, 0.9)'; sctx.fillRect(px, PAD + y, Math.max(1, k - 1), len);
+      sctx.fillStyle = 'rgba(255, 255, 255, 0.9)'; sctx.fillRect(px, PAD + y, 1, 1);
+    }
+  }
+}
+// Farbvarianten mit Extra: Gold glänzt, Mitternacht hat funkelnde Sterne auf dem Körper
+function drawColorFx(t, frame, flip) {
+  const farbe = CONFIG.farbe;
+  if (CHAR.sorte || (farbe !== 'gold' && farbe !== 'mitternacht') || hardSave()) return;
+  const slot = Math.floor(t / 650);
+  const k = (t % 650) / 650;
+  const alpha = Math.sin(k * Math.PI);
+  const count = farbe === 'mitternacht' ? 3 : 1;
+  for (let i = 0; i < count; i++) {
+    // fester Zufall je Zeitfenster, damit das Funkeln nicht flackert
+    let seed = (slot * 7919 + i * 104729) % 2147483647;
+    const rnd = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+    for (let tries = 0; tries < 12; tries++) {
+      const y = Math.floor(rnd() * frame.length);
+      const x = Math.floor(rnd() * WIDTH);
+      const ch = frame[y] && frame[y][x];
+      if (!ch || ch === '.' || ch === 'E' || ch === 'e' || ch === 'X' || ch === 'x') continue;
+      const px = PAD + (flip ? WIDTH - 1 - x : x), py = PAD + y;
+      sctx.fillStyle = farbe === 'gold' ? `rgba(255, 250, 220, ${alpha})` : `rgba(235, 240, 255, ${alpha * 0.9})`;
+      sctx.fillRect(px, py, 1, 1);
+      if (farbe === 'gold' && alpha > 0.6) { sctx.fillStyle = `rgba(255, 245, 200, ${alpha * 0.6})`; sctx.fillRect(px - 1, py, 3, 1); sctx.fillRect(px, py - 1, 1, 3); }
+      break;
+    }
+  }
+}
 // Dosen: Kondenstropfen laufen ab und zu am Blech herunter, beim Erschrecken/Freuen springt die Lasche auf
 const canFx = { drops: [], nextDrop: 0, tabUntil: 0 };
 function updateCanFx(dt, t) {
@@ -1127,6 +1262,7 @@ function drawCanFx(t, flip) {
 }
 function updateSteam(dt, t) {
   updateCanFx(dt, t);
+  checkFeierabend(t);
   if (CHAR.fizzy && !hardSave() && duck.state !== 'sleep' && keyTimes.length > 2) {
     // Energydose sprudelt: kleine Bläschen aus der Lasche, je schneller getippt, desto mehr
     fizzAcc += dt * Math.min(12, keyTimes.length * 1.5);
@@ -1309,6 +1445,7 @@ function onKey() {
   const wasTyping = isTyping(t);
   if (!work.start || t - duck.lastKeyAt > 5 * 60 * 1000) { work.start = t; work.nextAt = t + 60 * 60 * 1000; } // neue Arbeitsphase
   duck.lastKeyAt = t;
+  countStackKey();
   duck.wingDown = !duck.wingDown;
   duck.pressedKey = KEY_CELLS[Math.floor(Math.random() * KEY_CELLS.length)];
   duck.pressedUntil = t + 110;
@@ -1653,7 +1790,12 @@ function update(dt, t) {
       // Landung: je schneller, desto stärker plattgedrückt
       const hit = Math.min(1, duck.vy / 1400);
       const soft = CHAR.squishy ? 1.8 : 1; // Schleim wird beim Landen richtig platt
-      if (duck.vy > 150) squash(1 + 0.22 * hit * soft, 1 - 0.2 * hit * soft, (120 + 120 * hit) * soft);
+      if (duck.vy > 150) {
+        const ms = (140 + 140 * hit) * soft;
+        squash(1 + 0.2 * hit * soft, 1 - 0.18 * hit * soft, ms);
+        // weich: nach dem Plattdrücken kurz nachfedern
+        setTimeout(() => squash(1 - 0.05 * hit, 1 + 0.06 * hit, 180), ms * 0.7);
+      }
       if (duck.vy > 300 && !hardSave()) {
         for (let i = 0; i < 6; i++) {
           const side = i % 2 ? 1 : -1;
@@ -2210,6 +2352,14 @@ function drawSideBuddy(t, frame, flip) {
     paint(flames, WIDTH + 4, top + 5, flip);
   }
   if (buddyItem === 'ENERGYCAN' && !doing('energy')) at(CHAR.props.ENERGYCAN);
+  if (buddyItem === 'KUEHLBOX') {
+    const rows = CHAR.props.KUEHLBOX;
+    if (CHAR.fizzy && duck.state === 'sleep') {
+      // Dose schläft in der Kühlbox: Vorderteil der Box vor die Dose
+      const front = rows.slice(Math.round(rows.length * 0.3));
+      paint(front, Math.round(WIDTH / 2 - rows[0].length / 2), HEIGHT - front.length + 1, flip, null, CHAR.propPals.KUEHLBOX);
+    } else at(rows);
+  }
   if (buddyItem === 'SNUSCAN') at(CHAR.props[doing('snus') ? 'SNUSCAN_OPEN' : 'SNUSCAN']);
   if (buddyItem === 'CIGPACK') at(CHAR.props[doing('relight') && actionSince(t) < 1400 ? 'CIGPACK_OPEN' : 'CIGPACK']);
   if (buddyItem === 'ZIPPO') {
@@ -2848,13 +2998,18 @@ function drawGlow(t) {
     ctx.fill();
   }
 }
+let labelText = '';
+let labelUntil = 0;
+function say(text, ms = 2500) { labelText = text; labelUntil = now() + ms; }
 function drawNameTag(t) {
-  if (!petName || pauseUntil > t || duck.dragging) return;
+  const saying = labelUntil > t;
+  const petNameShown = saying ? labelText : petName;
+  if (!petNameShown || pauseUntil > t || duck.dragging) return;
   const hovering = hoverSince && t - hoverSince > 700;
-  if (!hovering && nameUntil <= t) return;
+  if (!saying && !hovering && nameUntil <= t) return;
   const fs = Math.max(9, Math.round(11 * Math.min(1.5, SIZE + 0.3)));
   ctx.font = `600 ${fs}px "Segoe UI", sans-serif`;
-  const w = Math.round(ctx.measureText(petName).width + fs);
+  const w = Math.round(ctx.measureText(petNameShown).width + fs);
   const h = Math.round(fs * 1.6);
   const x = Math.round(duck.x + DW / 2 - w / 2);
   const y = Math.round(duck.y - h - 6 * Math.max(0.6, SIZE));
@@ -2865,7 +3020,7 @@ function drawNameTag(t) {
   ctx.fillStyle = '#fffaf0';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(petName, x + w / 2, y + h / 2 + 1);
+  ctx.fillText(petNameShown, x + w / 2, y + h / 2 + 1);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 }
@@ -2924,8 +3079,8 @@ function drawSnow() {
 }
 
 // ---------- Tägliches Geschenk ----------
-const EFFECTS = ['FIREAURA', 'SMOKEAURA', 'RINGPRO', 'GOLDDUST', 'GLITTER', 'GOLDOUTLINE', 'DIAMOND', 'SNOWAROUND', 'BREATH', 'COZYGLOW', 'AURORA', 'STARCIRCLE', 'BOKEH', 'FROSTFLOOR', 'GOLDSHADOW', 'TOPLIGHT', 'CRYSTALS'];
-const SPECIAL_ACCESSORIES = new Set(EFFECTS); // keine Hüte
+const EFFECTS = ['FIREAURA', 'SMOKEAURA', 'RINGPRO', 'GOLDDUST', 'GLITTER', 'GOLDOUTLINE', 'DIAMOND', 'SNOWAROUND', 'BREATH', 'COZYGLOW', 'AURORA', 'STARCIRCLE', 'BOKEH', 'FROSTFLOOR', 'GOLDSHADOW', 'TOPLIGHT', 'CRYSTALS', 'FROST'];
+const SPECIAL_ACCESSORIES = new Set([...EFFECTS, 'SPIEGELBRILLE']); // keine Hüte
 // Regenbogen-Glitzer: zieht beim Bewegen eine bunte Spur, in Ruhe funkelt es leise
 let rainbowAcc = 0;
 function updateAccessoryFx(dt, t) {
@@ -2945,6 +3100,7 @@ function updateAccessoryFx(dt, t) {
   if (effectItem === 'GOLDDUST' && chance(moving ? 24 : 12)) { const p = around(); particles.push({ type: 'gold', x: p.x, y: duck.y + DH * rand(-0.2, 0.3), vx: rand(-6, 6), vy: rand(12, 26), life: 1, seed: rand(0, 6) }); }
   if (effectItem === 'GLITTER' && chance(9)) { const p = { x: duck.x + DW * rand(0.15, 0.85), y: duck.y + DH * rand(0.15, 0.85) }; particles.push({ type: 'glint', x: p.x, y: p.y, vx: 0, vy: 0, life: 1, color: '#ffffff' }); }
   if (effectItem === 'DIAMOND' && chance(3)) { const p = around(); particles.push({ type: 'diamond', x: p.x, y: p.y, vx: 0, vy: -4, life: 1 }); }
+  if (effectItem === 'FROST' && chance(0.7)) { const p = around(); particles.push({ type: 'crystal', x: p.x, y: p.y, vx: rand(-4, 4), vy: rand(4, 10), life: 1, seed: rand(0, 6) }); }
   if (effectItem === 'CRYSTALS' && chance(1.2)) { const p = around(); particles.push({ type: 'crystal', x: p.x, y: p.y, vx: rand(-5, 5), vy: rand(-10, -4), life: 1, seed: rand(0, 6) }); }
   if (effectItem === 'SNOWAROUND' && chance(5)) particles.push({ type: 'snow', x: duck.x + DW * rand(-0.2, 1.2), y: duck.y - rand(5, 25) * Math.max(0.6, SIZE), vx: rand(-8, 8), vy: rand(18, 30), life: 1 });
   if (effectItem === 'FROSTFLOOR' && chance(5)) particles.push({ type: 'glint', x: duck.x + DW * rand(-0.15, 1.15), y: duck.y + DH - rand(0, 3), vx: 0, vy: 0, life: 1, color: '#cfe9ff' });
@@ -3809,6 +3965,7 @@ window.addEventListener('dblclick', (e) => {
   if (!overDuck(mouseX(e), mouseY(e))) return;
   wake();
   hoverSince = 0;
+  if (CHAR.fizzy && PM > 1) { crushCan(now()); return; }
   duck.onGround = false;
   duck.vy = -820 * (CHAR.jump || 1); // Hase springt höher
   squash(0.82, 1.2, 200);
@@ -3837,8 +3994,10 @@ window.addEventListener('wheel', (e) => {
     return;
   }
   e.preventDefault();
-  const step = SIZE < 0.5 ? 0.02 : 0.05;
-  setSize(Math.round((SIZE + (e.deltaY < 0 ? step : -step)) * 100) / 100);
+  // nächste scharfe Größen-Stufe (wie im Einstellungsfenster)
+  const STEPS = [0.33, 0.5, 0.67, 0.83, 1, 1.33, 1.5, 1.67, 2, 2.33, 2.5, 2.67, 3];
+  const next = e.deltaY < 0 ? STEPS.find((v) => v > SIZE + 0.01) : [...STEPS].reverse().find((v) => v < SIZE - 0.01);
+  if (next) setSize(next);
   if (bridge) bridge.saveSize(SIZE);
 }, { passive: false });
 
@@ -3897,7 +4056,7 @@ if (bridge) {
     else onKey();
   });
   window.__duck = {
-    duck, mic, cursor, onKey, moveCursor, startAction, react, setSize, canFx, popTab,
+    duck, mic, cursor, onKey, moveCursor, startAction, react, setSize, canFx, popTab, stack, crushCan, say, checkFeierabend,
     setCharacter(id) {
       const bottom = duck.y + DH;
       applyCharacter(id);

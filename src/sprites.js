@@ -251,10 +251,27 @@
     if (beak > 0) rect(g, 13, 13 + by - lift, 16, 12 + by - lift + beak, beak > 1 ? (x, y) => (y === 14 + by - lift ? 't' : 'm') : 'm');
     return finish(g, by + breathe - lift, false);
   }
+  // Mini-Claude bekommt Tiefe: Licht von links oben (o), Schatten rechts unten (q). So sieht er auch in jeder Farbe
+  // nicht mehr einfarbig flach aus (die Farbvarianten verschieben helle und dunkle Töne unterschiedlich).
+  function shadeClaude(rows) {
+    const at = (x, y) => (rows[y] && rows[y][x]) || '.';
+    const out = rows.map((line, y) => [...line].map((ch, x) => {
+      if (ch !== 'W') return ch;
+      const up = at(x, y - 1), left = at(x - 1, y), down = at(x, y + 1), right = at(x + 1, y);
+      if (left === '.' || x === 0) return 'o';                         // Lichtkante links
+      if ((up === 'h' || up === '.') && x < 18) return 'o';             // Licht oben links
+      if (down === 'w' && right === 'w') return 'q';                    // Schattenecke rechts unten
+      if (down === 'w' && (x + y) % 2 === 0 && y > 12) return 'w';      // weicher Übergang zum Schatten unten
+      return ch;
+    }).join(''));
+    for (const k of Object.keys(rows)) if (Number.isNaN(Number(k))) out[k] = rows[k];
+    return out;
+  }
   const claude = {
     name: 'Mini-Claude',
-    palette: { W: '#d9654c', w: '#b9503a', v: '#9c412f', h: '#e8836b', E: '#151112', e: '#151112', m: '#3a1712', t: '#e9917f', P: '#f29a86' },
-    frames: framesOf(miniClaude),
+    variantTweaks: { mitternacht: { h: 234, sMul: 0.75, lMul: 0.62, lAdd: 0.04, shift: 1.6 } },
+    palette: { W: '#d9654c', w: '#b54c37', v: '#9c412f', h: '#f09a80', o: '#e8846a', q: '#97402c', E: '#151112', e: '#151112', m: '#3a1712', t: '#e9917f', P: '#f29a86' },
+    frames: Object.fromEntries(Object.entries(framesOf(miniClaude)).map(([k, f]) => [k, shadeClaude(f)])),
     eye: { positions: [[7, 8], [20, 8]], pattern: ['HEE', 'EEE', 'EEE'] }, // kleiner Glanzpunkt oben links
     eyeBg: 'W',
     front: true,
@@ -1106,7 +1123,16 @@
   const BLACKCAN = small(['.AAAAAAAAA..', 'ADAAAAACCCAG', 'AAAAAAAAAAFG', 'AEEEEEEEEEFG', 'AAAAAAAAAAEG', 'ADAHHHHHHHAG', 'ADAHAHHEAAFG', 'ADDHCHHEAAFG', 'ADDHCEHEAAFG', 'ADAHCEHEAHFG', 'ADAHCEHEDHFG', 'ADAHAHBEDHFG', 'ADDHAHDEAAFG', 'ADEAAAHEHAFG', 'AFEAAAAEAEFG', 'AFDFBEAEEEFG', 'AFEEEAAEEEAG', 'AAAGAGGDGGAG', 'AABGAGGAGEAB', 'AFAEDAAAAEAG', 'AAACBAAACEFG', 'AAEEEEEEEEFG', 'ABAEEEEEEAA.', '.ACCCCCCCA..']);
 
   // eigene Farbtabellen für Teile nach Bildern (gelten nur für dieses Teil)
-  const PROP_PALS = { CAPY: { 'A': '#312219', 'B': '#754a2c', 'C': '#97693e', 'D': '#b8824c', 'E': '#ba824b', 'F': '#ba834d' }, BLACKCAN: { 'A': '#010101', 'B': '#0f0f0d', 'C': '#181815', 'D': '#252521', 'E': '#30332a', 'F': '#4d504b', 'G': '#61615d', 'H': '#7d7e7b' }, DRINK: { 'A': '#f4ecec', 'B': '#d6a6a6', 'C': '#3a0c14', 'D': '#7a1018', 'E': '#a3201e', 'F': '#8a2a14', 'G': '#f1ddd6', 'H': '#e8682a', 'I': '#f6a628', 'J': '#c26a10' } };
+  // Kühlbox (Begleiter; Dosen setzen sich zum Schlafen hinein), Mini-Dosen für den Dosenturm
+  const KUEHLBOX = small(['....BBBBBBBB....', '....B......B....', 'AAAAAAAAAAAAAAAA', 'ACCCCCCCCCCCCCCA', 'DDDDDDDDDDDDDDDD', 'DEEEEEEEEEEEEEED',
+    'DEEEEFFFFFFEEEED', 'DEEEEFFFFFFEEEED', 'DEEEEEEEEEEEEEED', 'DEEEEEEEEEEEEEED', 'DDDDDDDDDDDDDDDD']);
+  const STACKCAN_O = small(['.AAA.', 'ABBBA', 'CDDDC', 'CDDDC', 'ABBBA', 'ABEBA', 'ABEBA', 'ABBBA', '.AAA.']);
+  const STACKCAN_M = small(['.AAA.', 'ABBBA', 'BCBCB', 'BCBCB', 'BCBCB', 'BBCBB', 'BBBBB', 'ABBBA', '.AAA.']);
+  const PROP_PALS = {
+    KUEHLBOX: { A: '#e9eef2', B: '#7a8590', C: '#ffffff', D: '#1d5fa8', E: '#2f7fd0', F: '#e9f2fa' },
+    STACKCAN_O: { A: '#6c7378', B: '#c9cdd1', C: '#c4671a', D: '#ee8a2a', E: '#3c4044' },
+    STACKCAN_M: { A: '#8d9198', B: '#f2f0ea', C: '#8a909c' },
+    CAPY: { 'A': '#312219', 'B': '#754a2c', 'C': '#97693e', 'D': '#b8824c', 'E': '#ba824b', 'F': '#ba834d' }, BLACKCAN: { 'A': '#010101', 'B': '#0f0f0d', 'C': '#181815', 'D': '#252521', 'E': '#30332a', 'F': '#4d504b', 'G': '#61615d', 'H': '#7d7e7b' }, DRINK: { 'A': '#f4ecec', 'B': '#d6a6a6', 'C': '#3a0c14', 'D': '#7a1018', 'E': '#a3201e', 'F': '#8a2a14', 'G': '#f1ddd6', 'H': '#e8682a', 'I': '#f6a628', 'J': '#c26a10' } };
 
   // Aschenbecher (Glas), Kippe darin; Feuerzeug zum Anzünden
   const ASHTRAY = small(['4555555554', '5444444445', '.55555555.']);
@@ -1195,7 +1221,7 @@
       ownColors: Object.keys(c.palette), // Farben der Figur selbst (für Farbvarianten)
       propPals: PROP_PALS,
       props: {
-        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, EGG, APPLE, COOKIE, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, DRINK, CAPY, BLACKCAN, RPS_STEIN, RPS_PAPIER, RPS_SCHERE, PHONE, NEWSPAPER, WALLET, WALLET_OPEN, XMASTREE, ORANGECAN, LIMECAN, JOINTXXL, SHERLOCK, VAPEXXL, GOLDPICK, CIGARXXL, GOLDRINGCIGAR, NOSESPRAY, GOLDJOINT, DIAMONDCIG,
+        IDEA, LENS, STAR, MUSHROOM, SANTA, PARTY, UMBRELLA, EARS, PUMPKIN, NIGHTCAP, BELL, EGG, APPLE, COOKIE, DOENER, PIZZA, BURGER, FRIES, TACO, PRETZEL, PASTA, DONUT, ICECREAM, CROISSANT, PANCAKES, CHOCOLATE, MUFFIN, MELON, BANANA, POPCORN, PEEL, MEDAL, STONE, GIFT, GIFTGOLD, WING_L, WING_R, CAPE1, CAPE2, BUBBLETEA, MINITEDDY, BUNNY, DUMBBELL, FIREPLACE, FRIDGE, FRIDGE_OPEN, GOLDBARS, RADIATOR, THERMOS, BEANBAG, CHAIR_BACK, CHAIR_SEAT, BED, BLANKET, HAMMOCK, GLOBEBASE, ...ACCESSORIES2, CIGARETTE, JOINT, ASHTRAY, BUTT, LIGHTER, DRINK, CAPY, BLACKCAN, KUEHLBOX, STACKCAN_O, STACKCAN_M, RPS_STEIN, RPS_PAPIER, RPS_SCHERE, PHONE, NEWSPAPER, WALLET, WALLET_OPEN, XMASTREE, ORANGECAN, LIMECAN, JOINTXXL, SHERLOCK, VAPEXXL, GOLDPICK, CIGARXXL, GOLDRINGCIGAR, NOSESPRAY, GOLDJOINT, DIAMONDCIG,
         CIGARILLO, ROLLIE, SLIM, FRUITVAPE, GRILLZ, SHISHA, BONG, ENERGYCAN, SNUSCAN, SNUSCAN_OPEN, CIGPACK, CIGPACK_OPEN, ZIPPO, ZIPPO_OPEN, JOINTCROWN, LAPTOP, LAPTOP_MINI, MUG, CIGAR, PIPE, VAPE, TOOTHPICK, PILLOW, SKATEBOARD, TEDDY, SNOWMAN, SNOWCAP, ...ACCESSORIES,
         GLASSES: c.glasses || (c.front ? GLASSES_FRONT : GLASSES_SIDE),
       },

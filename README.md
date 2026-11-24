@@ -7,6 +7,17 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Orangi (Kong-Strong-Dose, 0,25 l) und Monsti (Monster-Dose, 0,5 l), beide mit Gesicht, sprudeln beim schnellen Tippen.
 
+## Version 1.45
+- Mini-Claude mit Licht und Schatten; Farbvarianten verschieben helle und dunkle Töne unterschiedlich (wirkt nicht mehr einfarbig),
+  Gold glänzt, Mitternacht funkelt mit kleinen Sternen.
+- Größen rasten auf scharfe Stufen ein (33, 50, 67, 83, 100, 133, 150 … 300 %), auch mit Strg + Mausrad; alte Zwischengrößen werden angepasst.
+- Weichere Landung mit kleinem Nachfedern.
+- Bei kleinen Größen wird das scharfe Dosenbild höchstens alle 40 ms neu gerechnet (spart Rechenzeit).
+- „Neu in Version …“ einmal nach jedem Update auf der Startseite der Einstellungen.
+- Dosen: Dosenturm (alle 300 Tasten eine leere Dose mehr, bis 6, jeden Tag neu), Doppelklick zerdrückt die Dose kurz („Knack!“),
+  Feierabend ab 18 Uhr einmal am Tag mit „Pssst … Feierabend!“ (andere Figuren jubeln).
+- Neue Teile: Spiegel-Sonnenbrille (Kopf, mit wandernder Spiegelung), Kühlbox (Begleiter; Dosen schlafen darin), Effekt „Frost & Eis“.
+
 ## Version 1.44
 - Figuren aufgeräumt: nur noch Mini-Claude, Kuschel, Mokka, Kong Strong und Monster (Boo, Frosti, Axo entfernt).
 - Farben bei jeder Figur geprüft und korrigiert. Bei den Dosen ist jede Farbe eine eigene Sorte:
