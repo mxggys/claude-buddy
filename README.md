@@ -7,6 +7,11 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Orangi (Kong-Strong-Dose, 0,25 l) und Monsti (Monster-Dose, 0,5 l), beide mit Gesicht, sprudeln beim schnellen Tippen.
 
+## Version 1.47
+- Dosen bis 80 % als Klein-Version: gleiche Aufteilung wie groß (Sorte im Band, KONG | STRONG, Punkte; Kralle, MONSTER, ENERGY),
+  aber mit gröberen Pixeln und Schrift 3 x 5 – bei 60 % genau 1:1 Pixel und lesbar, bei 70/80 % scharf vergrößert.
+- Große Dosen ab 90 % wieder 1:1 (Kong 82 px, Monster 102 px bei 100 %).
+
 ## Version 1.46
 - Größe in 10er-Schritten (10–300 %), Regler, Strg + Mausrad und eigene Eingabe.
 - Alle Figuren einheitlich: bei gleicher Größe etwa gleich hoch (ca. 72–80 px bei 100 %; vorher Tasse 42, Koala 57, Claude 60, Kong 82, Monster 102 px).

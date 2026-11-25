@@ -76,13 +76,13 @@ test('Größe nur in 10er-Schritten', () => {
   const main = fs.readFileSync(path.join(__dirname, '../src/main.js'), 'utf8');
   assert.ok(/const snapSize = \(v\) => Math\.min\(MAX_SIZE, Math\.max\(MIN_SIZE, Math\.round\(v \* 10\) \/ 10\)\)/.test(main), 'snapSize nicht in 10er-Schritten');
 });
-test('Alle Figuren sind bei gleicher Größe ähnlich hoch (sichtbar 70–90 px bei 100 %)', () => {
+test('Figuren ähnlich hoch (Tiere/Claude 70–90 px, Dosen bis 105 px bei 100 %)', () => {
   for (const id of S.ORDER) {
     const c = S.character(id);
     let top = Infinity, bot = -1;
     c.frames.idle.forEach((row, y) => { if ([...row].some((ch) => ch !== '.')) { top = Math.min(top, y); bot = Math.max(bot, y); } });
     const h = (bot - top + 1) * (c.display || c.scale);
-    assert.ok(h >= 70 && h <= 90, `${id}: ${h.toFixed(0)} px`);
+    assert.ok(h >= 70 && h <= (c.variants ? 105 : 90), `${id}: ${h.toFixed(0)} px`);
   }
 });
 test('Neue Teile haben Bilder: Kühlbox, Mini-Dosen', () => {
@@ -92,6 +92,28 @@ test('Neue Teile haben Bilder: Kühlbox, Mini-Dosen', () => {
 test('Mini-Claude hat Licht und Schatten (nicht einfarbig)', () => {
   const idle = S.character('claude').frames.idle.join('');
   for (const k of ['o', 'q', 'W', 'w']) assert.ok(idle.includes(k), `Ton ${k} fehlt`);
+});
+
+test('Klein-Versionen der Dosen: jede Farbe, Schrift 1:1 bei 60 %', () => {
+  for (const id of ['orangi', 'monsti']) {
+    const c = S.character(id);
+    for (const col of ['original', ...COLORS]) {
+      const sid = c.small && c.small[col];
+      assert.ok(sid && S.CHARACTERS[sid], `${id}: Klein-Version ${col} fehlt`);
+      const k = S.character(sid);
+      assert.ok(Math.abs(k.display * 0.6 - 1) < 0.01, `${sid}: bei 60 % nicht 1:1`);
+      assert.ok(k.hidden, `${sid} sollte versteckt sein`);
+    }
+  }
+});
+
+test('Quelltext: alle Dateien gültig, aufgerufene Funktionen in main.js vorhanden', () => {
+  const { execFileSync } = require('child_process');
+  for (const f of ['main.js', 'renderer.js', 'sprites.js', 'settings.js']) execFileSync(process.execPath, ['--check', path.join(__dirname, '../src', f)]);
+  const main = fs.readFileSync(path.join(__dirname, '../src/main.js'), 'utf8');
+  const defined = new Set([...main.matchAll(/function\s+([A-Za-z_]\w*)\s*\(/g)].map((m) => m[1]));
+  for (const name of ['settingsState', 'pushSettingsState', 'setSize', 'buildMenu', 'loadSettings', 'snapSize'].filter((n) => n !== 'snapSize')) assert.ok(defined.has(name), `${name} fehlt`);
+  assert.ok(/const snapSize =/.test(main), 'snapSize fehlt');
 });
 
 console.log(`${passed} ok, ${failed} fehlgeschlagen`);

@@ -203,9 +203,17 @@ function normalizeCharacter(c) {
 }
 function applyCharacter(id) {
   CHAR = DuckSprites.character(id);
-  // Dosen: jede Farbe ist eine eigene Sorte mit eigenem Bild (statt alles einzufärben)
-  const sorte = CHAR.variants && CHAR.variants[CONFIG.farbe];
-  if (sorte) CHAR = { ...DuckSprites.character(sorte), id: CHAR.id, sorte: CONFIG.farbe };
+  const base = CHAR;
+  if (base.small && SIZE < SMALL_BELOW) {
+    // klein (bis 80 %): Dose mit gröberen Pixeln, damit die Schrift lesbar bleibt
+    const sid = base.small[CONFIG.farbe] || base.small.original;
+    CHAR = { ...DuckSprites.character(sid), id: base.id, sorte: CONFIG.farbe, isSmall: true };
+  } else {
+    // Dosen: jede Farbe ist eine eigene Sorte mit eigenem Bild (statt alles einzufärben)
+    const sorte = CHAR.variants && CHAR.variants[CONFIG.farbe];
+    if (sorte) CHAR = { ...DuckSprites.character(sorte), id: CHAR.id, sorte: CONFIG.farbe };
+  }
+  CHAR.hasSmall = Boolean(base.small);
   CHAR = normalizeCharacter(CHAR);
   PM = Math.max(1, Math.round(3 / CHAR.scale));
   PAD = 16 * PM;
@@ -233,8 +241,10 @@ function applyCharacter(id) {
   crispColors();
   applySize(SIZE);
 }
+const SMALL_BELOW = 0.85; // ab hier (also bis 80 %) die Klein-Version der Dosen
 function applySize(size) {
   SIZE = Math.min(MAX_SIZE, Math.max(MIN_SIZE, size));
+  if (CHAR.hasSmall && (SIZE < SMALL_BELOW) !== Boolean(CHAR.isSmall)) { applyCharacter(CHAR.id); return; }
   SCALE = CHAR.scale * SIZE;
   DW = WIDTH * SCALE;
   DH = HEIGHT * SCALE;

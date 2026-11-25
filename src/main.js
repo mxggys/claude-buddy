@@ -1293,9 +1293,9 @@ function openSettings(page) {
 // Was ist neu: einmal nach jedem Update auf der Startseite der Einstellungen
 const CHANGELOG = [
   'Größe jetzt in 10er-Schritten (10 %, 20 %, 30 % … 300 %), auch mit Strg + Mausrad',
-  'Alle Figuren gleich groß: Mini-Claude, Koala, Tasse und Dosen sind bei gleicher Größe jetzt etwa gleich hoch',
-  'Einheitlich scharf: alle Figuren laufen durch dieselbe Darstellung, Zubehör ist überall gleich groß',
-]
+  'Kong Strong und Monster bis 80 % als eigene Klein-Version: gleiche Aufteilung, gröbere Pixel – ORANGE, KONG STRONG, MONSTER ENERGY sind bei 60 % lesbar',
+  'Mini-Claude, Koala und Tasse sind bei gleicher Größe etwa gleich hoch; Zubehör ist bei allen Figuren gleich groß',
+];
 function settingsState() {
   const z = settings.zaehler;
   const owned = new Set(settings.sammlung);
