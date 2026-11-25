@@ -62,47 +62,8 @@ let glowUntil = 0;                // Lichtschein hinter der Figur (Abzeichen, go
 const frameCache = new Map(); // fertig gemalte Posen der aktuellen Figur
 
 // ---------- Farbvarianten: Farbton der Figur ändern (Augen, Mund und Bäckchen bleiben) ----------
-const VARIANTS = {
-  blau: { h: 212 }, gruen: { h: 128 }, lila: { h: 275 }, rosa: { h: 332 },
-  gold: { h: 40, sAdd: 0.25, lAdd: 0.04, shift: 1.4 }, mitternacht: { h: 232, sMul: 0.6, lMul: 0.5, shift: 1.6 },
-};
-const KEEP_COLORS = new Set(['E', 'e', 'H', 'P', 'm', 't', 'k']);
-function hexToHsl(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  if (max === min) return [0, 0, l];
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return [h * 60, s, l];
-}
-function hslToHex(h, s, l) {
-  const f = (n) => {
-    const k = (n + h / 30) % 12;
-    const a = s * Math.min(l, 1 - l);
-    return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0');
-  };
-  return `#${f(0)}${f(8)}${f(4)}`;
-}
-function recolor(palette, keys, variant, tweaks) {
-  const v = (tweaks && tweaks[variant]) || VARIANTS[variant];
-  if (!v) return palette;
-  const out = { ...palette };
-  const usable = keys.filter((k) => !KEEP_COLORS.has(k) && typeof palette[k] === 'string' && palette[k].length === 7);
-  const avgL = usable.reduce((sum, k) => sum + hexToHsl(palette[k])[2], 0) / Math.max(1, usable.length);
-  for (const k of usable) {
-    let [, s, l] = hexToHsl(palette[k]);
-    // Farbton-Verschiebung wie in der Pixel-Kunst: helle Töne wandern etwas zu einer, dunkle zur anderen Seite.
-    // Dadurch wirkt eine Farbvariante lebendig statt einfarbig.
-    const dh = Math.max(-24, Math.min(24, (l - avgL) * 80)) * (v.shift === undefined ? 1 : v.shift);
-    s = Math.min(1, Math.max(s, 0.32) * (v.sMul || 1) + (v.sAdd || 0));
-    l = Math.min(0.97, Math.max(0.04, l * (v.lMul || 1) + (v.lAdd || 0)));
-    out[k] = hslToHex((v.h + dh + 360) % 360, s, l);
-  }
-  return out;
-}
+// Farbvarianten: gemeinsamer Teil in sprites.js
+const { recolor } = DuckSprites;
 
 // Fein gezeichnete Figuren klein: erst sauber verkleinern, dann wieder auf klare Pixel und die eigenen Farben bringen
 // (sonst wirkt z. B. die Dose bei 60 % verwaschen, während Mini-Claude mit groben Pixeln scharf bleibt)
@@ -613,12 +574,12 @@ function paintFigure(t) {
     // Laptop vor ihm: Hände verschwinden hinter dem Deckel; beim Tastendruck blinkt die Leuchte
     const rows = CHAR.props.LAPTOP;
     paint(rows, ...ANCHORS.laptop, flip);
-    if (duck.pressedKey && duck.pressedUntil > t) paint(['i'], ANCHORS.laptop[0] + rows[0].length - 4, ANCHORS.laptop[1] + rows.length - 2, flip);
+    if (duck.pressedKey && duck.pressedUntil > t) paint(upscale(['i']), ANCHORS.laptop[0] + rows[0].length - 4 * PM, ANCHORS.laptop[1] + rows.length - 2 * PM, flip);
   } else if (isTyping(t)) {
-    paint(KEYBOARD, ...ANCHORS.keyboard, flip);
+    paint(upscale(KEYBOARD), ...ANCHORS.keyboard, flip);
     if (duck.pressedKey && duck.pressedUntil > t) {
       const [kc, kr] = duck.pressedKey;
-      paint(['I'], ANCHORS.keyboard[0] + kc, ANCHORS.keyboard[1] + kr, flip);
+      paint(upscale(['I']), ANCHORS.keyboard[0] + kc * PM, ANCHORS.keyboard[1] + kr * PM, flip);
     }
     if (ANCHORS.wingUp) paint(WING, ...(duck.wingDown ? ANCHORS.wingDown : ANCHORS.wingUp), flip);
   }
@@ -684,7 +645,7 @@ function paintFigure(t) {
     paint(CHAR.props.STONE, ANCHORS.stone[0], ANCHORS.stone[1] - Math.round(Math.sin(phase * Math.PI) * 5), flip);
   }
   if (medalUntil > t) paint(CHAR.props.MEDAL, ANCHORS.idea[0], ANCHORS.idea[1] + Math.round(Math.sin(t / 200)), flip);
-  if ((extras.ostern !== false && isEaster()) || previewPhase(t) === 'easter') paint(CHAR.props.EGG, -7, HEIGHT - 6, flip);
+  if ((extras.ostern !== false && isEaster()) || previewPhase(t) === 'easter') paint(CHAR.props.EGG, -7 * PM, HEIGHT - 6 * PM, flip);
 }
 
 // Fenster so verschieben, dass die Figur unten mittig drin steht
@@ -1164,9 +1125,13 @@ function drawCanStack(flip) {
   }
 }
 let feierabendDay = (() => { try { return localStorage.getItem('buddy-feierabend') || ''; } catch (e) { return ''; } })();
+const startedAt = new Date();
 function checkFeierabend(t) {
   const h = hour();
   if (h < 18 || h >= 23 || feierabendDay === todayKey() || dnd() || duck.state === 'sleep' || duck.dragging || acting(t)) return;
+  // nur wenn die Figur schon vor 18 Uhr lief (wer abends erst einschaltet, hat keinen Feierabend)
+  const sameDay = startedAt.toDateString() === new Date().toDateString();
+  if (!sameDay || startedAt.getHours() >= 18) { feierabendDay = todayKey(); return; }
   feierabendDay = todayKey();
   try { localStorage.setItem('buddy-feierabend', feierabendDay); } catch (e) { /* egal */ }
   say(CHAR.fizzy ? 'Pssst … Feierabend! 🍻' : 'Feierabend! 🎉', 3500);
@@ -2310,14 +2275,14 @@ function stat(key) { if (bridge && bridge.stat) bridge.stat(key); }
 function drawCoffee(t, frame, flip) {
   const sip = frame === FRAMES.sip;
   const [mx, my] = ANCHORS.mug;
-  const y = my - (sip ? 3 : 0);
+  const y = my - (sip ? 3 * PM : 0);
   paint(CHAR.props.MUG, mx, y, flip, CHAR.mug ? { '=': CHAR.mug[0], '#': CHAR.mug[1] } : null);
   // Dampf: kleine beige Quadrate, die aufsteigen und verschwinden
   for (let i = 0; i < 3; i++) {
     const k = ((t / 380 + i * 1.4) % 4.2);
     if (k > 3.6) continue;
-    const sx = mx + 2 + Math.round(Math.sin(t / 500 + i * 2) * 1.2) + i * 2;
-    paint(['&'], sx, y - 1 - Math.floor(k * 1.5), flip);
+    const sx = mx + (2 + Math.round(Math.sin(t / 500 + i * 2) * 1.2) + i * 2) * PM;
+    paint(upscale(['&']), sx, y - (1 + Math.floor(k * 1.5)) * PM, flip);
   }
   if (CHAR.laptop && !SIDE_BUDDIES.has(buddyItem)) {
     const lap = CHAR.props.LAPTOP_MINI;
@@ -2339,15 +2304,15 @@ function drawSideBuddy(t, frame, flip) {
     const pulling = doing('shisha') && actionSince(t) > 250 && actionSince(t) < 1600;
     paint(rows, WIDTH + 1, top, flip, pulling || Math.floor(t / 800) % 4 === 0 ? { 7: '8' } : null);
     // Schlauch: vom Anschluss zum Mund (beim Ziehen) oder lose durchhängend
-    const sx = WIDTH + 8;
-    const sy = top + 6;
+    const sx = WIDTH + 8 * PM;
+    const sy = top + 6 * PM;
     const [ex, ey] = pulling ? ANCHORS.mouth : [WIDTH - 1, HEIGHT - 2];
     const sag = pulling ? 3 : 6;
     for (let i = 0; i <= 24; i++) {
       const k = i / 24;
       const x = Math.round(sx + (ex - sx) * k);
       const y = Math.round(sy + (ey - sy) * k + Math.sin(k * Math.PI) * sag);
-      paint(['k'], x, y, flip);
+      paint(upscale(['k']), x, y, flip);
     }
   }
   if (buddyItem === 'BONG' && !doing('bong')) at(CHAR.props.BONG);
@@ -2363,8 +2328,8 @@ function drawSideBuddy(t, frame, flip) {
     const rows = CHAR.props.CAPY;
     at(rows);
     if (Math.floor(t / 9000) % 3 === 0) {
-      paint(['.yy.', 'yQyy', '.yy.'], WIDTH + 3, HEIGHT - rows.length - 1, flip);
-      if (Math.floor(t / 600) % 2) paint(['&'], WIDTH + 8, HEIGHT - rows.length - 2 - Math.floor(t / 300) % 3, flip);
+      paint(upscale(['.yy.', 'yQyy', '.yy.']), WIDTH + 3 * PM, HEIGHT - rows.length - 1 * PM, flip);
+      if (Math.floor(t / 600) % 2) paint(upscale(['&']), WIDTH + 8 * PM, HEIGHT - rows.length - (2 + Math.floor(t / 300) % 3) * PM, flip);
     }
   }
   if (buddyItem === 'THERMOS') at(CHAR.props.THERMOS);
@@ -2642,24 +2607,24 @@ function drawMouthExtras(t, frame, offY, flip) {
   if (!ANCHORS.mouth || duck.state === 'sleep') return;
   const [mx, my] = ANCHORS.mouth;
   if (mouthItem === 'GRILLZ' && (grinUntil > t || GRIN_FRAMES().includes(frame))) {
-    paint(CHAR.props.GRILLZ, mx - 3, my + offY, flip, Math.floor(t / 300) % 3 === 0 ? { i: 'I', I: 'i' } : null);
+    paint(CHAR.props.GRILLZ, mx - 3 * PM, my + offY, flip, Math.floor(t / 300) % 3 === 0 ? { i: 'I', I: 'i' } : null);
   }
   if (mouthItem === 'CHEW') {
     // dicke Backe (Glanz oben, Schatten unten) und ein brauner Mundwinkel
-    paint(['hh', 'WW', 'ww'], mx + 2, my - 2 + offY, flip);
-    paint(['('], mx, my + offY, flip);
+    paint(upscale(['hh', 'WW', 'ww']), mx + 2 * PM, my - 2 * PM + offY, flip);
+    paint(upscale(['(']), mx, my + offY, flip);
   }
-  if (snusUntil > t) paint(['hhhh', 'wwww'], mx - 3, my - 2 + offY, flip); // Beutel unter der Lippe
+  if (snusUntil > t) paint(upscale(['hhhh', 'wwww']), mx - 3 * PM, my - 2 * PM + offY, flip); // Beutel unter der Lippe
   if (mouthItem === 'HOSE') {
     // Shisha-Schlauch: Mundstück im Mund, der Schlauch hängt bis zum Boden neben ihm
-    paint(['jj'], mx, my - 1 + offY, flip);
-    const ex = WIDTH + 4;
+    paint(upscale(['jj']), mx, my - PM + offY, flip);
+    const ex = WIDTH + 4 * PM;
     const ey = HEIGHT;
     for (let i = 0; i <= 26; i++) {
       const k = i / 26;
-      const x = Math.round(mx + 2 + (ex - mx - 2) * k);
-      const y = Math.round(my - 1 + offY + (ey - my) * k + Math.sin(k * Math.PI) * 4);
-      paint(['k'], x, y, flip);
+      const x = Math.round(mx + 2 * PM + (ex - mx - 2 * PM) * k);
+      const y = Math.round(my - PM + offY + (ey - my) * k + Math.sin(k * Math.PI) * 4 * PM);
+      paint(upscale(['k']), x, y, flip);
     }
   }
 }

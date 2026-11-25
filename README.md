@@ -7,6 +7,15 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Orangi (Kong-Strong-Dose, 0,25 l) und Monsti (Monster-Dose, 0,5 l), beide mit Gesicht, sprudeln beim schnellen Tippen.
 
+## Version 1.48
+- Kein Größensprung zwischen 80 und 90 %: große Dosen jetzt genauso groß wie die Klein-Version (Kong ~100 px, Monster ~127 px bei 100 %).
+- Klein-Dosen etwas breiter: Buchstaben berühren den Rand nicht mehr.
+- Zubehör an Dosen: Tastatur beim Tippen unten vor der Dose (hochgerechnet), Regenschirm mittig darüber, Becher mit Abstand;
+  Kaffeedampf, Kautabak, Snus, Shisha-Schlauch, Osterei usw. werden mit hochgerechnet.
+- Einstellungen: Vorschau mit gewählter Farbe (auch Mini-Claude, Koala, Tasse) und Größen im selben Verhältnis wie in der App.
+- Zwei Figuren gleichzeitig mit Klein-Version und Sorten geprüft.
+- Feierabend-Gruß nur, wenn die Figur schon vor 18 Uhr lief.
+
 ## Version 1.47
 - Dosen bis 80 % als Klein-Version: gleiche Aufteilung wie groß (Sorte im Band, KONG | STRONG, Punkte; Kralle, MONSTER, ENERGY),
   aber mit gröberen Pixeln und Schrift 3 x 5 – bei 60 % genau 1:1 Pixel und lesbar, bei 70/80 % scharf vergrößert.

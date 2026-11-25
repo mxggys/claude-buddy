@@ -29,7 +29,7 @@ html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 var(--font); display: flex; overflow: hidden; user-select: none; }
 nav { width: 248px; flex: none; padding: 16px 8px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
 .me { display: flex; align-items: center; gap: 12px; padding: 4px 12px 16px; }
-.me canvas { width: 56px; height: 56px; image-rendering: pixelated; }
+.me canvas { width: 56px; height: 56px; image-rendering: pixelated; object-fit: contain; }
 .me b { display: block; font-size: 15px; font-weight: 600; }
 .me span { color: var(--muted); font-size: 12px; }
 nav button { font: inherit; display: flex; align-items: center; gap: 14px; width: 100%; padding: 9px 12px; border: 0; border-radius: 6px; background: transparent; color: var(--fg); text-align: left; cursor: pointer; position: relative; }
@@ -72,18 +72,18 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .tile { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 8px 6px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; text-align: center; }
 .tile:hover { background: var(--card-hover); }
 .tile[aria-pressed="true"] { border: 2px solid var(--accent); padding: 7px 5px 5px; }
-.tile canvas { width: 72px; height: 52px; image-rendering: pixelated; }
+.tile canvas { width: 72px; height: 52px; image-rendering: pixelated; object-fit: contain; }
 .tile small { font-size: 12px; line-height: 1.25; }
 .tile.none { justify-content: center; min-height: 92px; color: var(--muted); }
 .preview { display: flex; justify-content: center; padding: 8px 0; }
-.preview canvas { width: 280px; max-width: 100%; height: auto; image-rendering: pixelated; }
+.preview canvas { max-width: 100%; max-height: 300px; object-fit: contain; image-rendering: pixelated; }
 .muted { color: var(--muted); }
 .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; }
 .stats .card { flex-direction: column; align-items: flex-start; gap: 2px; min-height: 0; }
 .stats b { font: 600 22px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
 .warn { border-color: var(--accent); }
 .hero { display: flex; align-items: center; gap: 20px; }
-.hero canvas { width: 140px; height: auto; image-rendering: pixelated; flex: none; }
+.hero canvas { max-height: 150px; object-fit: contain; image-rendering: pixelated; flex: none; }
 .hero b { font: 600 22px/1.2 var(--font-display); display: block; }
 .quick { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
 .qbtn { font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; text-align: left; min-height: 64px; }

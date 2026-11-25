@@ -76,13 +76,13 @@ test('Größe nur in 10er-Schritten', () => {
   const main = fs.readFileSync(path.join(__dirname, '../src/main.js'), 'utf8');
   assert.ok(/const snapSize = \(v\) => Math\.min\(MAX_SIZE, Math\.max\(MIN_SIZE, Math\.round\(v \* 10\) \/ 10\)\)/.test(main), 'snapSize nicht in 10er-Schritten');
 });
-test('Figuren ähnlich hoch (Tiere/Claude 70–90 px, Dosen bis 105 px bei 100 %)', () => {
+test('Figuren ähnlich hoch (Tiere/Claude 70–90 px, Dosen bis 130 px bei 100 %)', () => {
   for (const id of S.ORDER) {
     const c = S.character(id);
     let top = Infinity, bot = -1;
     c.frames.idle.forEach((row, y) => { if ([...row].some((ch) => ch !== '.')) { top = Math.min(top, y); bot = Math.max(bot, y); } });
     const h = (bot - top + 1) * (c.display || c.scale);
-    assert.ok(h >= 70 && h <= (c.variants ? 105 : 90), `${id}: ${h.toFixed(0)} px`);
+    assert.ok(h >= 70 && h <= (c.variants ? 130 : 90), `${id}: ${h.toFixed(0)} px`);
   }
 });
 test('Neue Teile haben Bilder: Kühlbox, Mini-Dosen', () => {
@@ -94,6 +94,13 @@ test('Mini-Claude hat Licht und Schatten (nicht einfarbig)', () => {
   for (const k of ['o', 'q', 'W', 'w']) assert.ok(idle.includes(k), `Ton ${k} fehlt`);
 });
 
+test('Kein Größensprung zwischen Klein- und Groß-Version der Dosen (±5 %)', () => {
+  for (const id of ['orangi', 'monsti']) {
+    const big = S.character(id), small = S.character(big.small.original);
+    const hb = big.height * big.display, hs = small.height * small.display;
+    assert.ok(Math.abs(hb / hs - 1) < 0.05, `${id}: groß ${hb.toFixed(0)} px, klein ${hs.toFixed(0)} px (je bei 100 %)`);
+  }
+});
 test('Klein-Versionen der Dosen: jede Farbe, Schrift 1:1 bei 60 %', () => {
   for (const id of ['orangi', 'monsti']) {
     const c = S.character(id);

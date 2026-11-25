@@ -75,13 +75,16 @@ function drawFigure(canvas, id, equip, px) {
   // Dosen: die gewählte Farbe ist eine eigene Sorte
   const sorte = C.variants && C.variants[state.farbe];
   if (sorte) C = S.character(sorte);
-  // fein gezeichnete Figuren (Dosen): Zubehör hochrechnen, damit es so groß ist wie bei Mini-Claude
-  const pm = C.scale < 1.5 ? Math.max(1, Math.round(3 / C.scale)) : 1;
+  // Anzeige-Maßstab wie in der App: alle Figuren ähnlich groß, Zubehör überall gleich groß
+  const target = C.display || C.scale;
+  const pm = target < 1.5 ? Math.max(1, Math.round(3 / target)) : 1;
   const up = (rows) => (pm === 1 || !Array.isArray(rows) || typeof rows[0] !== 'string') ? rows
     : rows.flatMap((r) => Array(pm).fill([...r].map((ch) => ch.repeat(pm)).join('')));
   const P = {};
   for (const [k, rows] of Object.entries(C.props)) P[k] = k === 'GLASSES' ? rows : up(rows);
-  const PAL = C.palette, W = C.width, H = C.height, A = C.anchors;
+  // Farbe wie in der App (Dosen haben dafür eigene Sorten)
+  const PAL = (!sorte && !C.variants && S.recolor) ? S.recolor(C.palette, C.colorKeys || C.ownColors || [], state.farbe, C.variantTweaks) : C.palette;
+  const W = C.width, H = C.height, A = C.anchors;
   const MUG = A.mug ? [A.mug[0] < 0 ? A.mug[0] * pm : A.mug[0], A.mug[1]] : [-9 * pm, 11];
   const PROPPAL = pm > 1 && S.SHARED ? { ...S.SHARED, E: PAL.E, e: PAL.e, H: PAL.H, P: PAL.P, m: PAL.m, t: PAL.t } : PAL;
   const OX = 12 * pm, OY = 10 * pm, GW = W + 24 * pm, GH = H + 13 * pm;
@@ -89,7 +92,7 @@ function drawFigure(canvas, id, equip, px) {
   const work = document.createElement('canvas');
   work.width = GW; work.height = GH;
   const cx = work.getContext('2d');
-  const k = px / pm;
+  const k = px * target / 3; // Mini-Claude (scale 3) behält seine Größe, alle anderen im selben Verhältnis wie in der App
   canvas.width = Math.round(GW * k); canvas.height = Math.round(GH * k);
   const palOf = new Map(Object.entries(C.propPals || {}).map(([n, p]) => [P[n], p]));
   const paintWith = (base) => (rows, col, row, map) => { const rowsPal = palOf.get(rows); return rows && rows.forEach((line, r) => {
@@ -110,6 +113,10 @@ function drawFigure(canvas, id, equip, px) {
     out.imageSmoothingQuality = 'high';
     out.clearRect(0, 0, canvas.width, canvas.height);
     out.drawImage(work, 0, 0, canvas.width, canvas.height);
+    // Anzeigegröße aus der Bildgröße ableiten (statt fester Breite), damit Figuren im richtigen Verhältnis stehen
+    const box = canvas.closest('.hero, .preview');
+    const cssK = box ? (box.classList.contains('hero') ? 0.5 : 1) : null;
+    if (cssK) { canvas.style.width = `${Math.round(canvas.width * cssK)}px`; canvas.style.height = 'auto'; }
   };
   const e = equip || {};
   const frame = e.mund === 'GRILLZ' ? C.frames.happy : C.frames.idle;
