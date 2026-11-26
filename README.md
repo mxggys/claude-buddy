@@ -7,6 +7,19 @@ Kuschel (Koala, schläft beim Streicheln ein, auch seitlich am Fenster),
 Mokka (Kaffeetasse, dampft, morgens und beim schnellen Tippen kräftiger),
 Orangi (Kong-Strong-Dose, 0,25 l) und Monsti (Monster-Dose, 0,5 l), beide mit Gesicht, sprudeln beim schnellen Tippen.
 
+## Version 1.49
+- Größe Variante B: große Dosen wieder 1:1 bei 100 % (Kong 82 px, Monster 102 px), Klein-Version bei 70 % genau 1:1
+  (Schrift ab 70 % lesbar); Größe wächst ohne Sprung (80 % klein < 90 % groß).
+- Nicht ganzzahlige Größen (110 %, 130 % …): erst ganzzahlig hart vergrößern, dann weich auf Zielgröße – alle Pixel gleich breit.
+- Dosen kippeln statt Ärmchen: beim Winken, Jubeln, Tanzen, Hüpfen und leicht beim Tippen.
+- Fenster 300 px breit (mal Größe), Figur hält Abstand zum Rand: Zubehör wird nicht mehr abgeschnitten.
+- Feste Abstände bei Aktionen und Zubehör (Handy, Selfie, Zeitung, Drink, Geldbeutel, Wecker, Denkblase, Kamin, Kippen …) wachsen mit.
+- Rechenzeit: scharf gerechnete Bilder werden höchstens alle 40 ms neu berechnet, kleine feste Teile nur einmal angelegt.
+- Aufgeräumt: Code für Schweben, Rutschen, Schleim, Hasensprung, Verblassen und Rekord-Tanz entfernt (gehörte zu entfernten Figuren).
+- Einstellungen: Vorschau zeigt unter 90 % die Klein-Version der Dose.
+- Bildvergleich-Test: `npm run test:bilder` malt 79 Bilder (alle Figuren, Farben, Größen, mit Zubehör) und vergleicht sie mit
+  gespeicherten Bildern (`-- --neu` speichert neue).
+
 ## Version 1.48
 - Kein Größensprung zwischen 80 und 90 %: große Dosen jetzt genauso groß wie die Klein-Version (Kong ~100 px, Monster ~127 px bei 100 %).
 - Klein-Dosen etwas breiter: Buchstaben berühren den Rand nicht mehr.

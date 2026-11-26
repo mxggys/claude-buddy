@@ -73,7 +73,9 @@ function drawFigure(canvas, id, equip, px) {
   if (!S) return;
   let C = S.character(id);
   // Dosen: die gewählte Farbe ist eine eigene Sorte
-  const sorte = C.variants && C.variants[state.farbe];
+  // wie in der App: unter 90 % die Klein-Version der Dose, sonst je Farbe die passende Sorte
+  const klein = C.small && state.groesse < 0.85 ? (C.small[state.farbe] || C.small.original) : null;
+  const sorte = klein || (C.variants && C.variants[state.farbe]);
   if (sorte) C = S.character(sorte);
   // Anzeige-Maßstab wie in der App: alle Figuren ähnlich groß, Zubehör überall gleich groß
   const target = C.display || C.scale;

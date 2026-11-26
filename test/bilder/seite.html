@@ -1,0 +1,12 @@
+<!doctype html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#6d8fb8"><canvas id="c" style="display:block;width:100vw;height:100vh"></canvas>
+<script>
+  // fester Zufall, damit jedes Bild gleich aussieht
+  window.__seed = 12345;
+  Math.random = () => ((window.__seed = (window.__seed * 16807) % 2147483647) - 1) / 2147483646;
+  window.duckConfig = { figur: 'claude', size: 1, testKeys: false };
+</script>
+<script src="../../src/sprites.js"></script>
+<script src="../../src/renderer.js"></script>
+</body></html>

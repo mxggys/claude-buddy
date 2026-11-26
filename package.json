@@ -1,11 +1,12 @@
 {
   "name": "claude-buddy",
-  "version": "1.48.0",
+  "version": "1.49.0",
   "description": "Kleiner Pixel-Begleiter an der Taskleiste: Mini-Claude und kleine Viecher.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "test": "node test/check.js",
+    "test:bilder": "node test/bilder.js",
     "icon": "node scripts/make-icon.js",
     "dist": "electron-builder --win nsis --x64 --publish never",
     "release": "electron-builder --win nsis --x64 --publish always"

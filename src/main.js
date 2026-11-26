@@ -43,7 +43,7 @@ function moveOldAutostart() {
 }
 
 // Grundgröße des Figuren-Fensters: Figur unten mittig, darüber Platz für Effekte
-const BASE_W = 240;
+const BASE_W = 300; // breit genug für Figur + Becher links + Begleiter rechts
 const BASE_H = 200;
 const MIN_SIZE = 0.1;
 const MAX_SIZE = 3;
@@ -1292,10 +1292,11 @@ function openSettings(page) {
 }
 // Was ist neu: einmal nach jedem Update auf der Startseite der Einstellungen
 const CHANGELOG = [
-  'Kein Größensprung mehr bei den Dosen zwischen 80 und 90 %: Klein- und Groß-Version sind gleich groß',
-  'Dosen klein: Buchstaben mit Abstand zum Rand; Tastatur, Regenschirm, Becher und Co. sitzen jetzt richtig',
-  'Einstellungen: Vorschau zeigt die gewählte Farbe und die Größen wie in der App',
-  'Feierabend-Gruß nur noch, wenn die Figur schon vor 18 Uhr lief',
+  'Dosen wieder 1:1 scharf bei 100 % (Kong 82 px, Monster 102 px); Schrift ab 70 % lesbar, kein Größensprung',
+  'Größen wie 110 % oder 130 %: alle Pixel gleich breit',
+  'Dosen kippeln beim Winken, Jubeln, Tanzen und Tippen (statt Ärmchen)',
+  'Zubehör bleibt im Fenster: Becher, Begleiter und Zigarette werden am Rand nicht mehr abgeschnitten',
+  'Aktionen (Handy, Zeitung, Drink, Geldbeutel, Wecker …) sitzen an allen Figuren richtig',
 ];
 function settingsState() {
   const z = settings.zaehler;
